@@ -1,0 +1,43 @@
+.evento-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  background: color-mix(in srgb, var(--badge-color) 12%, white);
+  border: 1px solid color-mix(in srgb, var(--badge-color) 30%, white);
+  border-left: 3px solid var(--badge-color);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--badge-color) 80%, #1F2937);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s, box-shadow 0.1s;
+  overflow: hidden;
+}
+.evento-badge:hover {
+  background: color-mix(in srgb, var(--badge-color) 20%, white);
+  box-shadow: var(--shadow-sm);
+}
+.badge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--badge-color);
+  flex-shrink: 0;
+}
+.badge-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.badge-count {
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--badge-color);
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}

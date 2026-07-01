@@ -1,0 +1,50 @@
+.mini-cal { overflow: hidden; }
+
+.mini-cal-header {
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+.mini-nav-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: var(--font-size-sm); font-weight: 600;
+  color: var(--color-primary-teal);
+  padding: 0;
+  text-transform: capitalize;
+}
+.mini-nav-btn:hover { text-decoration: underline; }
+
+.mini-cal-body { padding: 8px 10px 10px; }
+
+.mini-weekdays, .mini-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+.mini-wd {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #9CA3AF;
+  padding: 2px 0;
+  text-transform: uppercase;
+}
+
+.mini-day {
+  text-align: center;
+  font-size: 11px;
+  padding: 3px 1px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--color-neutral-dark);
+  transition: background 0.1s;
+}
+.mini-day:hover { background: #E0F7FC; }
+.mini-day.other-month { color: #D1D5DB; }
+.mini-day.sunday { color: var(--color-salmon); }
+.mini-day.today {
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 50%;
+}
+.mini-day.has-event { font-weight: 700; }

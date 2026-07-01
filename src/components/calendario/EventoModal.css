@@ -1,0 +1,56 @@
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+.modal-box {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky; top: 0; background: var(--color-surface); z-index: 1;
+}
+.modal-title { font-size: var(--font-size-lg); font-weight: 700; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; color: #9CA3AF;
+  padding: 4px 8px; border-radius: var(--radius-sm);
+}
+.modal-close:hover { background: var(--color-bg); color: var(--color-neutral-dark); }
+
+.modal-form { padding: 20px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.modal-actions {
+  display: flex; gap: 10px; justify-content: flex-end;
+  padding-top: 16px; border-top: 1px solid var(--color-border); margin-top: 16px;
+}
+
+.eventi-giorno-list { margin-top: 20px; }
+.eventi-giorno-list h4 { font-size: var(--font-size-sm); font-weight: 600; margin-bottom: 10px; color: #6B7280; }
+
+.evento-detail { padding: 20px; }
+.detail-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.detail-row {
+  display: grid; grid-template-columns: 120px 1fr;
+  gap: 8px; font-size: var(--font-size-sm);
+  padding-bottom: 8px; border-bottom: 1px solid var(--color-border);
+}
+.detail-row span { color: #6B7280; }
+.detail-row strong { font-weight: 600; }
+
+@media (max-width: 480px) {
+  .form-row { grid-template-columns: 1fr; }
+  .modal-box { max-height: 95vh; }
+}

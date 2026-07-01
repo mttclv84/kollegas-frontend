@@ -1,0 +1,107 @@
+.nbg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.nbg-table th,
+.nbg-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #E5E7EB;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.nbg-table th {
+  background: #F9FAFB;
+  font-weight: 600;
+  font-size: 12px;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: help;
+}
+
+.nbg-table tbody tr:hover {
+  background: #F9FAFB;
+}
+
+.nbg-score-sel {
+  width: 56px;
+  padding: 4px 4px;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: center;
+  background: #fff;
+}
+
+.nbg-score-sel:focus {
+  outline: none;
+  border-color: #6366F1;
+}
+
+.nbg-box-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 15px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.nbg-box-name {
+  font-size: 10px;
+  color: #6B7280;
+  margin-top: 2px;
+  white-space: normal;
+  max-width: 120px;
+  line-height: 1.2;
+}
+
+.nbg-motiv-toggle {
+  display: flex;
+  gap: 2px;
+}
+
+.nbg-motiv-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  color: #6B7280;
+  transition: all 0.15s;
+}
+
+.nbg-motiv-btn:hover {
+  background: #F3F4F6;
+}
+
+.nbg-motiv-btn.active-blue {
+  background: #DBEAFE;
+  border-color: #3B82F6;
+  color: #1E40AF;
+}
+
+.nbg-motiv-btn.active-red {
+  background: #FEE2E2;
+  border-color: #EF4444;
+  color: #DC2626;
+}
+
+.nbg-legend {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}

@@ -1,0 +1,56 @@
+:root {
+  /* Primary palette */
+  --color-primary: #00B5D8;
+  --color-primary-mid: #0090B8;
+  --color-primary-teal: #007A9E;
+  --color-primary-sky: #7DD6E8;
+
+  /* Neutral */
+  --color-neutral-light: #D1D5DB;
+  --color-neutral-dark: #374151;
+
+  /* Secondary / ruoli */
+  --color-violet: #9B2FA6;
+  --color-pink: #E91E8C;
+  --color-pink-light: #F48FB1;
+  --color-rose: #FBBFCA;
+  --color-salmon: #F4A88A;
+  --color-blue: #3F51B5;
+  --color-purple: #7C4DFF;
+  --color-lilac: #CE93D8;
+
+  /* Functional */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+
+  /* Layout */
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E7EB;
+
+  /* Typography */
+  --font-family: 'Inter', 'Nunito', system-ui, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+
+  /* Spacing */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+
+  /* Sidebar */
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 64px;
+  --topbar-height: 56px;
+}
