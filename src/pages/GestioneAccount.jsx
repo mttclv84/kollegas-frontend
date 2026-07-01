@@ -5,6 +5,12 @@ import toast from 'react-hot-toast'
 import DataTable from '../components/ui/DataTable'
 import Modal from '../components/ui/Modal'
 
+const STATIC_CACHE_TTL = 24 * 60 * 60 * 1000
+function lsGet(key) {
+  try { const r = JSON.parse(localStorage.getItem(key)); if (r && Date.now() - r.ts < STATIC_CACHE_TTL) return r.d } catch {} return null
+}
+function lsSet(key, d) { try { localStorage.setItem(key, JSON.stringify({ d, ts: Date.now() })) } catch {} }
+
 const LIVELLI_PER_RUOLO = {
   admin: [
     { value: 'admin', label: 'Admin' },
@@ -170,19 +176,23 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
+    const cachedStores = lsGet('kol_stores')
+    const cachedRuoli = lsGet('kol_ruoli')
+    if (cachedStores) setStores(cachedStores)
+    if (cachedRuoli) setRuoli(cachedRuoli)
     try {
       const endpoint = mostraDisattivati ? '/users/disattivati/' : '/users/'
       const reqs = [
         api.get(endpoint),
-        api.get('/stores/').catch(() => ({ data: [] })),
-        api.get('/ruoli/').catch(() => ({ data: [] })),
+        cachedStores ? null : api.get('/stores/').catch(() => ({ data: [] })),
+        cachedRuoli ? null : api.get('/ruoli/').catch(() => ({ data: [] })),
         api.get('/richieste-creazione/').catch(() => ({ data: [] })),
         api.get('/richieste-eliminazione/').catch(() => ({ data: [] })),
       ]
-      const [uRes, sRes, rRes, rcRes, reRes] = await Promise.all(reqs)
+      const [uRes, sRes, rRes, rcRes, reRes] = await Promise.all(reqs.map(r => r || Promise.resolve(null)))
       setUtenti(uRes.data.results || uRes.data)
-      setStores(sRes.data.results || sRes.data)
-      setRuoli(rRes.data.results || rRes.data)
+      if (sRes) { const d = sRes.data.results || sRes.data; setStores(d); lsSet('kol_stores', d) }
+      if (rRes) { const d = rRes.data.results || rRes.data; setRuoli(d); lsSet('kol_ruoli', d) }
       setRichiesteCreazione(rcRes.data.results || rcRes.data)
       setRichiesteEliminazione(reRes.data.results || reRes.data)
     } finally {
