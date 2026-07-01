@@ -7,6 +7,9 @@ import Modal from '../components/ui/Modal'
 
 const LIVELLI_PER_RUOLO = {
   admin: [
+    { value: 'admin', label: 'Admin' },
+    { value: 'ho', label: 'HO' },
+    { value: 'store', label: 'Store' },
     { value: 'area', label: 'Area Manager' },
     { value: 'base', label: 'Base' },
   ],
@@ -609,7 +612,7 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
               <div className="form-group">
                 <label className="form-label">Email *</label>
                 <input type="email" className="form-control" value={form.email} onChange={e => setF('email', e.target.value)} required
-                  disabled style={disabledStyle} />
+                  disabled={!can(['admin'])} style={!can(['admin']) ? disabledStyle : {}} />
               </div>
               <div className="form-group">
                 <label className="form-label">Sesso</label>

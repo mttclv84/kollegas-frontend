@@ -166,7 +166,8 @@ export default function AuditLog() {
                       <td style={{ color: '#6B7280', fontSize: 13 }}>
                         {TIPO_LABEL[log.target_tipo] || log.target_tipo}
                       </td>
-                      <td style={{ maxWidth: 260 }}>
+                      <td style={{ maxWidth: 200, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+                          title={log.target_repr || ''}>
                         {log.target_repr || <span style={{ color: '#9CA3AF' }}>—</span>}
                       </td>
                       <td style={{ color: '#6B7280', fontSize: 12.5, maxWidth: 300 }}>

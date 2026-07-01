@@ -1,6 +1,35 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../api/client'
 
+const STATS_CACHE_KEY = 'kollegas_stats_cache'
+
+function lastRefreshTime() {
+  const now = new Date()
+  const d = now.getDate(), m = now.getMonth(), y = now.getFullYear()
+  const candidates = [
+    new Date(y, m, d, 1, 0, 0).getTime(),
+    new Date(y, m, d, 13, 0, 0).getTime(),
+    new Date(y, m, d - 1, 13, 0, 0).getTime(),
+  ]
+  return Math.max(...candidates.filter(t => t <= now.getTime()))
+}
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(STATS_CACHE_KEY)
+    if (!raw) return null
+    const cached = JSON.parse(raw)
+    if (cached.timestamp >= lastRefreshTime()) return cached.data
+  } catch {}
+  return null
+}
+
+function writeCache(data) {
+  try {
+    localStorage.setItem(STATS_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }))
+  } catch {}
+}
+
 const TIPOLOGIE = [
   { value: 'ld',         label: 'L&D' },
   { value: 'recruiting', label: 'RECRUITING' },
@@ -39,6 +68,11 @@ export default function Stats() {
   }, [])
 
   const fetchStats = useCallback(async () => {
+    const hasFilter = filterAttivita || filterTipologia || filterDa || filterA
+    if (!hasFilter) {
+      const cached = readCache()
+      if (cached) { setData(cached); return }
+    }
     setLoading(true)
     const params = {}
     if (filterAttivita) params.attivita = filterAttivita
@@ -48,6 +82,7 @@ export default function Stats() {
     try {
       const { data: res } = await api.get('/stats/', { params })
       setData(res)
+      if (!hasFilter) writeCache(res)
     } finally { setLoading(false) }
   }, [filterAttivita, filterTipologia, filterDa, filterA])
 
@@ -126,12 +161,12 @@ export default function Stats() {
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
             <StatCard label="Attività erogate" value={tot.num_edizioni} />
             <StatCard label="Ore erogate" value={`${tot.ore_erogate}h`} color="#1D4ED8" />
-            <StatCard label="Partecipanti M" value={tot.maschi} color="#0369A1" sub={`${tot.ore_maschi}h persona`} />
-            <StatCard label="Partecipanti F" value={tot.femmine} color="#BE185D" sub={`${tot.ore_femmine}h persona`} />
+            <StatCard label="Partecipanti M" value={tot.maschi} color="#0369A1" sub={`${tot.ore_maschi}h erogate`} />
+            <StatCard label="Partecipanti F" value={tot.femmine} color="#BE185D" sub={`${tot.ore_femmine}h erogate`} />
             {tot.ns > 0 && <StatCard label="N.S." value={tot.ns} color="#6B7280" sub="non specificato" />}
-            <StatCard label="In Presenza" value={tot.presenza} sub="edizioni" />
-            <StatCard label="Online" value={tot.online} sub="edizioni" />
-            {tot.blended > 0 && <StatCard label="Blended" value={tot.blended} sub="edizioni" />}
+            <StatCard label="In Presenza" value={tot.presenza} sub="attività" />
+            <StatCard label="Online" value={tot.online} sub="attività" />
+            {tot.blended > 0 && <StatCard label="Blended" value={tot.blended} sub="attività" />}
           </div>
 
           {/* Tabella per attività */}
