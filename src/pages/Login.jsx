@@ -101,7 +101,7 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="login-footer">© {new Date().getFullYear()} Primark Italy</p>
+        <p className="login-footer">© 2026 Primark Italy internal tool</p>
       </div>
     </div>
   )
