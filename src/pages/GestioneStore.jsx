@@ -6,27 +6,6 @@ import Modal from '../components/ui/Modal'
 
 const EMPTY_STORE = { codice_store: '', nome: '', comune: '', provincia: '', indirizzo: '', email_store: '' }
 
-function generatePassword(len = 10) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
-  return Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-}
-
-function PswCell({ password }) {
-  const [visible, setVisible] = useState(false)
-  if (!password) return <span style={{ color: '#9CA3AF' }}>—</span>
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'monospace' }}>
-      {visible ? password : '••••••••'}
-      <button
-        onClick={() => setVisible(v => !v)}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', color: '#6B7280', fontSize: 15, lineHeight: 1 }}
-        title={visible ? 'Nascondi' : 'Mostra password'}
-      >
-        {visible ? '🙈' : '👁️'}
-      </button>
-    </span>
-  )
-}
 
 export default function GestioneStore() {
   const [stores, setStores] = useState([])
@@ -56,8 +35,7 @@ export default function GestioneStore() {
     setSaving(true)
     try {
       if (modal.mode === 'create') {
-        const payload = { ...form, portale_password: generatePassword() }
-        await api.post('/stores/', payload)
+        await api.post('/stores/', form)
         toast.success('Store creato.')
       } else {
         await api.patch(`/stores/${modal.data.id}/`, form)
@@ -83,10 +61,6 @@ export default function GestioneStore() {
     { key: 'comune', label: 'Comune', sortable: true },
     { key: 'provincia', label: 'Prov.' },
     { key: 'email_store', label: 'Email Store' },
-    {
-      key: 'portale_password', label: 'PSW', sortable: false,
-      render: s => <PswCell password={s.portale_password} />
-    },
   ]
 
   return (
@@ -141,16 +115,6 @@ export default function GestioneStore() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
-              {modal.mode === 'edit' && (
-                <button type="button" className="btn btn-secondary" onClick={async () => {
-                  const pwd = generatePassword()
-                  try {
-                    await api.patch(`/stores/${modal.data.id}/`, { portale_password: pwd })
-                    toast.success('Password rigenerata.')
-                    fetch()
-                  } catch { toast.error('Errore.') }
-                }}>🔑 Rigenera Password</button>
-              )}
               <button type="button" className="btn btn-secondary" onClick={() => setModal(null)}>Annulla</button>
               <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</button>
             </div>
