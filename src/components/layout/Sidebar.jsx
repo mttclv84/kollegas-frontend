@@ -19,6 +19,7 @@ const NAV_ITEMS = [
     ],
   },
   { to: '/development',   label: 'Development',      icon: '🚀', roles: ['admin', 'ho', 'area'] },
+  { divider: true },
   {
     group: 'Gestione',
     icon: '⚙️',
@@ -79,6 +80,11 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
   const isGroupActive = (children) =>
     children.some(c => location.pathname === c.to || location.pathname.startsWith(c.to + '/'))
 
+  // Rimuove i divider "orfani" (senza contenuto visibile prima/dopo per il ruolo corrente)
+  const visibleNavItems = NAV_ITEMS
+    .filter(item => item.divider || (item.group ? item.children.some(c => can(c.roles)) : can(item.roles)))
+    .filter((item, i, arr) => !item.divider || (i > 0 && i < arr.length - 1 && !arr[i - 1].divider))
+
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-logo">
@@ -89,7 +95,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
       </div>
 
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map((item, idx) => {
+        {visibleNavItems.map((item, idx) => {
 
           // ── Divider ──
           if (item.divider) {
