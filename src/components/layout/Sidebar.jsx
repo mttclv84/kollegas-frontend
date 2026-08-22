@@ -39,7 +39,7 @@ const NAV_ITEMS = [
   { to: '/richieste',        label: 'Richieste di Modifica', icon: '🔔', roles: ['admin', 'ho'], alertBadge: true },
   { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin', 'ho'] },
   { to: '/stats',            label: 'Stats',                  icon: '📊', roles: ['admin', 'ho', 'area'] },
-  { to: '/disattivati',      label: 'Disattivati',            icon: '🗄️', roles: ['admin'] },
+  { to: '/disattivati',      label: 'Disattivati',            icon: '🚫', roles: ['admin'] },
 ]
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
