@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import AppLayout from './components/layout/AppLayout'
 import Login from './pages/Login'
@@ -31,11 +31,22 @@ function ProtectedRoute({ children, roles }) {
   return children
 }
 
+// Il livello 'fornitore' ha accesso solo alla sezione EHS: qualunque altra rotta
+// (comprese quelle senza `roles`, quindi altrimenti aperte a tutti) lo rimanda a /ehs.
+function FornitoreGuard({ children }) {
+  const { user } = useAuth()
+  const location = useLocation()
+  if (user?.livello_accesso === 'fornitore' && !location.pathname.startsWith('/ehs')) {
+    return <Navigate to="/ehs" replace />
+  }
+  return children
+}
+
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
   {
     path: '/',
-    element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
+    element: <ProtectedRoute><FornitoreGuard><AppLayout /></FornitoreGuard></ProtectedRoute>,
     children: [
       { index: true, element: <Calendario /> },
       { path: 'ehs', element: <EHS /> },

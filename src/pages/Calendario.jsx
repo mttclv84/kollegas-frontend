@@ -91,6 +91,7 @@ export default function Calendario() {
 
   const handleEventoClick = (e, evento) => {
     e.stopPropagation()
+    if (evento.is_ehs) return
     setSelectedEvento(evento)
     setModalMode('detail')
   }
@@ -133,7 +134,8 @@ export default function Calendario() {
             <EventoBadge
               key={ev.id}
               evento={ev}
-              onClick={(e) => handleEventoClick(e, ev)}
+              clickable={!ev.is_ehs}
+              onClick={ev.is_ehs ? undefined : (e) => handleEventoClick(e, ev)}
               dimmed={isStore && ev.data < TODAY}
             />
           ))}

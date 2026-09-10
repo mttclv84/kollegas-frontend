@@ -20,6 +20,13 @@
   background: color-mix(in srgb, var(--badge-color) 20%, white);
   box-shadow: var(--shadow-sm);
 }
+.evento-badge-readonly {
+  cursor: default;
+}
+.evento-badge-readonly:hover {
+  background: color-mix(in srgb, var(--badge-color) 12%, white);
+  box-shadow: none;
+}
 .badge-dot {
   width: 6px; height: 6px;
   border-radius: 50%;

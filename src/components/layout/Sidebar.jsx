@@ -6,7 +6,7 @@ import kollegalogo from '../../assets/kollegas-logo.jpeg'
 import './Sidebar.css'
 
 const NAV_ITEMS = [
-  { to: '/ehs', label: 'EHS', icon: '⛑️', roles: ['admin', 'ho', 'area', 'store', 'base'], className: 'nav-item-ehs' },
+  { to: '/ehs', label: 'EHS', icon: '⛑️', roles: ['admin', 'ho', 'area', 'store', 'base', 'fornitore'], className: 'nav-item-ehs' },
   { divider: true },
   { to: '/', label: 'Calendario', icon: '📅', roles: ['admin', 'ho', 'area', 'store', 'base'] },
   { to: '/corsi', label: 'Elenco Attività', icon: '📝', roles: ['admin', 'ho', 'store'] },

@@ -13,7 +13,7 @@ export function getEventColor(evento) {
   return TIPOLOGIA_COLORS[evento.attivita_tipologia] || '#6B7280'
 }
 
-export default function EventoBadge({ evento, onClick, dimmed = false }) {
+export default function EventoBadge({ evento, onClick, dimmed = false, clickable = true }) {
   const color = dimmed ? '#9CA3AF' : getEventColor(evento)
 
   const hasLimit = evento.max_partecipanti > 0
@@ -28,23 +28,40 @@ export default function EventoBadge({ evento, onClick, dimmed = false }) {
     countsText,
   ].filter(Boolean).join(' • ')
 
+  const content = (
+    <>
+      <span className="badge-dot" />
+      <span className="badge-text">{evento.attivita_nome}</span>
+      <span className="badge-count">
+        {evento.iscritti_count}
+        {hasLimit && (
+          <> / <span className="badge-liberi">{evento.posti_disponibili ?? 0}</span></>
+        )}
+      </span>
+    </>
+  )
+
   return (
     <div className="tooltip-wrap">
-      <button
-        className="evento-badge"
-        style={{ '--badge-color': color, opacity: dimmed ? 0.65 : 1 }}
-        onClick={onClick}
-        title={tooltip}
-      >
-        <span className="badge-dot" />
-        <span className="badge-text">{evento.attivita_nome}</span>
-        <span className="badge-count">
-          {evento.iscritti_count}
-          {hasLimit && (
-            <> / <span className="badge-liberi">{evento.posti_disponibili ?? 0}</span></>
-          )}
-        </span>
-      </button>
+      {clickable ? (
+        <button
+          className="evento-badge"
+          style={{ '--badge-color': color, opacity: dimmed ? 0.65 : 1 }}
+          onClick={onClick}
+          title={tooltip}
+        >
+          {content}
+        </button>
+      ) : (
+        <div
+          className="evento-badge evento-badge-readonly"
+          style={{ '--badge-color': color, opacity: dimmed ? 0.65 : 1 }}
+          title={tooltip}
+          onClick={e => e.stopPropagation()}
+        >
+          {content}
+        </div>
+      )}
       <div className="tooltip-content">{tooltip}</div>
     </div>
   )

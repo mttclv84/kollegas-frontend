@@ -154,6 +154,38 @@ function NotificaTrasferimentoPopup({ notifica, onVisto }) {
   )
 }
 
+function EHSNotificaScadenzaPopup({ notifica, onOk }) {
+  if (!notifica) return null
+  const dataFmt = notifica.scadenza_formazione
+    ? new Date(notifica.scadenza_formazione).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '—'
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      zIndex: 2300, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 14, padding: 32, maxWidth: 420, width: '92%',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.4)', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>⚠️</div>
+        <h2 style={{ margin: '0 0 16px', fontSize: 18, color: '#92400E' }}>Formazione in scadenza</h2>
+        <div style={{
+          background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 10,
+          padding: '14px 18px', marginBottom: 24, textAlign: 'left', fontSize: 14, color: '#374151',
+        }}>
+          <div style={{ marginBottom: 6 }}><strong>Corso:</strong> {notifica.corso_nome}</div>
+          <div style={{ marginBottom: 6 }}><strong>Utente:</strong> {notifica.utente_nome}</div>
+          <div><strong>Scadenza:</strong> {dataFmt}</div>
+        </div>
+        <button className="btn btn-primary" style={{ minWidth: 140, fontSize: 15 }} onClick={onOk}>
+          OK, ho capito
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function AppLayout() {
   const { user, can } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
@@ -161,6 +193,7 @@ export default function AppLayout() {
   const [notifiche, setNotifiche] = useState([])
   const [notificheTrasferimento, setNotificheTrasferimento] = useState([])
   const [notificheEvento, setNotificheEvento] = useState([])
+  const [notificheScadenzaEHS, setNotificheScadenzaEHS] = useState([])
 
   useEffect(() => {
     if (!user || !can(['store'])) return
@@ -212,6 +245,25 @@ export default function AppLayout() {
     setNotificheTrasferimento(prev => prev.slice(1))
   }
 
+  useEffect(() => {
+    if (!user || !can(['store'])) return
+    const fetch = () => {
+      api.get('/ehs/notifiche-scadenza/')
+        .then(({ data }) => { if (data.length > 0) setNotificheScadenzaEHS(data) })
+        .catch(() => {})
+    }
+    fetch()
+    const timer = setInterval(fetch, 30000)
+    return () => clearInterval(timer)
+  }, [user])
+
+  const handleOkScadenzaEHS = async () => {
+    const notifica = notificheScadenzaEHS[0]
+    if (!notifica) return
+    try { await api.patch(`/ehs/notifiche-scadenza/${notifica.id}/`) } catch {}
+    setNotificheScadenzaEHS(prev => prev.slice(1))
+  }
+
   return (
     <div className={`app-layout ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <NotifichePopup notifiche={notifiche} onClose={handleCloseNotifiche} />
@@ -222,6 +274,10 @@ export default function AppLayout() {
       <NotificaTrasferimentoPopup
         notifica={notificheTrasferimento[0] || null}
         onVisto={handleVistoTrasferimento}
+      />
+      <EHSNotificaScadenzaPopup
+        notifica={notificheScadenzaEHS[0] || null}
+        onOk={handleOkScadenzaEHS}
       />
       <div
         className={`mobile-overlay ${mobileOpen ? 'visible' : ''}`}
