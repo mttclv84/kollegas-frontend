@@ -8,6 +8,7 @@ import EHSSessioneModal from '../components/ehs/EHSSessioneModal'
 import EHSRichiesteList from '../components/ehs/EHSRichiesteList'
 import EHSRichiestaFormModal from '../components/ehs/EHSRichiestaFormModal'
 import './Calendario.css'
+import './EHS.css'
 
 export default function EHS() {
   const { can } = useAuth()
@@ -89,17 +90,17 @@ export default function EHS() {
   const canCreaRichiesta = can(['store', 'admin', 'ho'])
 
   return (
-    <div>
+    <div className="ehs-section">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="ehs-tabs">
           <button
-            className={`btn btn-sm ${tab === 'calendario' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`ehs-tab ${tab === 'calendario' ? 'active' : ''}`}
             onClick={() => setTab('calendario')}
           >
             📅 Calendario
           </button>
           <button
-            className={`btn btn-sm ${tab === 'richieste' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`ehs-tab ${tab === 'richieste' ? 'active' : ''}`}
             onClick={() => setTab('richieste')}
           >
             📋 Richieste

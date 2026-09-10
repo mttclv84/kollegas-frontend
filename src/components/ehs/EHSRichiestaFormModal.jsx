@@ -10,10 +10,12 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
 
   const [corsi, setCorsi] = useState([])
   const [stores, setStores] = useState([])
+  const [fornitori, setFornitori] = useState([])
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     corso: '',
     negozio: user?.store_id || '',
+    fornitore: '',
     contatto_negozio_nome: '',
     contatto_negozio_telefono: '',
     note: '',
@@ -24,6 +26,7 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
       setCorsi(data)
       if (data.length === 1) setForm(f => ({ ...f, corso: data[0].id }))
     })
+    api.get('/ehs/fornitori/').then(({ data }) => setFornitori(data)).catch(() => {})
     if (isAdminHO) {
       api.get('/stores/').then(({ data }) => setStores(data.results || data))
     }
@@ -42,6 +45,7 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
         note: form.note,
       }
       if (isAdminHO) payload.negozio = form.negozio
+      if (form.fornitore) payload.fornitore = form.fornitore
       await api.post('/ehs/sessioni/', payload)
       toast.success('Richiesta inviata al fornitore.')
       onCreated()
@@ -56,7 +60,9 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">Nuova richiesta formazione</h2>
+          <h2 className="modal-title" style={{ textTransform: 'uppercase', letterSpacing: 0.3 }}>
+            Nuova Richiesta Formazione Area EHS
+          </h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -93,6 +99,17 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
               <input className="form-control" value={user?.store_nome || '—'} disabled />
             </div>
           )}
+
+          <div className="form-group">
+            <label className="form-label">Fornitore (opz.)</label>
+            <select className="form-control" value={form.fornitore}
+              onChange={e => setForm(f => ({ ...f, fornitore: e.target.value }))}>
+              <option value="">— Nessuno specifico (assegnato in seguito) —</option>
+              {fornitori.map(f => (
+                <option key={f.id} value={f.id}>{f.fornitore_ragione_sociale} — {f.nome_completo}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="form-group">
             <label className="form-label">Contatto negozio *</label>

@@ -6,7 +6,16 @@ import kollegalogo from '../../assets/kollegas-logo.jpeg'
 import './Sidebar.css'
 
 const NAV_ITEMS = [
-  { to: '/ehs', label: 'EHS', icon: '⛑️', roles: ['admin', 'ho', 'area', 'store', 'base', 'fornitore'], className: 'nav-item-ehs' },
+  {
+    group: 'EHS',
+    icon: '⛑️',
+    roles: ['admin', 'ho', 'area', 'store', 'base', 'fornitore'],
+    className: 'nav-item-ehs',
+    children: [
+      { to: '/ehs', label: 'Calendario & Richieste', icon: '📅', roles: ['admin', 'ho', 'area', 'store', 'base', 'fornitore'] },
+      { to: '/ehs/fornitori', label: 'Gestione Fornitori EHS', icon: '🏢', roles: ['admin', 'ho'] },
+    ],
+  },
   { divider: true },
   { to: '/', label: 'Calendario', icon: '📅', roles: ['admin', 'ho', 'area', 'store', 'base'] },
   { to: '/corsi', label: 'Elenco Attività', icon: '📝', roles: ['admin', 'ho', 'store'] },
@@ -48,7 +57,7 @@ const NAV_ITEMS = [
 export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
   const { user, logout, can } = useAuth()
   const location = useLocation()
-  const [openGroups, setOpenGroups] = useState({ Report: true, Gestione: true })
+  const [openGroups, setOpenGroups] = useState({ EHS: true, Report: true, Gestione: true })
   const [pendingCount, setPendingCount] = useState(0)
   const [accountBadge, setAccountBadge] = useState(0)
 
@@ -114,7 +123,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
             return (
               <div key={item.group} className="nav-group">
                 <button
-                  className={`nav-group-header ${active ? 'active' : ''}`}
+                  className={`nav-group-header ${active ? 'active' : ''} ${item.className || ''}`.trim()}
                   onClick={() => !collapsed && toggleGroup(item.group)}
                   title={collapsed ? item.group : undefined}
                 >

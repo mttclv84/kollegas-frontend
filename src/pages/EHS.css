@@ -1,0 +1,41 @@
+/* Identità visiva dedicata alla sezione EHS: tendente all'arancione,
+   per essere evidentemente diversa dal resto di Kollegas (blu/teal). */
+.ehs-section {
+  background: linear-gradient(180deg, #FFF7ED 0%, #FFFBF5 60%, #FFFFFF 100%);
+  border: 1px solid #FED7AA;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  min-height: calc(100vh - 140px);
+}
+
+.ehs-section .page-title {
+  color: #9A3412;
+}
+
+.ehs-tabs {
+  display: flex;
+  gap: 8px;
+}
+.ehs-tab {
+  background: #fff;
+  border: 1px solid #FDBA74;
+  color: #9A3412;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.ehs-tab:hover { background: #FFEDD5; }
+.ehs-tab.active {
+  background: #F97316;
+  border-color: #F97316;
+  color: #fff;
+}
+
+.ehs-section .cal-month-title { color: #C2410C; }
+.ehs-section .cal-grid { border-color: #FED7AA; }
+.ehs-section .cal-day.oggi { background: #FFEDD5; }
+.ehs-section .cal-day.oggi .cal-day-num { background: #F97316; }
+.ehs-section .cal-day.clickable:hover { background: #FFF7ED; }
