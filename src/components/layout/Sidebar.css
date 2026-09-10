@@ -75,6 +75,18 @@
 .nav-icon { font-size: 17px; flex-shrink: 0; width: 20px; text-align: center; }
 .nav-label { overflow: hidden; }
 
+/* EHS item */
+.nav-item-ehs {
+  margin: 4px 8px;
+  width: calc(100% - 16px);
+  border-radius: var(--radius-md);
+  background: rgba(254, 243, 199, 0.25);
+  color: #FEF3C7;
+}
+.nav-item-ehs:hover { background: rgba(254, 243, 199, 0.4); color: #FFFBEB; }
+.nav-item-ehs.active { background: rgba(254, 243, 199, 0.55); color: #92400E; font-weight: 600; }
+.nav-item-ehs.active::before { background: #92400E; }
+
 /* Nav group */
 .nav-group { display: flex; flex-direction: column; }
 

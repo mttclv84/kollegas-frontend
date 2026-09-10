@@ -6,6 +6,8 @@ import kollegalogo from '../../assets/kollegas-logo.jpeg'
 import './Sidebar.css'
 
 const NAV_ITEMS = [
+  { to: '/ehs', label: 'EHS', icon: '⛑️', roles: ['admin', 'ho', 'area', 'store', 'base'], className: 'nav-item-ehs' },
+  { divider: true },
   { to: '/', label: 'Calendario', icon: '📅', roles: ['admin', 'ho', 'area', 'store', 'base'] },
   { to: '/corsi', label: 'Elenco Attività', icon: '📝', roles: ['admin', 'ho', 'store'] },
   {
@@ -171,7 +173,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
               key={item.to}
               to={item.to}
               end={item.to === '/'}
-              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''} ${item.className || ''}`.trim()}
               title={collapsed ? item.label : undefined}
               style={{ position: 'relative' }}
             >

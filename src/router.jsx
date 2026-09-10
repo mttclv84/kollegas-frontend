@@ -21,6 +21,7 @@ import EccezioniCalendario from './pages/EccezioniCalendario'
 import Stats from './pages/Stats'
 import RichiesteModifica from './pages/RichiesteModifica'
 import IscrizioniStore from './pages/IscrizioniStore'
+import EHS from './pages/EHS'
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth()
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
     children: [
       { index: true, element: <Calendario /> },
+      { path: 'ehs', element: <EHS /> },
       { path: 'corsi', element: <ElencoCorsi /> },
       { path: 'iscrizioni', element: <GestionePartecipanti /> },
       { path: 'account', element: <GestioneAccount /> },
