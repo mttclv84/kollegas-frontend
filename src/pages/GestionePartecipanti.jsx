@@ -72,6 +72,7 @@ export default function GestionePartecipanti() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [richiestaModal, setRichiestaModal] = useState(null)
+  const [confermaAssegna, setConfermaAssegna] = useState(null)
 
   const fetchData = async () => {
     if (!eventoId) return
@@ -109,6 +110,27 @@ export default function GestionePartecipanti() {
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Errore.')
     }
+  }
+
+  const avviaAssegna = async (u) => {
+    if (evento?.is_ehs && evento.ehs_corso_id) {
+      try {
+        const { data } = await api.get('/ehs/verifica-partecipante/', {
+          params: { utente: u.id, corso: evento.ehs_corso_id },
+        })
+        if (data.valido) {
+          setConfermaAssegna({ userId: u.id, corsoNome: data.corso_nome, scadenza: data.scadenza_formazione })
+          return
+        }
+      } catch {}
+    }
+    handleAssegna(u.id)
+  }
+
+  const confermaEAssegna = () => {
+    const userId = confermaAssegna?.userId
+    setConfermaAssegna(null)
+    if (userId) handleAssegna(userId)
   }
 
   const handleStatoChange = async (iscrizioneId, stato) => {
@@ -161,6 +183,36 @@ export default function GestionePartecipanti() {
           onClose={() => setRichiestaModal(null)}
           onSuccess={() => { setRichiestaModal(null); fetchData() }}
         />
+      )}
+
+      {confermaAssegna && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+          zIndex: 2800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 14, padding: 32, maxWidth: 440, width: '92%',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.4)', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>⚠️</div>
+            <h2 style={{ margin: '0 0 16px', fontSize: 17, color: '#92400E' }}>
+              Corso già effettuato e non ancora scaduto
+            </h2>
+            <p style={{ margin: '0 0 24px', fontSize: 14, color: '#374151' }}>
+              Procedere alla nuova iscrizione?
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button className="btn" style={{ background: '#EF4444', color: '#fff', minWidth: 100 }}
+                onClick={() => setConfermaAssegna(null)}>
+                NO
+              </button>
+              <button className="btn" style={{ background: '#10B981', color: '#fff', minWidth: 140 }}
+                onClick={confermaEAssegna}>
+                SI, procedo
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <h1 className="page-title">
@@ -328,7 +380,7 @@ export default function GestionePartecipanti() {
                       <td><span className="badge badge-neutral">{u.store_nome || '—'}</span></td>
                       <td>{u.cognome} {u.nome}</td>
                       <td>
-                        <button className="btn btn-primary btn-sm" onClick={() => handleAssegna(u.id)}>
+                        <button className="btn btn-primary btn-sm" onClick={() => avviaAssegna(u)}>
                           + Assegna
                         </button>
                       </td>
