@@ -38,7 +38,9 @@ export default function EHS() {
 
   useEffect(() => {
     fetchEventi()
-    const timer = setInterval(fetchEventi, 5000)
+    // Aggiornamento automatico ogni 60 minuti: un refresh manuale della pagina
+    // resta sempre disponibile per dati immediatamente aggiornati.
+    const timer = setInterval(fetchEventi, 3600000)
     return () => clearInterval(timer)
   }, [fetchEventi])
 
@@ -51,7 +53,7 @@ export default function EHS() {
       api.get('/ehs/notifiche-richiesta/').then(({ data }) => setNotificheRichieste(data)).catch(() => {})
     }
     fetchNotifiche()
-    const timer = setInterval(fetchNotifiche, 5000)
+    const timer = setInterval(fetchNotifiche, 3600000)
     return () => clearInterval(timer)
   }, [isFornitore])
 
@@ -106,6 +108,7 @@ export default function EHS() {
               evento={ev}
               clickable={ev.is_ehs}
               onClick={ev.is_ehs ? (e) => handleEventoClick(e, ev) : undefined}
+              dimmed={!ev.is_ehs}
             />
           ))}
         </div>

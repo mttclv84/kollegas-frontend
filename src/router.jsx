@@ -23,6 +23,7 @@ import RichiesteModifica from './pages/RichiesteModifica'
 import IscrizioniStore from './pages/IscrizioniStore'
 import EHS from './pages/EHS'
 import GestioneFornitoriEHS from './pages/GestioneFornitoriEHS'
+import GestioneCorsiEHS from './pages/GestioneCorsiEHS'
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth()
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Calendario /> },
       { path: 'ehs', element: <EHS /> },
       { path: 'ehs/fornitori', element: <ProtectedRoute roles={['admin','ho']}><GestioneFornitoriEHS /></ProtectedRoute> },
+      { path: 'ehs/corsi', element: <ProtectedRoute roles={['admin','ho']}><GestioneCorsiEHS /></ProtectedRoute> },
       { path: 'corsi', element: <ElencoCorsi /> },
       { path: 'iscrizioni', element: <GestionePartecipanti /> },
       { path: 'account', element: <GestioneAccount /> },

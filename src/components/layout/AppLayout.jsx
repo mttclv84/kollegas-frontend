@@ -271,7 +271,7 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 5000)
+    const timer = setInterval(fetch, 3600000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -288,7 +288,7 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 5000)
+    const timer = setInterval(fetch, 3600000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -314,7 +314,7 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 5000)
+    const timer = setInterval(fetch, 3600000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -333,7 +333,7 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 5000)
+    const timer = setInterval(fetch, 3600000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -354,7 +354,7 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 5000)
+    const timer = setInterval(fetch, 3600000)
     return () => clearInterval(timer)
   }, [user])
 

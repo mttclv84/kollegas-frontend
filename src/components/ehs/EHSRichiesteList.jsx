@@ -88,7 +88,7 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
 
   useEffect(() => {
     fetchSessioni()
-    const timer = setInterval(fetchSessioni, 5000)
+    const timer = setInterval(fetchSessioni, 3600000)
     return () => clearInterval(timer)
   }, [fetchSessioni])
   useImperativeHandle(ref, () => ({ refresh: fetchSessioni }))

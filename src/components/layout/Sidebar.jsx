@@ -14,6 +14,7 @@ const NAV_ITEMS = [
     children: [
       { to: '/ehs', label: 'Calendario & Richieste', icon: '📅', roles: ['admin', 'ho', 'area', 'store', 'base', 'fornitore'] },
       { to: '/ehs/fornitori', label: 'Gestione Fornitori EHS', icon: '🏢', roles: ['admin', 'ho'] },
+      { to: '/ehs/corsi', label: 'Gestione Corsi EHS', icon: '📚', roles: ['admin', 'ho'] },
     ],
   },
   { divider: true },
@@ -69,7 +70,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 120000)
+    const timer = setInterval(fetch, 3600000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -81,7 +82,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 60000)
+    const timer = setInterval(fetch, 3600000)
     return () => clearInterval(timer)
   }, [user])
 

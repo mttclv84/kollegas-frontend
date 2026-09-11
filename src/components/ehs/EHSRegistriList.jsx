@@ -106,7 +106,7 @@ export default function EHSRegistriList() {
 
   useEffect(() => {
     fetchRegistri()
-    const timer = setInterval(fetchRegistri, 5000)
+    const timer = setInterval(fetchRegistri, 3600000)
     return () => clearInterval(timer)
   }, [fetchRegistri])
 

@@ -136,7 +136,7 @@ export default function Calendario() {
               evento={ev}
               clickable={!ev.is_ehs}
               onClick={ev.is_ehs ? undefined : (e) => handleEventoClick(e, ev)}
-              dimmed={isStore && ev.data < TODAY}
+              dimmed={ev.is_ehs || (isStore && ev.data < TODAY)}
             />
           ))}
         </div>
