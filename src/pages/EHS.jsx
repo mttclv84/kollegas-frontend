@@ -120,7 +120,7 @@ export default function EHS() {
 
   return (
     <div className="ehs-section">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
         <div className="ehs-tabs">
           <button
             className={`ehs-tab ${tab === 'calendario' ? 'active' : ''}`}

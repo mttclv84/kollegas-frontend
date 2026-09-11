@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import { useAuth } from '../../context/AuthContext'
@@ -218,8 +219,11 @@ function EHSNotificaConfermaPopup({ notifica, onOk }) {
   )
 }
 
-function EHSNotificaDataPropostaPopup({ notifica, onOk }) {
+function EHSNotificaDataPropostaPopup({ notifica, onAccetto, onDismiss, accepting }) {
   if (!notifica) return null
+  const data = notifica.data_proposta ? new Date(notifica.data_proposta) : null
+  const dataFmt = data ? data.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'
+  const oraFmt = data ? data.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '—'
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
@@ -236,11 +240,20 @@ function EHSNotificaDataPropostaPopup({ notifica, onOk }) {
           padding: '14px 18px', marginBottom: 24, textAlign: 'left', fontSize: 14, color: '#374151',
         }}>
           <div style={{ marginBottom: 6 }}><strong>Corso:</strong> {notifica.corso_nome}</div>
-          <div><strong>Negozio:</strong> {notifica.negozio_nome}</div>
+          <div style={{ marginBottom: 6 }}><strong>Negozio:</strong> {notifica.negozio_nome}</div>
+          <div style={{ marginBottom: 6 }}><strong>Data:</strong> {dataFmt}</div>
+          <div style={{ marginBottom: 6 }}><strong>Ora:</strong> {oraFmt}</div>
+          <div><strong>Fornitore:</strong> {notifica.fornitore_nome || '—'}</div>
         </div>
-        <button className="btn btn-primary" style={{ minWidth: 140, fontSize: 15 }} onClick={onOk}>
-          OK, ho capito
-        </button>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <button className="btn btn-success" style={{ minWidth: 140, fontSize: 15 }} disabled={accepting} onClick={onAccetto}>
+            {accepting ? 'Attendere...' : '✓ ACCETTO'}
+          </button>
+          <button className="btn" style={{ background: '#EF4444', color: '#fff', fontSize: 15, padding: '8px 16px' }}
+            disabled={accepting} onClick={onDismiss}>
+            ✕
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -441,11 +454,29 @@ export default function AppLayout() {
     return () => clearInterval(timer)
   }, [user])
 
-  const handleOkDataPropostaEHS = async () => {
+  const [accettandoDataProposta, setAccettandoDataProposta] = useState(false)
+
+  const handleDismissDataPropostaEHS = async () => {
     const notifica = notificheDataPropostaEHS[0]
     if (!notifica) return
     try { await api.patch(`/ehs/notifiche-data-proposta/${notifica.id}/`) } catch {}
     setNotificheDataPropostaEHS(prev => prev.slice(1))
+  }
+
+  const handleAccettoDataPropostaEHS = async () => {
+    const notifica = notificheDataPropostaEHS[0]
+    if (!notifica) return
+    setAccettandoDataProposta(true)
+    try {
+      await api.patch(`/ehs/sessioni/${notifica.sessione_id}/rispondi-data/`, { accetta: true })
+      toast.success('Sessione confermata! Ora appare sul calendario EHS.')
+      await api.patch(`/ehs/notifiche-data-proposta/${notifica.id}/`).catch(() => {})
+      setNotificheDataPropostaEHS(prev => prev.slice(1))
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore durante l\'accettazione.')
+    } finally {
+      setAccettandoDataProposta(false)
+    }
   }
 
   const [notificheConfermaStoreEHS, setNotificheConfermaStoreEHS] = useState([])
@@ -495,7 +526,9 @@ export default function AppLayout() {
       />
       <EHSNotificaDataPropostaPopup
         notifica={notificheDataPropostaEHS[0] || null}
-        onOk={handleOkDataPropostaEHS}
+        onAccetto={handleAccettoDataPropostaEHS}
+        onDismiss={handleDismissDataPropostaEHS}
+        accepting={accettandoDataProposta}
       />
       <EHSNotificaConfermaStorePopup
         notifica={notificheConfermaStoreEHS[0] || null}

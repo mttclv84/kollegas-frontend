@@ -19,6 +19,22 @@
   font-weight: 700;
   color: var(--color-primary-teal);
   letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .cal-header {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .cal-month-title {
+    order: -1;
+    width: 100%;
+    text-align: center;
+    font-size: var(--font-size-lg);
+    white-space: normal;
+  }
 }
 
 /* Two-column grid */

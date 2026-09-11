@@ -17,7 +17,6 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
     corso: '',
     negozio: user?.store_id || '',
     contatto_negozio_nome: '',
-    contatto_negozio_telefono: '',
     partecipanti_previsti: '',
     data_suggerita_store: '',
     note: '',
@@ -42,7 +41,6 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
       const payload = {
         corso: form.corso,
         contatto_negozio_nome: form.contatto_negozio_nome,
-        contatto_negozio_telefono: form.contatto_negozio_telefono,
         note: form.note,
       }
       if (isAdminHO) payload.negozio = form.negozio
@@ -141,16 +139,6 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Telefono contatto *</label>
-            <input
-              className="form-control"
-              placeholder="Es. cellulare P&C"
-              value={form.contatto_negozio_telefono}
-              onChange={e => setForm(f => ({ ...f, contatto_negozio_telefono: e.target.value }))}
-              required
-            />
-          </div>
 
           <div className="form-group">
             <label className="form-label">Note (opz.)</label>

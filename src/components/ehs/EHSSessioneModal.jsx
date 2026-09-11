@@ -204,7 +204,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               <div className="detail-row"><span>Data proposta</span><strong>{sessione.data_proposta ? new Date(sessione.data_proposta).toLocaleString('it-IT') : '—'}</strong></div>
               <div className="detail-row"><span>Data confermata</span><strong>{sessione.data_confermata ? new Date(sessione.data_confermata).toLocaleString('it-IT') : '—'}</strong></div>
               <div className="detail-row"><span>Docente</span><strong>{sessione.docente_nome || '—'} {sessione.docente_telefono ? `— ${sessione.docente_telefono}` : ''}</strong></div>
-              <div className="detail-row"><span>Contatto negozio</span><strong>{sessione.contatto_negozio_nome} — {sessione.contatto_negozio_telefono}</strong></div>
+              <div className="detail-row"><span>Contatto negozio</span><strong>{sessione.contatto_negozio_nome}</strong></div>
               <div className="detail-row"><span>Partecipanti iscritti</span><strong>{sessione.partecipanti_count}</strong></div>
             </div>
 
@@ -354,27 +354,6 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
 
                 {isFornitoreLato && wizardStep === 2 && (
                   <div style={{ marginTop: 16 }}>
-                    {sessione.partecipanti?.length > 0 && (
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
-                          Partecipanti ({sessione.partecipanti.length})
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          {sessione.partecipanti.map(p => {
-                            const assente = presenze[p.id] === false
-                            return (
-                              <div key={p.id} style={{
-                                fontSize: 13, padding: '6px 2px',
-                                borderTop: assente ? '1px solid #F3F4F6' : 'none',
-                                color: assente ? '#D1D5DB' : '#374151',
-                              }}>
-                                {partecipanteLabel(p)}
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )}
                     <label className="form-label">Carica il registro compilato</label>
                     <input type="file" accept="application/pdf" className="form-control"
                       onChange={e => setRegistroFile(e.target.files[0] || null)} />
