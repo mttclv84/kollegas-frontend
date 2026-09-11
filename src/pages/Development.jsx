@@ -365,7 +365,7 @@ export default function Development() {
                     <TimelineCard
                       key={step.id}
                       step={step}
-                      onDelete={i === 0 && can(['admin', 'ho', 'area']) ? handleDeletePercorso : null}
+                      onDelete={i === 0 && can(['admin', 'admin_ehs', 'ho', 'area']) ? handleDeletePercorso : null}
                     />
                   ))}
                 </div>

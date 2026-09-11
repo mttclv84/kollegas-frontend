@@ -8,7 +8,7 @@ import '../calendario/EventoModal.css'
 
 export default function EHSRichiestaFormModal({ onClose, onCreated }) {
   const { user, can } = useAuth()
-  const isAdminHO = can(['admin', 'ho'])
+  const isAdminHO = can(['admin', 'admin_ehs', 'ho'])
 
   const [corsi, setCorsi] = useState([])
   const [stores, setStores] = useState([])

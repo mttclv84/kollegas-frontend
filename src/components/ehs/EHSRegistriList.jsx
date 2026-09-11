@@ -83,7 +83,7 @@ function PartecipantiOverlay({ partecipanti }) {
 
 export default function EHSRegistriList() {
   const { can } = useAuth()
-  const isAdminHO = can(['admin', 'ho'])
+  const isAdminHO = can(['admin', 'admin_ehs', 'ho'])
   const [registri, setRegistri] = useState([])
   const [loading, setLoading] = useState(true)
   const [viewing, setViewing] = useState(null)

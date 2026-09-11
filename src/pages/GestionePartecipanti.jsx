@@ -132,7 +132,7 @@ export default function GestionePartecipanti() {
   }
 
   const canModify = (iscrizione) => {
-    if (can(['admin', 'ho', 'area'])) return true
+    if (can(['admin', 'admin_ehs', 'ho', 'area'])) return true
     if (can(['store']) && iscrizione.store_id === user.store_id) return true
     return false
   }
@@ -241,7 +241,7 @@ export default function GestionePartecipanti() {
                         </td>
                         <td>{i.user_cognome} {i.user_nome}</td>
                         <td>
-                          {editable && can(['admin', 'ho', 'area']) ? (
+                          {editable && can(['admin', 'admin_ehs', 'ho', 'area']) ? (
                             <select
                               className="form-control"
                               style={{ padding: '4px 8px', fontSize: '12px' }}
@@ -260,7 +260,7 @@ export default function GestionePartecipanti() {
                         </td>
                         <td>
                           {editable && (() => {
-                            if (can(['admin', 'ho', 'area'])) {
+                            if (can(['admin', 'admin_ehs', 'ho', 'area'])) {
                               return <button className="btn btn-danger btn-sm" onClick={() => handleElimina(i.id)}>✕</button>
                             }
                             if (i.richiesta_pendente_id) {

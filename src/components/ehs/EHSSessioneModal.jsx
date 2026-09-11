@@ -40,7 +40,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const [chiudendo, setChiudendo] = useState(false)
 
   const isFornitore = can(['fornitore'])
-  const isFornitoreLato = can(['fornitore', 'admin', 'ho'])
+  const isFornitoreLato = can(['fornitore', 'admin', 'admin_ehs', 'ho'])
 
   const fetchSessione = useCallback(() => {
     setLoading(true)
@@ -54,9 +54,9 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const notify = () => { fetchSessione(); onChanged?.() }
 
   const isStoreProprietario = can(['store']) && sessione?.negozio === user.store_id
-  const isStoreLato = isStoreProprietario || can(['admin', 'ho'])
+  const isStoreLato = isStoreProprietario || can(['admin', 'admin_ehs', 'ho'])
   const puoAnnullare = sessione && !['COMPLETATA', 'ANNULLATA'].includes(sessione.stato) && (
-    isStoreProprietario || can(['admin', 'ho']) || (can(['fornitore']) && sessione.fornitore === user.id)
+    isStoreProprietario || can(['admin', 'admin_ehs', 'ho']) || (can(['fornitore']) && sessione.fornitore === user.id)
   )
 
   const annullaLabel = sessione?.stato === 'RICHIESTA_INVIATA' ? 'Annulla richiesta'
@@ -149,13 +149,16 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   }
 
   const avviaWizard = () => {
-    const iniziali = {}
-    sessione.partecipanti?.forEach(p => { iniziali[p.id] = false })
-    setPresenze(iniziali)
+    setPresenze({})
     setMotivi({})
     setRegistroFile(null)
     setWizardStep(1)
   }
+
+  // L'aula si può chiudere solo il giorno stesso della data confermata, non prima.
+  const isGiornoSessione = sessione?.data_confermata
+    ? new Date(sessione.data_confermata).toDateString() === new Date().toDateString()
+    : false
 
   const confermaPresenze = () => setWizardStep(2)
 
@@ -301,7 +304,15 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
 
                 {isFornitoreLato && wizardStep === 0 && (
                   <div style={{ marginTop: 16 }}>
-                    <button className="btn btn-primary btn-sm" onClick={avviaWizard}>Aula Completata</button>
+                    <button className="btn btn-primary btn-sm" disabled={!isGiornoSessione} onClick={avviaWizard}
+                      title={!isGiornoSessione ? 'Disponibile solo il giorno della sessione' : undefined}>
+                      Aula Completata
+                    </button>
+                    {!isGiornoSessione && sessione.data_confermata && (
+                      <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 6 }}>
+                        Disponibile il {new Date(sessione.data_confermata).toLocaleDateString('it-IT')}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -343,6 +354,27 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
 
                 {isFornitoreLato && wizardStep === 2 && (
                   <div style={{ marginTop: 16 }}>
+                    {sessione.partecipanti?.length > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
+                          Partecipanti ({sessione.partecipanti.length})
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          {sessione.partecipanti.map(p => {
+                            const assente = presenze[p.id] === false
+                            return (
+                              <div key={p.id} style={{
+                                fontSize: 13, padding: '6px 2px',
+                                borderTop: assente ? '1px solid #F3F4F6' : 'none',
+                                color: assente ? '#D1D5DB' : '#374151',
+                              }}>
+                                {partecipanteLabel(p)}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
                     <label className="form-label">Carica il registro compilato</label>
                     <input type="file" accept="application/pdf" className="form-control"
                       onChange={e => setRegistroFile(e.target.files[0] || null)} />

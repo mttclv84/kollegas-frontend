@@ -6,7 +6,7 @@ import Modal from '../components/ui/Modal'
 import './EHS.css'
 
 const EMPTY_FORM = {
-  codice: '', nome: '', durata_ore: '', scadenza_giorni: '', descrizione: '',
+  nome: '', durata_ore: '', scadenza_giorni: '', descrizione: '',
 }
 
 export default function GestioneCorsiEHS() {
@@ -32,7 +32,7 @@ export default function GestioneCorsiEHS() {
   const openCreate = () => { setForm(EMPTY_FORM); setModal({ mode: 'create' }) }
   const openEdit = (c) => {
     setForm({
-      codice: c.codice, nome: c.nome, durata_ore: c.durata_ore,
+      nome: c.nome, durata_ore: c.durata_ore,
       scadenza_giorni: c.scadenza_giorni ?? '', descrizione: c.descrizione || '',
     })
     setModal({ mode: 'edit', data: c })
@@ -45,7 +45,7 @@ export default function GestioneCorsiEHS() {
     setSaving(true)
     try {
       const payload = {
-        codice: form.codice, nome: form.nome, durata_ore: form.durata_ore,
+        nome: form.nome, durata_ore: form.durata_ore,
         scadenza_giorni: form.scadenza_giorni || null, descrizione: form.descrizione,
       }
       if (modal.mode === 'create') {
@@ -131,15 +131,22 @@ export default function GestioneCorsiEHS() {
           size="md"
         >
           <form onSubmit={handleSave}>
-            <div className="form-group">
-              <label className="form-label">Codice *</label>
-              <input className="form-control" placeholder="Es. SCALE" value={form.codice}
-                onChange={e => setF('codice', e.target.value)} required autoFocus />
-            </div>
+            {modal.mode === 'edit' && (
+              <div className="form-group">
+                <label className="form-label">Codice</label>
+                <input className="form-control" value={modal.data?.codice} disabled
+                  style={{ background: '#F1F5F9', color: '#9CA3AF' }} />
+              </div>
+            )}
+            {modal.mode === 'create' && (
+              <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: -8, marginBottom: 12 }}>
+                Il codice (EHS + 4 cifre) viene generato automaticamente al salvataggio.
+              </p>
+            )}
             <div className="form-group">
               <label className="form-label">Nome corso *</label>
               <input className="form-control" value={form.nome}
-                onChange={e => setF('nome', e.target.value)} required />
+                onChange={e => setF('nome', e.target.value)} required autoFocus />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
               <div className="form-group">

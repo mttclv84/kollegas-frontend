@@ -28,7 +28,7 @@ export default function Report() {
     if (filters.data_da) params.data_da = filters.data_da
     if (filters.data_a) params.data_a = filters.data_a
     if (filters.ruolo) params.ruolo = filters.ruolo
-    if (filters.store && can(['admin', 'ho', 'area'])) params.store = filters.store
+    if (filters.store && can(['admin', 'admin_ehs', 'ho', 'area'])) params.store = filters.store
     try {
       const { data } = await api.get('/report/', { params })
       setDati(data.results || data)
@@ -50,7 +50,7 @@ export default function Report() {
       if (filters.data_da) params.data_da = filters.data_da
       if (filters.data_a)  params.data_a  = filters.data_a
       if (filters.ruolo)   params.ruolo   = filters.ruolo
-      if (filters.store && can(['admin', 'ho', 'area'])) params.store = filters.store
+      if (filters.store && can(['admin', 'admin_ehs', 'ho', 'area'])) params.store = filters.store
       const { data } = await api.delete('/iscrizioni/assenti/', { params })
       toast.success(`${data.eliminati} record eliminati.`)
       fetchReport()
@@ -94,7 +94,7 @@ export default function Report() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 className="page-title" style={{ marginBottom: 0 }}>Dettaglio</h1>
         <div style={{ display: 'flex', gap: 8 }}>
-          {assentiCount > 0 && can(['admin', 'ho', 'area']) && (
+          {assentiCount > 0 && can(['admin', 'admin_ehs', 'ho', 'area']) && (
             <button className="btn btn-danger" onClick={handleDeleteAssenti}>
               🗑 Elimina assenti ({assentiCount})
             </button>
@@ -122,7 +122,7 @@ export default function Report() {
               {ruoli.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
             </select>
           </div>
-          {can(['admin', 'ho', 'area']) && (
+          {can(['admin', 'admin_ehs', 'ho', 'area']) && (
             <div className="form-group" style={{ marginBottom: 0, minWidth: 180 }}>
               <label className="form-label">Store</label>
               <select className="form-control" value={filters.store} onChange={e => setF('store', e.target.value)}>

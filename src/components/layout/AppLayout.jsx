@@ -218,6 +218,66 @@ function EHSNotificaConfermaPopup({ notifica, onOk }) {
   )
 }
 
+function EHSNotificaDataPropostaPopup({ notifica, onOk }) {
+  if (!notifica) return null
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      zIndex: 2600, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 14, padding: 32, maxWidth: 420, width: '92%',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.4)', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>📅</div>
+        <h2 style={{ margin: '0 0 16px', fontSize: 18, color: '#92400E' }}>Data proposta per la formazione EHS</h2>
+        <div style={{
+          background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 10,
+          padding: '14px 18px', marginBottom: 24, textAlign: 'left', fontSize: 14, color: '#374151',
+        }}>
+          <div style={{ marginBottom: 6 }}><strong>Corso:</strong> {notifica.corso_nome}</div>
+          <div><strong>Negozio:</strong> {notifica.negozio_nome}</div>
+        </div>
+        <button className="btn btn-primary" style={{ minWidth: 140, fontSize: 15 }} onClick={onOk}>
+          OK, ho capito
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function EHSNotificaConfermaStorePopup({ notifica, onOk }) {
+  if (!notifica) return null
+  const dataFmt = notifica.data_confermata
+    ? new Date(notifica.data_confermata).toLocaleString('it-IT')
+    : '—'
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      zIndex: 2700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 14, padding: 32, maxWidth: 420, width: '92%',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.4)', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
+        <h2 style={{ margin: '0 0 16px', fontSize: 18, color: '#065F46' }}>Sessione EHS confermata</h2>
+        <div style={{
+          background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 10,
+          padding: '14px 18px', marginBottom: 24, textAlign: 'left', fontSize: 14, color: '#374151',
+        }}>
+          <div style={{ marginBottom: 6 }}><strong>Corso:</strong> {notifica.corso_nome}</div>
+          <div style={{ marginBottom: 6 }}><strong>Negozio:</strong> {notifica.negozio_nome}</div>
+          <div><strong>Data:</strong> {dataFmt}</div>
+        </div>
+        <button className="btn btn-primary" style={{ minWidth: 140, fontSize: 15 }} onClick={onOk}>
+          OK, ho capito
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function EHSNotificaRichiestaPopup({ notifica, onOk }) {
   if (!notifica) return null
   return (
@@ -281,7 +341,7 @@ export default function AppLayout() {
   }
 
   useEffect(() => {
-    if (!user || !can(['store', 'ho', 'admin'])) return
+    if (!user || !can(['store', 'ho', 'admin', 'admin_ehs'])) return
     const fetch = () => {
       api.get('/notifiche-evento/')
         .then(({ data }) => { if (data.length > 0) setNotificheEvento(data) })
@@ -333,7 +393,8 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 3600000)
+    // Una proposta accettata va segnalata quasi subito, non al prossimo poll orario.
+    const timer = setInterval(fetch, 10000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -365,6 +426,50 @@ export default function AppLayout() {
     setNotificheRichiestaEHS(prev => prev.slice(1))
   }
 
+  const [notificheDataPropostaEHS, setNotificheDataPropostaEHS] = useState([])
+
+  useEffect(() => {
+    if (!user || !can(['store'])) return
+    const fetch = () => {
+      api.get('/ehs/notifiche-data-proposta/')
+        .then(({ data }) => { if (data.length > 0) setNotificheDataPropostaEHS(data) })
+        .catch(() => {})
+    }
+    fetch()
+    // Una proposta di data va segnalata quasi subito, non al prossimo poll orario.
+    const timer = setInterval(fetch, 10000)
+    return () => clearInterval(timer)
+  }, [user])
+
+  const handleOkDataPropostaEHS = async () => {
+    const notifica = notificheDataPropostaEHS[0]
+    if (!notifica) return
+    try { await api.patch(`/ehs/notifiche-data-proposta/${notifica.id}/`) } catch {}
+    setNotificheDataPropostaEHS(prev => prev.slice(1))
+  }
+
+  const [notificheConfermaStoreEHS, setNotificheConfermaStoreEHS] = useState([])
+
+  useEffect(() => {
+    if (!user || !can(['store'])) return
+    const fetch = () => {
+      api.get('/ehs/notifiche-conferma-store/')
+        .then(({ data }) => { if (data.length > 0) setNotificheConfermaStoreEHS(data) })
+        .catch(() => {})
+    }
+    fetch()
+    // Una proposta accettata va segnalata quasi subito, non al prossimo poll orario.
+    const timer = setInterval(fetch, 10000)
+    return () => clearInterval(timer)
+  }, [user])
+
+  const handleOkConfermaStoreEHS = async () => {
+    const notifica = notificheConfermaStoreEHS[0]
+    if (!notifica) return
+    try { await api.patch(`/ehs/notifiche-conferma-store/${notifica.id}/`) } catch {}
+    setNotificheConfermaStoreEHS(prev => prev.slice(1))
+  }
+
   return (
     <div className={`app-layout ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <NotifichePopup notifiche={notifiche} onClose={handleCloseNotifiche} />
@@ -387,6 +492,14 @@ export default function AppLayout() {
       <EHSNotificaRichiestaPopup
         notifica={notificheRichiestaEHS[0] || null}
         onOk={handleOkRichiestaEHS}
+      />
+      <EHSNotificaDataPropostaPopup
+        notifica={notificheDataPropostaEHS[0] || null}
+        onOk={handleOkDataPropostaEHS}
+      />
+      <EHSNotificaConfermaStorePopup
+        notifica={notificheConfermaStoreEHS[0] || null}
+        onOk={handleOkConfermaStoreEHS}
       />
       <div
         className={`mobile-overlay ${mobileOpen ? 'visible' : ''}`}

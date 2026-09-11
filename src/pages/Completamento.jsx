@@ -352,7 +352,7 @@ export default function Completamento() {
             </div>
 
             {/* Per area — admin/ho/area */}
-            {can(['admin', 'ho', 'area']) && (
+            {can(['admin', 'admin_ehs', 'ho', 'area']) && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
                 {italiaData.aree.filter(a => a.corsi.some(c => c.totale > 0)).map(area => (
                   <div key={area.numero} className="card">

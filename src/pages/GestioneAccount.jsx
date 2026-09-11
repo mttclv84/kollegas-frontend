@@ -14,6 +14,7 @@ function lsSet(key, d) { try { localStorage.setItem(key, JSON.stringify({ d, ts:
 const LIVELLI_PER_RUOLO = {
   admin: [
     { value: 'admin', label: 'Admin' },
+    { value: 'admin_ehs', label: 'Admin EHS' },
     { value: 'ho', label: 'HO' },
     { value: 'store', label: 'Store' },
     { value: 'area', label: 'Area Manager' },
@@ -32,7 +33,7 @@ const SESSI = [
   { value: 'F', label: 'Femmina' },
   { value: 'NS', label: 'Non specificato' },
 ]
-const LIVELLO_BADGE = { admin: 'danger', ho: 'primary', area: 'violet', store: 'success', base: 'neutral' }
+const LIVELLO_BADGE = { admin: 'danger', admin_ehs: 'warning', ho: 'primary', area: 'violet', store: 'success', base: 'neutral' }
 
 const EMPTY_FORM = {
   cognome: '', nome: '', email: '', sesso: 'NS', livello_accesso: 'base',

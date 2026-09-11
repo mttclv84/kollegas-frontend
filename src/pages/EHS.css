@@ -39,6 +39,13 @@
   color: #fff;
 }
 
+.ehs-cal-title {
+  margin: 0 0 10px;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #DC2626;
+}
 .ehs-section .cal-month-title { color: #B91C1C; }
 .ehs-section .cal-grid { border-color: #FCA5A5; }
 .ehs-section .cal-day.oggi { background: #FEE2E2; }

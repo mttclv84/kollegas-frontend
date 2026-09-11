@@ -12,7 +12,7 @@ const TODAY = new Date().toISOString().slice(0, 10)
 
 export default function Calendario() {
   const { can } = useAuth()
-  const canEdit = can(['admin', 'ho', 'area'])
+  const canEdit = can(['admin', 'admin_ehs', 'ho', 'area'])
   const isStore = can(['store'])
 
   const [currentDate, setCurrentDate] = useState(new Date())

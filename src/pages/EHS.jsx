@@ -116,7 +116,7 @@ export default function EHS() {
     )
   }
 
-  const canCreaRichiesta = can(['store', 'admin', 'ho'])
+  const canCreaRichiesta = can(['store', 'admin', 'admin_ehs', 'ho'])
 
   return (
     <div className="ehs-section">
@@ -158,6 +158,7 @@ export default function EHS() {
       {tab === 'calendario' ? (
         <div className="calendario-page">
           <div className="cal-main">
+            <h2 className="ehs-cal-title">CALENDARIO EHS</h2>
             <div className="cal-header">
               <button className="btn btn-ghost btn-sm" onClick={() => setCurrentDate(d => subMonths(d, 1))}>
                 ← Precedente
