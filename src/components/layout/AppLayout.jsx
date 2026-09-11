@@ -186,6 +186,38 @@ function EHSNotificaScadenzaPopup({ notifica, onOk }) {
   )
 }
 
+function EHSNotificaConfermaPopup({ notifica, onOk }) {
+  if (!notifica) return null
+  const dataFmt = notifica.data_confermata
+    ? new Date(notifica.data_confermata).toLocaleString('it-IT')
+    : '—'
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      zIndex: 2400, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 14, padding: 32, maxWidth: 420, width: '92%',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.4)', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
+        <h2 style={{ margin: '0 0 16px', fontSize: 18, color: '#065F46' }}>Sessione EHS confermata</h2>
+        <div style={{
+          background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 10,
+          padding: '14px 18px', marginBottom: 24, textAlign: 'left', fontSize: 14, color: '#374151',
+        }}>
+          <div style={{ marginBottom: 6 }}><strong>Corso:</strong> {notifica.corso_nome}</div>
+          <div style={{ marginBottom: 6 }}><strong>Negozio:</strong> {notifica.negozio_nome}</div>
+          <div><strong>Data:</strong> {dataFmt}</div>
+        </div>
+        <button className="btn btn-primary" style={{ minWidth: 140, fontSize: 15 }} onClick={onOk}>
+          OK, ho capito
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function AppLayout() {
   const { user, can } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
@@ -194,6 +226,7 @@ export default function AppLayout() {
   const [notificheTrasferimento, setNotificheTrasferimento] = useState([])
   const [notificheEvento, setNotificheEvento] = useState([])
   const [notificheScadenzaEHS, setNotificheScadenzaEHS] = useState([])
+  const [notificheConfermaEHS, setNotificheConfermaEHS] = useState([])
 
   useEffect(() => {
     if (!user || !can(['store'])) return
@@ -264,6 +297,25 @@ export default function AppLayout() {
     setNotificheScadenzaEHS(prev => prev.slice(1))
   }
 
+  useEffect(() => {
+    if (!user || !can(['fornitore'])) return
+    const fetch = () => {
+      api.get('/ehs/notifiche-conferma/')
+        .then(({ data }) => { if (data.length > 0) setNotificheConfermaEHS(data) })
+        .catch(() => {})
+    }
+    fetch()
+    const timer = setInterval(fetch, 30000)
+    return () => clearInterval(timer)
+  }, [user])
+
+  const handleOkConfermaEHS = async () => {
+    const notifica = notificheConfermaEHS[0]
+    if (!notifica) return
+    try { await api.patch(`/ehs/notifiche-conferma/${notifica.id}/`) } catch {}
+    setNotificheConfermaEHS(prev => prev.slice(1))
+  }
+
   return (
     <div className={`app-layout ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <NotifichePopup notifiche={notifiche} onClose={handleCloseNotifiche} />
@@ -278,6 +330,10 @@ export default function AppLayout() {
       <EHSNotificaScadenzaPopup
         notifica={notificheScadenzaEHS[0] || null}
         onOk={handleOkScadenzaEHS}
+      />
+      <EHSNotificaConfermaPopup
+        notifica={notificheConfermaEHS[0] || null}
+        onOk={handleOkConfermaEHS}
       />
       <div
         className={`mobile-overlay ${mobileOpen ? 'visible' : ''}`}

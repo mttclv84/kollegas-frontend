@@ -16,6 +16,8 @@ export default function GestioneFornitoriEHS() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [emailSbloccata, setEmailSbloccata] = useState(false)
+  const [nomeAziendaSbloccato, setNomeAziendaSbloccato] = useState(false)
 
   const fetchFornitori = useCallback(async () => {
     setLoading(true)
@@ -29,13 +31,20 @@ export default function GestioneFornitoriEHS() {
 
   useEffect(() => { fetchFornitori() }, [fetchFornitori])
 
-  const openCreate = () => { setForm(EMPTY_FORM); setModal({ mode: 'create' }) }
+  const openCreate = () => {
+    setForm(EMPTY_FORM)
+    setEmailSbloccata(true)
+    setNomeAziendaSbloccato(true)
+    setModal({ mode: 'create' })
+  }
 
   const openEdit = (f) => {
     setForm({
       fornitore_ragione_sociale: f.fornitore_ragione_sociale, nome: f.nome,
       email: f.email, telefono: f.telefono || '', indirizzo: f.indirizzo || '',
     })
+    setEmailSbloccata(false)
+    setNomeAziendaSbloccato(false)
     setModal({ mode: 'edit', data: f })
   }
 
@@ -120,8 +129,16 @@ export default function GestioneFornitoriEHS() {
           <form onSubmit={handleSave}>
             <div className="form-group">
               <label className="form-label">Nome Azienda *</label>
-              <input className="form-control" value={form.fornitore_ragione_sociale}
-                onChange={e => setF('fornitore_ragione_sociale', e.target.value)} required autoFocus />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input className="form-control" value={form.fornitore_ragione_sociale}
+                  onChange={e => setF('fornitore_ragione_sociale', e.target.value)} required autoFocus
+                  disabled={modal.mode === 'edit' && !nomeAziendaSbloccato}
+                  style={modal.mode === 'edit' && !nomeAziendaSbloccato ? { background: '#F1F5F9', color: '#9CA3AF' } : {}} />
+                {modal.mode === 'edit' && !nomeAziendaSbloccato && (
+                  <button type="button" className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap' }}
+                    onClick={() => setNomeAziendaSbloccato(true)}>🔓 Attiva</button>
+                )}
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Nome di riferimento *</label>
@@ -130,23 +147,30 @@ export default function GestioneFornitoriEHS() {
             </div>
             <div className="form-group">
               <label className="form-label">Email *</label>
-              <input type="email" className="form-control" value={form.email}
-                onChange={e => setF('email', e.target.value)} required disabled={modal.mode === 'edit'}
-                style={modal.mode === 'edit' ? { background: '#F1F5F9', color: '#9CA3AF' } : {}} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input type="email" className="form-control" value={form.email}
+                  onChange={e => setF('email', e.target.value)} required
+                  disabled={modal.mode === 'edit' && !emailSbloccata}
+                  style={modal.mode === 'edit' && !emailSbloccata ? { background: '#F1F5F9', color: '#9CA3AF' } : {}} />
+                {modal.mode === 'edit' && !emailSbloccata && (
+                  <button type="button" className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap' }}
+                    onClick={() => setEmailSbloccata(true)}>🔓 Attiva</button>
+                )}
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Livello di accesso</label>
               <input className="form-control" value="Fornitore EHS" disabled style={{ background: '#F1F5F9', color: '#9CA3AF' }} />
             </div>
             <div className="form-group">
-              <label className="form-label">Indirizzo</label>
+              <label className="form-label">Indirizzo *</label>
               <input className="form-control" placeholder="Es. Via della Palla 2, Milano, MI" value={form.indirizzo}
-                onChange={e => setF('indirizzo', e.target.value)} />
+                onChange={e => setF('indirizzo', e.target.value)} required />
             </div>
             <div className="form-group">
-              <label className="form-label">Numero di telefono</label>
+              <label className="form-label">Numero di telefono *</label>
               <input className="form-control" value={form.telefono}
-                onChange={e => setF('telefono', e.target.value)} />
+                onChange={e => setF('telefono', e.target.value)} required />
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 16, borderTop: '1px solid var(--color-border)', marginTop: 8 }}>
               <button type="button" className="btn btn-secondary" onClick={() => setModal(null)}>Annulla</button>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react'
 import api from '../../api/client'
 
 const STATO_LABELS = {
@@ -6,8 +6,6 @@ const STATO_LABELS = {
   DATA_PROPOSTA: 'Data proposta',
   DATA_CONTROPROPOSTA: 'Contro-proposta',
   CONFERMATA: 'Confermata',
-  REGISTRO_INVIATO: 'Registro inviato',
-  SVOLTA: 'Svolta',
   COMPLETATA: 'Completata',
   ANNULLATA: 'Annullata',
 }
@@ -17,8 +15,6 @@ const STATO_COLORS = {
   DATA_PROPOSTA: { bg: '#FEF3C7', text: '#92400E' },
   DATA_CONTROPROPOSTA: { bg: '#FEF3C7', text: '#92400E' },
   CONFERMATA: { bg: '#D1FAE5', text: '#065F46' },
-  REGISTRO_INVIATO: { bg: '#D1FAE5', text: '#065F46' },
-  SVOLTA: { bg: '#D1FAE5', text: '#065F46' },
   COMPLETATA: { bg: '#E5E7EB', text: '#374151' },
   ANNULLATA: { bg: '#FEE2E2', text: '#991B1B' },
 }
@@ -26,9 +22,10 @@ const STATO_COLORS = {
 const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref) {
   const [sessioni, setSessioni] = useState([])
   const [loading, setLoading] = useState(true)
+  const primaVolta = useRef(true)
 
   const fetchSessioni = useCallback(async () => {
-    setLoading(true)
+    if (primaVolta.current) setLoading(true)
     try {
       const { data } = await api.get('/ehs/sessioni/')
       setSessioni(data)
@@ -36,10 +33,15 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
       console.error(err)
     } finally {
       setLoading(false)
+      primaVolta.current = false
     }
   }, [])
 
-  useEffect(() => { fetchSessioni() }, [fetchSessioni])
+  useEffect(() => {
+    fetchSessioni()
+    const timer = setInterval(fetchSessioni, 30000)
+    return () => clearInterval(timer)
+  }, [fetchSessioni])
   useImperativeHandle(ref, () => ({ refresh: fetchSessioni }))
 
   if (loading) return <div className="loading-center"><div className="spinner" /></div>

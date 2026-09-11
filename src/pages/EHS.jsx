@@ -7,6 +7,7 @@ import EventoBadge from '../components/calendario/EventoBadge'
 import EHSSessioneModal from '../components/ehs/EHSSessioneModal'
 import EHSRichiesteList from '../components/ehs/EHSRichiesteList'
 import EHSRichiestaFormModal from '../components/ehs/EHSRichiestaFormModal'
+import EHSRegistriList from '../components/ehs/EHSRegistriList'
 import './Calendario.css'
 import './EHS.css'
 
@@ -35,7 +36,11 @@ export default function EHS() {
     }
   }, [anno, mese])
 
-  useEffect(() => { fetchEventi() }, [fetchEventi])
+  useEffect(() => {
+    fetchEventi()
+    const timer = setInterval(fetchEventi, 30000)
+    return () => clearInterval(timer)
+  }, [fetchEventi])
 
   const giorni = eachDayOfInterval({
     start: startOfMonth(currentDate),
@@ -105,6 +110,12 @@ export default function EHS() {
           >
             📋 Richieste
           </button>
+          <button
+            className={`ehs-tab ${tab === 'registri' ? 'active' : ''}`}
+            onClick={() => setTab('registri')}
+          >
+            📁 Registri
+          </button>
         </div>
         {canCreaRichiesta && (
           <button className="btn btn-primary btn-sm" onClick={() => setShowRichiestaForm(true)}>
@@ -157,8 +168,10 @@ export default function EHS() {
             </div>
           </aside>
         </div>
-      ) : (
+      ) : tab === 'richieste' ? (
         <EHSRichiesteList ref={richiesteListRef} onSelect={setSelectedSessioneId} />
+      ) : (
+        <EHSRegistriList />
       )}
 
       {selectedSessioneId && (

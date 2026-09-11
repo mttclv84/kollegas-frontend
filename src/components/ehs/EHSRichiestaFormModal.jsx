@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
+import { EHS_TIME_STEP, arrotondaMezzora } from '../../utils/ehsTime'
 import '../calendario/EventoModal.css'
 
 export default function EHSRichiestaFormModal({ onClose, onCreated }) {
@@ -18,6 +19,8 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
     fornitore: '',
     contatto_negozio_nome: '',
     contatto_negozio_telefono: '',
+    partecipanti_previsti: '',
+    data_suggerita_store: '',
     note: '',
   })
 
@@ -46,6 +49,10 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
       }
       if (isAdminHO) payload.negozio = form.negozio
       if (form.fornitore) payload.fornitore = form.fornitore
+      if (form.partecipanti_previsti) payload.partecipanti_previsti = form.partecipanti_previsti
+      if (form.data_suggerita_store) {
+        payload.data_suggerita_store = arrotondaMezzora(form.data_suggerita_store).toISOString()
+      }
       await api.post('/ehs/sessioni/', payload)
       toast.success('Richiesta inviata al fornitore.')
       onCreated()
@@ -109,6 +116,24 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
                 <option key={f.id} value={f.id}>{f.fornitore_ragione_sociale} — {f.nome_completo}</option>
               ))}
             </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">N. Partecipanti previsti (opz.)</label>
+            <input
+              type="number" min="0" className="form-control"
+              value={form.partecipanti_previsti}
+              onChange={e => setForm(f => ({ ...f, partecipanti_previsti: e.target.value }))}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Data da proporre al fornitore (opz.)</label>
+            <input
+              type="datetime-local" step={EHS_TIME_STEP} className="form-control"
+              value={form.data_suggerita_store}
+              onChange={e => setForm(f => ({ ...f, data_suggerita_store: e.target.value }))}
+            />
           </div>
 
           <div className="form-group">
