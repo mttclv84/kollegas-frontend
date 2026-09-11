@@ -12,7 +12,7 @@ const NAV_ITEMS = [
     roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'],
     className: 'nav-item-ehs',
     children: [
-      { to: '/ehs', label: 'Calendario & Richieste', icon: '📅', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
+      { to: '/ehs', label: 'EHS Calendar & Richieste', icon: '📅', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
       { to: '/ehs/fornitori', label: 'Gestione Fornitori EHS', icon: '🏢', roles: ['admin', 'admin_ehs', 'ho'] },
       { to: '/ehs/corsi', label: 'Gestione Corsi EHS', icon: '📚', roles: ['admin', 'admin_ehs', 'ho'] },
     ],
@@ -44,15 +44,15 @@ const NAV_ITEMS = [
       { to: '/aree',         label: 'Gestione Aree',     icon: '🗺️', roles: ['admin'] },
       { to: '/host',         label: 'Gestione Host',      icon: '🎤', roles: ['admin', 'ho'] },
       { to: '/ruoli',        label: 'Gestione Ruoli',     icon: '🏷️', roles: ['admin'] },
-      { to: '/eccezioni',    label: 'Eccezioni Calendario', icon: '📌', roles: ['admin', 'ho'] },
     ],
   },
   { divider: true },
   { to: '/iscrizioni-store', label: 'Iscrizioni',            icon: '📋', roles: ['store'] },
+  { to: '/eccezioni',        label: 'Eccezioni Calendario',  icon: '📌', roles: ['admin', 'admin_ehs', 'ho'] },
   { to: '/richieste',        label: 'Richieste di Modifica', icon: '🔔', roles: ['admin', 'ho'], alertBadge: true },
   { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin', 'admin_ehs', 'ho'] },
   { to: '/stats',            label: 'Stats',                  icon: '📊', roles: ['admin', 'admin_ehs', 'ho', 'area'] },
-  { to: '/disattivati',      label: 'Disattivati',            icon: '🚫', roles: ['admin'] },
+  { to: '/disattivati',      label: 'Disattivati',            icon: '🚫', roles: ['admin', 'admin_ehs'] },
 ]
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
@@ -122,7 +122,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
             const open = openGroups[item.group] ?? true
 
             return (
-              <div key={item.group} className="nav-group">
+              <div key={item.group} className="nav-group" data-group={item.group}>
                 <button
                   className={`nav-group-header ${active ? 'active' : ''} ${item.className || ''}`.trim()}
                   onClick={() => !collapsed && toggleGroup(item.group)}

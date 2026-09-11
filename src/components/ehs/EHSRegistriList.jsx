@@ -1,6 +1,69 @@
 import { useState, useEffect, useCallback } from 'react'
+import toast from 'react-hot-toast'
 import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
+
+const CONFERMA_ELIMINA = 'ELIMINARE DEFINITIVAMENTE'
+
+function EliminaRegistroModal({ registro, onClose, onDeleted }) {
+  const [testo, setTesto] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await api.delete(`/ehs/registri/${registro.id}/`, { data: { conferma: testo } })
+      toast.success('Registro eliminato definitivamente.')
+      onDeleted()
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore durante l\'eliminazione.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      zIndex: 2900, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        background: '#fff', borderRadius: 14, padding: 32, maxWidth: 460, width: '92%',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.4)',
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize: 32, marginBottom: 10, textAlign: 'center' }}>🗑️</div>
+        <h2 style={{ margin: '0 0 12px', fontSize: 17, color: '#991B1B', textAlign: 'center' }}>
+          Eliminare definitivamente questo registro?
+        </h2>
+        <p style={{ fontSize: 13, color: '#374151', marginBottom: 16, textAlign: 'center' }}>
+          <strong>{registro.corso_nome}</strong> — {registro.negozio_nome}
+          <br />Azione irreversibile: registro, presenze e evento in calendario verranno rimossi.
+        </p>
+        <p style={{ fontSize: 13, color: '#374151', marginBottom: 8 }}>
+          Digita <strong>{CONFERMA_ELIMINA}</strong> per confermare:
+        </p>
+        <input
+          className="form-control"
+          value={testo}
+          onChange={e => setTesto(e.target.value)}
+          placeholder={CONFERMA_ELIMINA}
+          autoFocus
+        />
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+          <button className="btn btn-secondary" onClick={onClose}>Annulla</button>
+          <button
+            className="btn"
+            style={{ background: '#EF4444', color: '#fff' }}
+            disabled={testo !== CONFERMA_ELIMINA || deleting}
+            onClick={handleDelete}
+          >
+            {deleting ? 'Eliminazione...' : 'Elimina definitivamente'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function RegistroViewerModal({ registro, onClose }) {
   const [url, setUrl] = useState(null)
@@ -84,25 +147,30 @@ function PartecipantiOverlay({ partecipanti }) {
 export default function EHSRegistriList() {
   const { can } = useAuth()
   const isAdminHO = can(['admin', 'admin_ehs', 'ho'])
+  const canElimina = can(['admin', 'admin_ehs'])
   const [registri, setRegistri] = useState([])
   const [loading, setLoading] = useState(true)
   const [viewing, setViewing] = useState(null)
+  const [eliminando, setEliminando] = useState(null)
   const [stores, setStores] = useState([])
   const [fornitori, setFornitori] = useState([])
+  const [corsi, setCorsi] = useState([])
   const [filterNegozio, setFilterNegozio] = useState('')
   const [filterFornitore, setFilterFornitore] = useState('')
+  const [filterCorso, setFilterCorso] = useState('')
 
   const fetchRegistri = useCallback(async () => {
     try {
       const params = {}
       if (filterNegozio) params.negozio = filterNegozio
       if (filterFornitore) params.fornitore = filterFornitore
+      if (filterCorso) params.corso = filterCorso
       const { data } = await api.get('/ehs/registri/', { params })
       setRegistri(data)
     } finally {
       setLoading(false)
     }
-  }, [filterNegozio, filterFornitore])
+  }, [filterNegozio, filterFornitore, filterCorso])
 
   useEffect(() => {
     fetchRegistri()
@@ -114,6 +182,7 @@ export default function EHSRegistriList() {
     if (!isAdminHO) return
     api.get('/stores/').then(({ data }) => setStores(data.results || data)).catch(() => {})
     api.get('/ehs/fornitori/').then(({ data }) => setFornitori(data)).catch(() => {})
+    api.get('/ehs/corsi/').then(({ data }) => setCorsi(data)).catch(() => {})
   }, [isAdminHO])
 
   if (loading) return <div className="loading-center"><div className="spinner" /></div>
@@ -137,8 +206,15 @@ export default function EHSRegistriList() {
                 {fornitori.map(f => <option key={f.id} value={f.id}>{f.fornitore_ragione_sociale}</option>)}
               </select>
             </div>
-            {(filterNegozio || filterFornitore) && (
-              <button className="btn btn-secondary" onClick={() => { setFilterNegozio(''); setFilterFornitore('') }}>Reset</button>
+            <div className="form-group" style={{ marginBottom: 0, minWidth: 180 }}>
+              <label className="form-label">Corso</label>
+              <select className="form-control" value={filterCorso} onChange={e => setFilterCorso(e.target.value)}>
+                <option value="">Tutti i corsi</option>
+                {corsi.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </div>
+            {(filterNegozio || filterFornitore || filterCorso) && (
+              <button className="btn btn-secondary" onClick={() => { setFilterNegozio(''); setFilterFornitore(''); setFilterCorso('') }}>Reset</button>
             )}
           </div>
         </div>
@@ -174,7 +250,15 @@ export default function EHSRegistriList() {
                     <td>{r.docente_nome || '—'}</td>
                     <td>{r.fornitore_nome || '—'}</td>
                     <td><PartecipantiOverlay partecipanti={r.partecipanti || []} /></td>
-                    <td><button className="btn btn-ghost btn-sm" onClick={() => setViewing(r)}>👁️ Consulta</button></td>
+                    <td style={{ display: 'flex', gap: 4 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setViewing(r)}>👁️ Consulta</button>
+                      {canElimina && (
+                        <button className="btn btn-ghost btn-sm btn-icon" title="Elimina definitivamente"
+                          onClick={e => { e.stopPropagation(); setEliminando(r) }}>
+                          🗑️
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -184,6 +268,14 @@ export default function EHSRegistriList() {
       )}
 
       {viewing && <RegistroViewerModal registro={viewing} onClose={() => setViewing(null)} />}
+
+      {eliminando && (
+        <EliminaRegistroModal
+          registro={eliminando}
+          onClose={() => setEliminando(null)}
+          onDeleted={() => { setEliminando(null); fetchRegistri() }}
+        />
+      )}
     </>
   )
 }

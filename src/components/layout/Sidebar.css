@@ -75,17 +75,36 @@
 .nav-icon { font-size: 17px; flex-shrink: 0; width: 20px; text-align: center; }
 .nav-label { overflow: hidden; }
 
-/* EHS item */
+/* EHS item: sfondo rosso leggero su tutte le voci (header + figli), icone in tono rosso */
 .nav-item-ehs {
   margin: 4px 8px;
   width: calc(100% - 16px);
   border-radius: var(--radius-md);
-  background: rgba(254, 243, 199, 0.25);
-  color: #FEF3C7;
+  background: rgba(239, 68, 68, 0.2);
+  color: #FEE2E2;
 }
-.nav-item-ehs:hover { background: rgba(254, 243, 199, 0.4); color: #FFFBEB; }
-.nav-item-ehs.active { background: rgba(254, 243, 199, 0.55); color: #92400E; font-weight: 600; }
-.nav-item-ehs.active::before { background: #92400E; }
+.nav-item-ehs:hover { background: rgba(239, 68, 68, 0.32); color: #fff; }
+.nav-item-ehs.active { background: rgba(239, 68, 68, 0.5); color: #7F1D1D; font-weight: 600; }
+.nav-item-ehs.active::before { background: #7F1D1D; }
+
+.nav-group[data-group="EHS"] .nav-child {
+  margin: 2px 8px;
+  width: calc(100% - 16px);
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.14);
+}
+.nav-group[data-group="EHS"] .nav-child:hover { background: rgba(239, 68, 68, 0.26); color: #fff; }
+.nav-group[data-group="EHS"] .nav-child.active { background: rgba(239, 68, 68, 0.42); color: #fff; font-weight: 600; }
+
+.nav-group[data-group="EHS"] .nav-icon {
+  filter: grayscale(1) sepia(1) hue-rotate(-40deg) saturate(15) brightness(0.75);
+}
+
+/* Gestione e Report: icone in tono grigio */
+.nav-group[data-group="Gestione"] .nav-icon,
+.nav-group[data-group="Report"] .nav-icon {
+  filter: grayscale(1);
+}
 
 /* Nav group */
 .nav-group { display: flex; flex-direction: column; }
@@ -140,8 +159,8 @@
 .nav-group-children { display: flex; flex-direction: column; }
 
 .nav-child {
-  padding-left: 36px !important;
-  font-size: 12.5px !important;
+  padding-left: 32px !important;
+  font-size: 11.5px !important;
 }
 .collapsed-children .nav-child { padding-left: 14px !important; }
 
