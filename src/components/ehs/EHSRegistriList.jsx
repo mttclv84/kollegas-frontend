@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../../api/client'
+import { useAuth } from '../../context/AuthContext'
 
 function RegistroViewerModal({ registro, onClose }) {
   const [url, setUrl] = useState(null)
@@ -46,70 +47,141 @@ function RegistroViewerModal({ registro, onClose }) {
   )
 }
 
+function PartecipantiOverlay({ partecipanti }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <span
+      style={{ position: 'relative', cursor: 'default', textDecoration: 'underline dotted' }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onClick={e => e.stopPropagation()}
+    >
+      {partecipanti.length}
+      {hover && partecipanti.length > 0 && (
+        <div style={{
+          position: 'absolute', left: 0, top: '120%', zIndex: 50,
+          background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.15)', padding: '10px 14px',
+          minWidth: 200, fontSize: 12, color: '#374151',
+        }}>
+          {partecipanti.map((p, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '0 5px', borderRadius: 3,
+                background: p.presente ? '#D1FAE5' : '#FEE2E2', color: p.presente ? '#065F46' : '#991B1B',
+              }}>
+                {p.presente ? 'P' : 'A'}
+              </span>
+              {p.utente_nome}
+            </div>
+          ))}
+        </div>
+      )}
+    </span>
+  )
+}
+
 export default function EHSRegistriList() {
+  const { can } = useAuth()
+  const isAdminHO = can(['admin', 'ho'])
   const [registri, setRegistri] = useState([])
   const [loading, setLoading] = useState(true)
   const [viewing, setViewing] = useState(null)
+  const [stores, setStores] = useState([])
+  const [fornitori, setFornitori] = useState([])
+  const [filterNegozio, setFilterNegozio] = useState('')
+  const [filterFornitore, setFilterFornitore] = useState('')
 
   const fetchRegistri = useCallback(async () => {
     try {
-      const { data } = await api.get('/ehs/registri/')
+      const params = {}
+      if (filterNegozio) params.negozio = filterNegozio
+      if (filterFornitore) params.fornitore = filterFornitore
+      const { data } = await api.get('/ehs/registri/', { params })
       setRegistri(data)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [filterNegozio, filterFornitore])
 
   useEffect(() => {
     fetchRegistri()
-    const timer = setInterval(fetchRegistri, 30000)
+    const timer = setInterval(fetchRegistri, 5000)
     return () => clearInterval(timer)
   }, [fetchRegistri])
 
-  if (loading) return <div className="loading-center"><div className="spinner" /></div>
+  useEffect(() => {
+    if (!isAdminHO) return
+    api.get('/stores/').then(({ data }) => setStores(data.results || data)).catch(() => {})
+    api.get('/ehs/fornitori/').then(({ data }) => setFornitori(data)).catch(() => {})
+  }, [isAdminHO])
 
-  if (registri.length === 0) {
-    return (
-      <div className="card">
-        <div className="card-body" style={{ color: '#9CA3AF', textAlign: 'center', padding: 48 }}>
-          Nessun registro disponibile.
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <div className="loading-center"><div className="spinner" /></div>
 
   return (
     <>
-      <div className="card">
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Corso</th>
-                <th>Negozio</th>
-                <th>Data</th>
-                <th>Docente</th>
-                <th>Fornitore</th>
-                <th>Partecipanti</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {registri.map(r => (
-                <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => setViewing(r)}>
-                  <td><strong>{r.corso_nome}</strong></td>
-                  <td>{r.negozio_nome}</td>
-                  <td>{r.data_confermata ? new Date(r.data_confermata).toLocaleDateString('it-IT') : '—'}</td>
-                  <td>{r.docente_nome || '—'}</td>
-                  <td>{r.fornitore_nome || '—'}</td>
-                  <td>{r.partecipanti_count}</td>
-                  <td><button className="btn btn-ghost btn-sm" onClick={() => setViewing(r)}>👁️ Consulta</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {isAdminHO && (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <div className="card-body" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end', padding: '10px 16px' }}>
+            <div className="form-group" style={{ marginBottom: 0, minWidth: 180 }}>
+              <label className="form-label">Negozio</label>
+              <select className="form-control" value={filterNegozio} onChange={e => setFilterNegozio(e.target.value)}>
+                <option value="">Tutti i negozi</option>
+                {stores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0, minWidth: 180 }}>
+              <label className="form-label">Fornitore</label>
+              <select className="form-control" value={filterFornitore} onChange={e => setFilterFornitore(e.target.value)}>
+                <option value="">Tutti i fornitori</option>
+                {fornitori.map(f => <option key={f.id} value={f.id}>{f.fornitore_ragione_sociale}</option>)}
+              </select>
+            </div>
+            {(filterNegozio || filterFornitore) && (
+              <button className="btn btn-secondary" onClick={() => { setFilterNegozio(''); setFilterFornitore('') }}>Reset</button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {registri.length === 0 ? (
+        <div className="card">
+          <div className="card-body" style={{ color: '#9CA3AF', textAlign: 'center', padding: 48 }}>
+            Nessun registro disponibile.
+          </div>
+        </div>
+      ) : (
+        <div className="card" style={{ overflow: 'visible' }}>
+          <div className="table-wrapper" style={{ overflow: 'visible' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Corso</th>
+                  <th>Negozio</th>
+                  <th>Data</th>
+                  <th>Docente</th>
+                  <th>Fornitore</th>
+                  <th>Partecipanti</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {registri.map(r => (
+                  <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => setViewing(r)}>
+                    <td><strong>{r.corso_nome}</strong></td>
+                    <td>{r.negozio_nome}</td>
+                    <td>{r.data_confermata ? new Date(r.data_confermata).toLocaleDateString('it-IT') : '—'}</td>
+                    <td>{r.docente_nome || '—'}</td>
+                    <td>{r.fornitore_nome || '—'}</td>
+                    <td><PartecipantiOverlay partecipanti={r.partecipanti || []} /></td>
+                    <td><button className="btn btn-ghost btn-sm" onClick={() => setViewing(r)}>👁️ Consulta</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {viewing && <RegistroViewerModal registro={viewing} onClose={() => setViewing(null)} />}
     </>

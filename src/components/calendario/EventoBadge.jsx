@@ -21,8 +21,14 @@ export default function EventoBadge({ evento, onClick, dimmed = false, clickable
     ? `${evento.iscritti_count}/${evento.max_partecipanti} iscritti • ${evento.posti_disponibili ?? 0} liberi`
     : `${evento.iscritti_count} iscritti`
 
+  // Sul calendario principale gli eventi EHS mostrano corso (prime due parole) e
+  // numero store, invece del titolo generico fisso "EHS".
+  const labelTesto = evento.is_ehs && evento.ehs_corso_nome
+    ? `${evento.ehs_corso_nome.split(' ').slice(0, 2).join(' ')} · Store ${evento.ehs_negozio_codice || ''}`
+    : evento.attivita_nome
+
   const tooltip = [
-    evento.attivita_nome,
+    labelTesto,
     evento.location_display,
     `${evento.ora_inizio?.slice(0,5)} - ${evento.ora_fine?.slice(0,5)}`,
     countsText,
@@ -31,7 +37,7 @@ export default function EventoBadge({ evento, onClick, dimmed = false, clickable
   const content = (
     <>
       <span className="badge-dot" />
-      <span className="badge-text">{evento.attivita_nome}</span>
+      <span className="badge-text">{labelTesto}</span>
       <span className="badge-count">
         {evento.iscritti_count}
         {hasLimit && (

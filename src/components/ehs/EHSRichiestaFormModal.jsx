@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
-import { EHS_TIME_STEP, arrotondaMezzora } from '../../utils/ehsTime'
+import { arrotondaMezzora } from '../../utils/ehsTime'
+import EHSDataOraPicker from './EHSDataOraPicker'
 import '../calendario/EventoModal.css'
 
 export default function EHSRichiestaFormModal({ onClose, onCreated }) {
@@ -129,10 +130,9 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
 
           <div className="form-group">
             <label className="form-label">Data da proporre al fornitore (opz.)</label>
-            <input
-              type="datetime-local" step={EHS_TIME_STEP} className="form-control"
+            <EHSDataOraPicker
               value={form.data_suggerita_store}
-              onChange={e => setForm(f => ({ ...f, data_suggerita_store: e.target.value }))}
+              onChange={v => setForm(f => ({ ...f, data_suggerita_store: v }))}
             />
           </div>
 

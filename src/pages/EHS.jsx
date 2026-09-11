@@ -38,9 +38,30 @@ export default function EHS() {
 
   useEffect(() => {
     fetchEventi()
-    const timer = setInterval(fetchEventi, 30000)
+    const timer = setInterval(fetchEventi, 5000)
     return () => clearInterval(timer)
   }, [fetchEventi])
+
+  const [notificheRichieste, setNotificheRichieste] = useState([])
+  const isFornitore = can(['fornitore'])
+
+  useEffect(() => {
+    if (!isFornitore) return
+    const fetchNotifiche = () => {
+      api.get('/ehs/notifiche-richiesta/').then(({ data }) => setNotificheRichieste(data)).catch(() => {})
+    }
+    fetchNotifiche()
+    const timer = setInterval(fetchNotifiche, 5000)
+    return () => clearInterval(timer)
+  }, [isFornitore])
+
+  const handleTabClick = (nuovaTab) => {
+    setTab(nuovaTab)
+    if (nuovaTab === 'richieste' && notificheRichieste.length > 0) {
+      Promise.all(notificheRichieste.map(n => api.patch(`/ehs/notifiche-richiesta/${n.id}/`).catch(() => {})))
+        .then(() => setNotificheRichieste([]))
+    }
+  }
 
   const giorni = eachDayOfInterval({
     start: startOfMonth(currentDate),
@@ -100,19 +121,26 @@ export default function EHS() {
         <div className="ehs-tabs">
           <button
             className={`ehs-tab ${tab === 'calendario' ? 'active' : ''}`}
-            onClick={() => setTab('calendario')}
+            onClick={() => handleTabClick('calendario')}
           >
             📅 Calendario
           </button>
           <button
             className={`ehs-tab ${tab === 'richieste' ? 'active' : ''}`}
-            onClick={() => setTab('richieste')}
+            onClick={() => handleTabClick('richieste')}
+            style={{ position: 'relative' }}
           >
             📋 Richieste
+            {notificheRichieste.length > 0 && (
+              <span style={{
+                position: 'absolute', top: -4, right: -4, width: 10, height: 10,
+                borderRadius: '50%', background: '#EF4444', border: '2px solid #fff',
+              }} />
+            )}
           </button>
           <button
             className={`ehs-tab ${tab === 'registri' ? 'active' : ''}`}
-            onClick={() => setTab('registri')}
+            onClick={() => handleTabClick('registri')}
           >
             📁 Registri
           </button>

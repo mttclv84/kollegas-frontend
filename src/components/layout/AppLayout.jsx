@@ -218,6 +218,34 @@ function EHSNotificaConfermaPopup({ notifica, onOk }) {
   )
 }
 
+function EHSNotificaRichiestaPopup({ notifica, onOk }) {
+  if (!notifica) return null
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      zIndex: 2500, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 14, padding: 32, maxWidth: 420, width: '92%',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.4)', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
+        <h2 style={{ margin: '0 0 16px', fontSize: 18, color: '#1E40AF' }}>Nuova richiesta EHS</h2>
+        <div style={{
+          background: '#DBEAFE', border: '1px solid #93C5FD', borderRadius: 10,
+          padding: '14px 18px', marginBottom: 24, textAlign: 'left', fontSize: 14, color: '#374151',
+        }}>
+          <div style={{ marginBottom: 6 }}><strong>Corso:</strong> {notifica.corso_nome}</div>
+          <div><strong>Negozio:</strong> {notifica.negozio_nome}</div>
+        </div>
+        <button className="btn btn-primary" style={{ minWidth: 140, fontSize: 15 }} onClick={onOk}>
+          OK, ho capito
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function AppLayout() {
   const { user, can } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
@@ -243,7 +271,7 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 30000)
+    const timer = setInterval(fetch, 5000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -260,7 +288,7 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 30000)
+    const timer = setInterval(fetch, 5000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -286,7 +314,7 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 30000)
+    const timer = setInterval(fetch, 5000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -305,7 +333,7 @@ export default function AppLayout() {
         .catch(() => {})
     }
     fetch()
-    const timer = setInterval(fetch, 30000)
+    const timer = setInterval(fetch, 5000)
     return () => clearInterval(timer)
   }, [user])
 
@@ -314,6 +342,27 @@ export default function AppLayout() {
     if (!notifica) return
     try { await api.patch(`/ehs/notifiche-conferma/${notifica.id}/`) } catch {}
     setNotificheConfermaEHS(prev => prev.slice(1))
+  }
+
+  const [notificheRichiestaEHS, setNotificheRichiestaEHS] = useState([])
+
+  useEffect(() => {
+    if (!user || !can(['fornitore'])) return
+    const fetch = () => {
+      api.get('/ehs/notifiche-richiesta/')
+        .then(({ data }) => { if (data.length > 0) setNotificheRichiestaEHS(data) })
+        .catch(() => {})
+    }
+    fetch()
+    const timer = setInterval(fetch, 5000)
+    return () => clearInterval(timer)
+  }, [user])
+
+  const handleOkRichiestaEHS = async () => {
+    const notifica = notificheRichiestaEHS[0]
+    if (!notifica) return
+    try { await api.patch(`/ehs/notifiche-richiesta/${notifica.id}/`) } catch {}
+    setNotificheRichiestaEHS(prev => prev.slice(1))
   }
 
   return (
@@ -334,6 +383,10 @@ export default function AppLayout() {
       <EHSNotificaConfermaPopup
         notifica={notificheConfermaEHS[0] || null}
         onOk={handleOkConfermaEHS}
+      />
+      <EHSNotificaRichiestaPopup
+        notifica={notificheRichiestaEHS[0] || null}
+        onOk={handleOkRichiestaEHS}
       />
       <div
         className={`mobile-overlay ${mobileOpen ? 'visible' : ''}`}

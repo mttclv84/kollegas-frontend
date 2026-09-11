@@ -19,6 +19,55 @@ const STATO_COLORS = {
   ANNULLATA: { bg: '#FEE2E2', text: '#991B1B' },
 }
 
+function StoricoIcon({ sessioneId }) {
+  const [log, setLog] = useState(null)
+  const [hover, setHover] = useState(false)
+
+  const handleEnter = () => {
+    setHover(true)
+    if (log === null) {
+      api.get(`/ehs/sessioni/${sessioneId}/`)
+        .then(({ data }) => setLog(data.log || []))
+        .catch(() => setLog([]))
+    }
+  }
+
+  return (
+    <span
+      style={{ position: 'relative', cursor: 'default', fontSize: 15 }}
+      onMouseEnter={handleEnter}
+      onMouseLeave={() => setHover(false)}
+      onClick={e => e.stopPropagation()}
+    >
+      📄
+      {hover && (
+        <div style={{
+          position: 'absolute', right: 0, top: '120%', zIndex: 50,
+          background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.15)', padding: '10px 14px',
+          minWidth: 260, maxWidth: 340, fontSize: 12, color: '#374151',
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Storico</div>
+          {log === null ? (
+            <div style={{ color: '#9CA3AF' }}>Caricamento...</div>
+          ) : log.length === 0 ? (
+            <div style={{ color: '#9CA3AF' }}>Nessuna voce.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
+              {log.map(l => (
+                <div key={l.id}>
+                  • {new Date(l.timestamp).toLocaleString('it-IT')} — {l.nota || `${l.stato_precedente || '—'} → ${l.stato_nuovo}`}
+                  {l.utente_nome && <span style={{ color: '#9CA3AF' }}> ({l.utente_nome})</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </span>
+  )
+}
+
 const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref) {
   const [sessioni, setSessioni] = useState([])
   const [loading, setLoading] = useState(true)
@@ -39,7 +88,7 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
 
   useEffect(() => {
     fetchSessioni()
-    const timer = setInterval(fetchSessioni, 30000)
+    const timer = setInterval(fetchSessioni, 5000)
     return () => clearInterval(timer)
   }, [fetchSessioni])
   useImperativeHandle(ref, () => ({ refresh: fetchSessioni }))
@@ -57,8 +106,8 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
   }
 
   return (
-    <div className="card">
-      <div className="table-wrapper">
+    <div className="card" style={{ overflow: 'visible' }}>
+      <div className="table-wrapper" style={{ overflow: 'visible' }}>
         <table>
           <thead>
             <tr>
@@ -66,7 +115,8 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
               <th>Negozio</th>
               <th>Stato</th>
               <th>Partecipanti</th>
-              <th>Creata il</th>
+              <th>Programmazione</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -85,7 +135,8 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
                     </span>
                   </td>
                   <td>{s.partecipanti_count}</td>
-                  <td>{new Date(s.creata_il).toLocaleDateString('it-IT')}</td>
+                  <td>{s.data_confermata ? new Date(s.data_confermata).toLocaleString('it-IT') : '—'}</td>
+                  <td style={{ textAlign: 'right' }}><StoricoIcon sessioneId={s.id} /></td>
                 </tr>
               )
             })}

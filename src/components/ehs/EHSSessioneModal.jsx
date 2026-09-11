@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
-import { EHS_TIME_STEP, arrotondaMezzora } from '../../utils/ehsTime'
+import { arrotondaMezzora } from '../../utils/ehsTime'
+import EHSDataOraPicker from './EHSDataOraPicker'
 import '../calendario/EventoModal.css'
 
 const STATO_LABELS = {
@@ -15,6 +16,8 @@ const STATO_LABELS = {
   ANNULLATA: 'Annullata',
 }
 
+const partecipanteLabel = (p) => `${p.utente_nome}${p.utente_store_nome ? ` (${p.utente_store_nome})` : ''}`
+
 export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const { user, can } = useAuth()
   const navigate = useNavigate()
@@ -25,6 +28,9 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const [nuovaData, setNuovaData] = useState('')
   const [docenteNome, setDocenteNome] = useState('')
   const [docenteTelefono, setDocenteTelefono] = useState('')
+
+  const [fornitori, setFornitori] = useState([])
+  const [fornitoreScelto, setFornitoreScelto] = useState('')
 
   // Wizard "Aula completata": 0 = non avviato, 1 = marcatura presenze, 2 = upload registro
   const [wizardStep, setWizardStep] = useState(0)
@@ -52,11 +58,27 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const puoAnnullare = sessione && !['COMPLETATA', 'ANNULLATA'].includes(sessione.stato) && (
     isStoreProprietario || can(['admin', 'ho']) || (can(['fornitore']) && sessione.fornitore === user.id)
   )
-  const inFaseRichiesta = sessione && ['RICHIESTA_INVIATA', 'DATA_PROPOSTA', 'DATA_CONTROPROPOSTA'].includes(sessione.stato)
+
+  const annullaLabel = sessione?.stato === 'RICHIESTA_INVIATA' ? 'Annulla richiesta'
+    : ['DATA_PROPOSTA', 'DATA_CONTROPROPOSTA'].includes(sessione?.stato) ? 'Annulla proposta'
+    : 'Annulla sessione'
+
+  const statusMessage = sessione?.stato === 'DATA_PROPOSTA' && isFornitore && !isStoreLato
+    ? 'Proposta inviata, in attesa di conferma'
+    : sessione?.stato === 'DATA_CONTROPROPOSTA' && can(['store'])
+    ? 'Contro-proposta inviata, in attesa di risposta del fornitore'
+    : null
 
   const statoLabel = sessione
     ? (isFornitore && sessione.stato === 'RICHIESTA_INVIATA' ? 'Richiesta Ricevuta' : (STATO_LABELS[sessione.stato] || sessione.stato))
     : ''
+
+  useEffect(() => {
+    if (sessione?.stato === 'RICHIESTA_INVIATA' && !sessione.fornitore && isStoreLato && fornitori.length === 0) {
+      api.get('/ehs/fornitori/').then(({ data }) => setFornitori(data)).catch(() => {})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessione?.id, sessione?.stato, sessione?.fornitore])
 
   const run = async (action) => {
     setBusy(true)
@@ -70,6 +92,14 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
     }
   }
 
+  const handleAssegnaFornitore = () => {
+    if (!fornitoreScelto) { toast.error('Seleziona un fornitore.'); return }
+    run(async () => {
+      await api.patch(`/ehs/sessioni/${sessioneId}/assegna-fornitore/`, { fornitore: fornitoreScelto })
+      toast.success('Fornitore assegnato.')
+    })
+  }
+
   const handleProponiData = () => {
     if (!nuovaData) { toast.error('Seleziona data e ora.'); return }
     if (!docenteNome.trim() || !docenteTelefono.trim()) { toast.error('Nome e telefono del docente sono obbligatori.'); return }
@@ -79,7 +109,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
         docente_nome: docenteNome.trim(),
         docente_telefono: docenteTelefono.trim(),
       })
-      toast.success('Data proposta.')
+      toast.success('Proposta inviata.')
       setNuovaData(''); setDocenteNome(''); setDocenteTelefono('')
     })
   }
@@ -111,13 +141,10 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   }
 
   const handleAnnulla = () => {
-    const msg = inFaseRichiesta
-      ? 'Annullare questa richiesta EHS?'
-      : 'Annullare questa sessione EHS? Tutti gli iscritti verranno rimossi automaticamente.'
-    if (!window.confirm(msg)) return
+    if (!window.confirm(`${annullaLabel}? ${sessione.stato === 'CONFERMATA' ? 'Tutti gli iscritti verranno rimossi automaticamente.' : ''}`)) return
     run(async () => {
       await api.patch(`/ehs/sessioni/${sessioneId}/annulla/`)
-      toast.success(inFaseRichiesta ? 'Richiesta annullata.' : 'Sessione annullata.')
+      toast.success(`${annullaLabel === 'Annulla sessione' ? 'Sessione' : annullaLabel === 'Annulla proposta' ? 'Proposta' : 'Richiesta'} annullata.`)
     })
   }
 
@@ -178,13 +205,28 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               <div className="detail-row"><span>Partecipanti iscritti</span><strong>{sessione.partecipanti_count}</strong></div>
             </div>
 
+            {/* --- Assegna fornitore (richiesta ancora senza fornitore) --- */}
+            {sessione.stato === 'RICHIESTA_INVIATA' && !sessione.fornitore && isStoreLato && (
+              <div className="form-group">
+                <label className="form-label">Assegna fornitore</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <select className="form-control" value={fornitoreScelto} onChange={e => setFornitoreScelto(e.target.value)}>
+                    <option value="">Seleziona fornitore...</option>
+                    {fornitori.map(f => (
+                      <option key={f.id} value={f.id}>{f.fornitore_ragione_sociale} — {f.nome_completo}</option>
+                    ))}
+                  </select>
+                  <button className="btn btn-primary btn-sm" disabled={busy} onClick={handleAssegnaFornitore}>Assegna</button>
+                </div>
+              </div>
+            )}
+
             {/* --- Azioni per stato/ruolo --- */}
-            {sessione.stato === 'RICHIESTA_INVIATA' && isFornitoreLato && (
+            {sessione.stato === 'RICHIESTA_INVIATA' && isFornitoreLato && sessione.fornitore && (
               <div className="form-group">
                 <label className="form-label">Proponi data, ora e docente</label>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <input type="datetime-local" step={EHS_TIME_STEP} className="form-control" value={nuovaData}
-                    onChange={e => setNuovaData(e.target.value)} />
+                <div style={{ marginBottom: 8 }}>
+                  <EHSDataOraPicker value={nuovaData} onChange={setNuovaData} />
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <input className="form-control" placeholder="Nome docente *" value={docenteNome}
@@ -192,7 +234,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                   <input className="form-control" placeholder="Telefono docente *" value={docenteTelefono}
                     onChange={e => setDocenteTelefono(e.target.value)} />
                 </div>
-                <button className="btn btn-primary btn-sm" disabled={busy} onClick={handleProponiData}>Invia proposta</button>
+                <button className="btn btn-success btn-sm" disabled={busy} onClick={handleProponiData}>Invia proposta</button>
               </div>
             )}
 
@@ -200,11 +242,10 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               <div className="form-group">
                 <label className="form-label">Rispondi alla data proposta</label>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <button className="btn btn-primary btn-sm" disabled={busy} onClick={handleAccetta}>✓ Accetta</button>
+                  <button className="btn btn-success btn-sm" disabled={busy} onClick={handleAccetta}>✓ Accetta</button>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input type="datetime-local" step={EHS_TIME_STEP} className="form-control" value={nuovaData}
-                    onChange={e => setNuovaData(e.target.value)} placeholder="Nuova data" />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                  <EHSDataOraPicker value={nuovaData} onChange={setNuovaData} />
                   <button className="btn btn-secondary btn-sm" disabled={busy} onClick={handleContropropone}>Contro-proponi</button>
                 </div>
               </div>
@@ -214,14 +255,13 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               <div className="form-group">
                 <label className="form-label">Rispondi alla contro-proposta dello store</label>
                 <div style={{ marginBottom: 12 }}>
-                  <button className="btn btn-primary btn-sm" disabled={busy} onClick={handleAccettaControproposta}>
+                  <button className="btn btn-success btn-sm" disabled={busy} onClick={handleAccettaControproposta}>
                     ✓ Accetta questa data
                   </button>
                 </div>
                 <label className="form-label">...oppure proponi un'altra data, ora e docente</label>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <input type="datetime-local" step={EHS_TIME_STEP} className="form-control" value={nuovaData}
-                    onChange={e => setNuovaData(e.target.value)} />
+                <div style={{ marginBottom: 8 }}>
+                  <EHSDataOraPicker value={nuovaData} onChange={setNuovaData} />
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <input className="form-control" placeholder="Nome docente *" value={docenteNome}
@@ -253,7 +293,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       {sessione.partecipanti.map(p => (
-                        <div key={p.id} style={{ fontSize: 13, color: '#374151' }}>• {p.utente_nome}</div>
+                        <div key={p.id} style={{ fontSize: 13, color: '#374151' }}>• {partecipanteLabel(p)}</div>
                       ))}
                     </div>
                   </div>
@@ -274,7 +314,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {sessione.partecipanti.map(p => (
                           <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: '1px solid #E5E7EB', borderRadius: 8, padding: 10 }}>
-                            <span style={{ flex: 1, fontSize: 13 }}>{p.utente_nome}</span>
+                            <span style={{ flex: 1, fontSize: 13 }}>{partecipanteLabel(p)}</span>
                             <button type="button"
                               className="btn btn-sm"
                               style={{ background: presenze[p.id] ? '#10B981' : '#F3F4F6', color: presenze[p.id] ? '#fff' : '#374151' }}
@@ -331,7 +371,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                       }}>
                         {p.presente ? 'PRESENTE' : 'ASSENTE'}
                       </span>
-                      {p.utente_nome}
+                      {partecipanteLabel(p)}
                       {p.scadenza_formazione && (
                         <span style={{ color: '#9CA3AF', fontSize: 12 }}>— scade il {new Date(p.scadenza_formazione).toLocaleDateString('it-IT')}</span>
                       )}
@@ -344,25 +384,14 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               </div>
             )}
 
-            {sessione.log?.length > 0 && (
-              <div style={{ marginTop: 20 }}>
-                <div className="dev-timeline-title" style={{ marginBottom: 8, fontWeight: 600, fontSize: 13 }}>Storico</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {sessione.log.map(l => (
-                    <div key={l.id} style={{ fontSize: 12, color: '#6B7280' }}>
-                      • {new Date(l.timestamp).toLocaleString('it-IT')} — {l.nota || `${l.stato_precedente || '—'} → ${l.stato_nuovo}`}
-                      {l.utente_nome && <span style={{ color: '#9CA3AF' }}> ({l.utente_nome})</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {puoAnnullare && wizardStep === 0 && (
-              <div className="modal-actions">
-                <button className="btn btn-danger btn-sm" disabled={busy} onClick={handleAnnulla}>
-                  {inFaseRichiesta ? 'Annulla richiesta' : 'Annulla sessione'}
-                </button>
+              <div className="modal-actions" style={{ justifyContent: statusMessage ? 'space-between' : 'flex-end', alignItems: 'center' }}>
+                {statusMessage && (
+                  <span style={{ fontSize: 13, color: '#92400E', background: '#FEF3C7', padding: '6px 12px', borderRadius: 6 }}>
+                    {statusMessage}
+                  </span>
+                )}
+                <button className="btn btn-danger btn-sm" disabled={busy} onClick={handleAnnulla}>{annullaLabel}</button>
               </div>
             )}
           </div>
