@@ -12,12 +12,10 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
 
   const [corsi, setCorsi] = useState([])
   const [stores, setStores] = useState([])
-  const [fornitori, setFornitori] = useState([])
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     corso: '',
     negozio: user?.store_id || '',
-    fornitore: '',
     contatto_negozio_nome: '',
     contatto_negozio_telefono: '',
     partecipanti_previsti: '',
@@ -30,7 +28,6 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
       setCorsi(data)
       if (data.length === 1) setForm(f => ({ ...f, corso: data[0].id }))
     })
-    api.get('/ehs/fornitori/').then(({ data }) => setFornitori(data)).catch(() => {})
     if (isAdminHO) {
       api.get('/stores/').then(({ data }) => setStores(data.results || data))
     }
@@ -49,7 +46,6 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
         note: form.note,
       }
       if (isAdminHO) payload.negozio = form.negozio
-      if (form.fornitore) payload.fornitore = form.fornitore
       if (form.partecipanti_previsti) payload.partecipanti_previsti = form.partecipanti_previsti
       if (form.data_suggerita_store) {
         payload.data_suggerita_store = arrotondaMezzora(form.data_suggerita_store).toISOString()
@@ -109,14 +105,12 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
           )}
 
           <div className="form-group">
-            <label className="form-label">Fornitore (opz.)</label>
-            <select className="form-control" value={form.fornitore}
-              onChange={e => setForm(f => ({ ...f, fornitore: e.target.value }))}>
-              <option value="">— Nessuno specifico (assegnato in seguito) —</option>
-              {fornitori.map(f => (
-                <option key={f.id} value={f.id}>{f.fornitore_ragione_sociale} — {f.nome_completo}</option>
-              ))}
-            </select>
+            <label className="form-label">Fornitore</label>
+            <input
+              className="form-control"
+              value={corsoSelezionato?.fornitore_nome || (form.corso ? '— assegnato in seguito —' : '—')}
+              disabled
+            />
           </div>
 
           <div className="form-group">

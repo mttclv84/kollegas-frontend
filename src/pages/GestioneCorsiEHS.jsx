@@ -6,11 +6,12 @@ import Modal from '../components/ui/Modal'
 import './EHS.css'
 
 const EMPTY_FORM = {
-  nome: '', durata_ore: '', scadenza_giorni: '', descrizione: '',
+  nome: '', durata_ore: '', scadenza_giorni: '', descrizione: '', fornitore: '',
 }
 
 export default function GestioneCorsiEHS() {
   const [corsi, setCorsi] = useState([])
+  const [fornitori, setFornitori] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -28,12 +29,16 @@ export default function GestioneCorsiEHS() {
   }, [])
 
   useEffect(() => { fetchCorsi() }, [fetchCorsi])
+  useEffect(() => {
+    api.get('/ehs/fornitori/').then(({ data }) => setFornitori(data)).catch(() => {})
+  }, [])
 
   const openCreate = () => { setForm(EMPTY_FORM); setModal({ mode: 'create' }) }
   const openEdit = (c) => {
     setForm({
       nome: c.nome, durata_ore: c.durata_ore,
       scadenza_giorni: c.scadenza_giorni ?? '', descrizione: c.descrizione || '',
+      fornitore: c.fornitore ?? '',
     })
     setModal({ mode: 'edit', data: c })
   }
@@ -42,11 +47,13 @@ export default function GestioneCorsiEHS() {
 
   const handleSave = async (e) => {
     e.preventDefault()
+    if (!form.fornitore) { toast.error('Seleziona il fornitore abbinato al corso.'); return }
     setSaving(true)
     try {
       const payload = {
         nome: form.nome, durata_ore: form.durata_ore,
         scadenza_giorni: form.scadenza_giorni || null, descrizione: form.descrizione,
+        fornitore: form.fornitore,
       }
       if (modal.mode === 'create') {
         await api.post('/ehs/corsi/', payload)
@@ -88,6 +95,7 @@ export default function GestioneCorsiEHS() {
   const columns = [
     { key: 'codice', label: 'Codice', sortable: true },
     { key: 'nome', label: 'Nome corso', sortable: true },
+    { key: 'fornitore_nome', label: 'Fornitore', accessor: c => c.fornitore_nome || '— nessuno —' },
     { key: 'durata_ore', label: 'Durata (ore)', accessor: c => c.durata_ore },
     { key: 'scadenza_giorni', label: 'Scadenza (giorni)', accessor: c => c.scadenza_giorni ?? '— nessuna —' },
     {
@@ -147,6 +155,16 @@ export default function GestioneCorsiEHS() {
               <label className="form-label">Nome corso *</label>
               <input className="form-control" value={form.nome}
                 onChange={e => setF('nome', e.target.value)} required autoFocus />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Fornitore *</label>
+              <select className="form-control" value={form.fornitore}
+                onChange={e => setF('fornitore', e.target.value)} required>
+                <option value="">Seleziona fornitore...</option>
+                {fornitori.map(f => (
+                  <option key={f.id} value={f.id}>{f.fornitore_ragione_sociale} — {f.nome_completo}</option>
+                ))}
+              </select>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
               <div className="form-group">
