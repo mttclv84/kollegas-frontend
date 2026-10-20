@@ -107,9 +107,13 @@
   filter: grayscale(1) sepia(1) hue-rotate(-40deg) saturate(15) brightness(0.75);
 }
 
-/* Gestione: icone in tono giallo. Report: icone a colori originali (nessun filtro). */
+/* Gestione: icona del gruppo bianca, voci interne bianche semitrasparenti.
+   Report: icone a colori originali (nessun filtro). */
 .nav-group[data-group="Gestione"] .nav-icon {
-  filter: grayscale(1) sepia(1) saturate(8) hue-rotate(-10deg) brightness(0.8);
+  filter: grayscale(1) brightness(0) invert(1);
+}
+.nav-group[data-group="Gestione"] .nav-child .nav-icon {
+  opacity: 0.6;
 }
 
 /* Nav group */
