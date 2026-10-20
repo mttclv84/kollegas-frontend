@@ -96,6 +96,13 @@
 .nav-group[data-group="EHS"] .nav-child:hover { background: rgba(239, 68, 68, 0.26); color: #fff; }
 .nav-group[data-group="EHS"] .nav-child.active { background: rgba(239, 68, 68, 0.42); color: #fff; font-weight: 600; }
 
+/* Voce bloccata per il ruolo corrente: visibile ma non cliccabile */
+.nav-item.nav-locked { cursor: not-allowed; opacity: 0.55; }
+.nav-group[data-group="EHS"] .nav-child.nav-locked:hover { background: rgba(239, 68, 68, 0.14); color: inherit; }
+.nav-lock { margin-left: auto; font-size: 13px; flex-shrink: 0; }
+.sidebar.collapsed .nav-lock { position: absolute; top: 4px; right: 6px; font-size: 10px; margin: 0; }
+.nav-item.nav-locked { position: relative; }
+
 .nav-group[data-group="EHS"] .nav-icon {
   filter: grayscale(1) sepia(1) hue-rotate(-40deg) saturate(15) brightness(0.75);
 }

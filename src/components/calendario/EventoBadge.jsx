@@ -23,27 +23,34 @@ export default function EventoBadge({ evento, onClick, dimmed = false, clickable
 
   // Sul calendario principale gli eventi EHS mostrano corso (prime due parole) e
   // numero store, invece del titolo generico fisso "EHS".
-  const labelTesto = evento.is_ehs && evento.ehs_corso_nome
+  // Calendario EHS del fornitore: le attività altrui arrivano già anonimizzate
+  // dal backend (solo store + "Occupato"), senza conteggi iscritti.
+  const occupato = !!evento.occupato
+  const labelTesto = occupato
+    ? [evento.location_display, 'Occupato'].filter(Boolean).join(' · ')
+    : evento.is_ehs && evento.ehs_corso_nome
     ? `${evento.ehs_corso_nome.split(' ').slice(0, 2).join(' ')} · Store ${evento.ehs_negozio_codice || ''}`
     : evento.attivita_nome
 
   const tooltip = [
     labelTesto,
-    evento.location_display,
+    occupato ? null : evento.location_display,
     `${evento.ora_inizio?.slice(0,5)} - ${evento.ora_fine?.slice(0,5)}`,
-    countsText,
+    occupato ? null : countsText,
   ].filter(Boolean).join(' • ')
 
   const content = (
     <>
       <span className="badge-dot" />
       <span className="badge-text">{labelTesto}</span>
-      <span className="badge-count">
-        {evento.iscritti_count}
-        {hasLimit && (
-          <> / <span className="badge-liberi">{evento.posti_disponibili ?? 0}</span></>
-        )}
-      </span>
+      {!occupato && (
+        <span className="badge-count">
+          {evento.iscritti_count}
+          {hasLimit && (
+            <> / <span className="badge-liberi">{evento.posti_disponibili ?? 0}</span></>
+          )}
+        </span>
+      )}
     </>
   )
 

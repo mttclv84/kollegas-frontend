@@ -68,17 +68,23 @@ function EliminaRegistroModal({ registro, onClose, onDeleted }) {
 function RegistroViewerModal({ registro, onClose }) {
   const [url, setUrl] = useState(null)
   const [loading, setLoading] = useState(true)
+  const documenti = registro.documenti || []
+  const [documentoId, setDocumentoId] = useState(documenti[0]?.id ?? null)
 
   useEffect(() => {
     let objectUrl
-    api.get(`/ehs/registri/${registro.id}/file/`, { responseType: 'blob' })
+    setLoading(true)
+    setUrl(null)
+    const path = documentoId ? `/ehs/registri/${registro.id}/file/${documentoId}/` : `/ehs/registri/${registro.id}/file/`
+    api.get(path, { responseType: 'blob' })
       .then((res) => {
         objectUrl = URL.createObjectURL(res.data)
         setUrl(objectUrl)
       })
+      .catch(() => {})
       .finally(() => setLoading(false))
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
-  }, [registro.id])
+  }, [registro.id, documentoId])
 
   return (
     <div style={{
@@ -99,6 +105,18 @@ function RegistroViewerModal({ registro, onClose }) {
           ✕ Chiudi
         </button>
       </div>
+      {documenti.length > 1 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, width: '90vw', maxWidth: 900 }}>
+          {documenti.map(d => (
+            <button key={d.id} onClick={() => setDocumentoId(d.id)} style={{
+              border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 13,
+              background: d.id === documentoId ? '#10B981' : '#fff', color: d.id === documentoId ? '#fff' : '#374151',
+            }}>
+              📎 {d.nome_originale || `Documento ${d.id}`}
+            </button>
+          ))}
+        </div>
+      )}
       {loading ? (
         <div className="spinner" />
       ) : url ? (
@@ -238,6 +256,8 @@ export default function EHSRegistriList() {
                   <th>Docente</th>
                   <th>Fornitore</th>
                   <th>Partecipanti</th>
+                  <th>Documenti</th>
+                  <th>Attestati</th>
                   <th></th>
                 </tr>
               </thead>
@@ -250,6 +270,16 @@ export default function EHSRegistriList() {
                     <td>{r.docente_nome || '—'}</td>
                     <td>{r.fornitore_nome || '—'}</td>
                     <td><PartecipantiOverlay partecipanti={r.partecipanti || []} /></td>
+                    <td>{r.documenti?.length || 0}</td>
+                    <td>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '2px 8px', whiteSpace: 'nowrap',
+                        background: r.attestati_caricati_il ? '#D1FAE5' : '#FEF3C7',
+                        color: r.attestati_caricati_il ? '#065F46' : '#92400E',
+                      }}>
+                        {r.attestati_caricati_il ? '✓ Caricati' : 'Da caricare'}
+                      </span>
+                    </td>
                     <td style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => setViewing(r)}>👁️ Consulta</button>
                       {canElimina && (

@@ -8,6 +8,7 @@ import EHSSessioneModal from '../components/ehs/EHSSessioneModal'
 import EHSRichiesteList from '../components/ehs/EHSRichiesteList'
 import EHSRichiestaFormModal from '../components/ehs/EHSRichiestaFormModal'
 import EHSRegistriList from '../components/ehs/EHSRegistriList'
+import EHSScadenzeList from '../components/ehs/EHSScadenzeList'
 import './Calendario.css'
 import './EHS.css'
 
@@ -56,6 +57,18 @@ export default function EHS() {
     const timer = setInterval(fetchNotifiche, 3600000)
     return () => clearInterval(timer)
   }, [isFornitore])
+
+  // Richieste eccezionali in attesa di approvazione: pallino sulla tab per l'EHS Admin.
+  const isApprovatore = can(['admin', 'admin_ehs'])
+  const [eccezioniInAttesa, setEccezioniInAttesa] = useState(0)
+  const fetchEccezioni = useCallback(() => {
+    if (!isApprovatore) return
+    api.get('/ehs/sessioni/', { params: { stato: 'IN_APPROVAZIONE' } })
+      .then(({ data }) => setEccezioniInAttesa(data.length)).catch(() => {})
+  }, [isApprovatore])
+  useEffect(() => { fetchEccezioni() }, [fetchEccezioni])
+
+  const canVedereScadenze = can(['store', 'admin', 'admin_ehs', 'ho'])
 
   const handleTabClick = (nuovaTab) => {
     setTab(nuovaTab)
@@ -134,7 +147,7 @@ export default function EHS() {
             style={{ position: 'relative' }}
           >
             📋 Richieste
-            {notificheRichieste.length > 0 && (
+            {(notificheRichieste.length > 0 || eccezioniInAttesa > 0) && (
               <span style={{
                 position: 'absolute', top: -4, right: -4, width: 10, height: 10,
                 borderRadius: '50%', background: '#EF4444', border: '2px solid #fff',
@@ -147,6 +160,14 @@ export default function EHS() {
           >
             📁 Registri
           </button>
+          {canVedereScadenze && (
+            <button
+              className={`ehs-tab ${tab === 'scadenze' ? 'active' : ''}`}
+              onClick={() => handleTabClick('scadenze')}
+            >
+              ⏰ Scadenze
+            </button>
+          )}
         </div>
         {canCreaRichiesta && (
           <button className="btn btn-primary btn-sm" onClick={() => setShowRichiestaForm(true)}>
@@ -191,10 +212,10 @@ export default function EHS() {
               <div className="card-body">
                 <h4 className="legenda-title">Legenda</h4>
                 <div className="legenda-item">
-                  <span className="legenda-dot" style={{ background: '#10B981' }} /> Evento EHS (cliccabile)
+                  <span className="legenda-dot" style={{ background: '#10B981' }} /> {isFornitore ? 'Tue sessioni EHS (cliccabili)' : 'Evento EHS (cliccabile)'}
                 </div>
                 <div className="legenda-item">
-                  <span className="legenda-dot" style={{ background: '#9CA3AF' }} /> Altre attività (sola vista)
+                  <span className="legenda-dot" style={{ background: '#9CA3AF' }} /> {isFornitore ? 'Store occupato da altre attività' : 'Altre attività (sola vista)'}
                 </div>
               </div>
             </div>
@@ -202,6 +223,8 @@ export default function EHS() {
         </div>
       ) : tab === 'richieste' ? (
         <EHSRichiesteList ref={richiesteListRef} onSelect={setSelectedSessioneId} />
+      ) : tab === 'scadenze' ? (
+        <EHSScadenzeList />
       ) : (
         <EHSRegistriList />
       )}
@@ -210,7 +233,7 @@ export default function EHS() {
         <EHSSessioneModal
           sessioneId={selectedSessioneId}
           onClose={() => setSelectedSessioneId(null)}
-          onChanged={() => { fetchEventi(); richiesteListRef.current?.refresh() }}
+          onChanged={() => { fetchEventi(); fetchEccezioni(); richiesteListRef.current?.refresh() }}
         />
       )}
 

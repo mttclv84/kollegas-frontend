@@ -2,22 +2,30 @@ import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHand
 import api from '../../api/client'
 
 const STATO_LABELS = {
+  IN_APPROVAZIONE: 'In approvazione EHS',
   RICHIESTA_INVIATA: 'Richiesta inviata',
+  NON_DISPONIBILE: 'Fornitore non disponibile',
   DATA_PROPOSTA: 'Data proposta',
   DATA_CONTROPROPOSTA: 'Contro-proposta',
   CONFERMATA: 'Confermata',
   COMPLETATA: 'Completata',
   ANNULLATA: 'Annullata',
+  RIFIUTATA: 'Rifiutata',
 }
 
 const STATO_COLORS = {
+  IN_APPROVAZIONE: { bg: '#EDE9FE', text: '#5B21B6' },
   RICHIESTA_INVIATA: { bg: '#DBEAFE', text: '#1E40AF' },
+  NON_DISPONIBILE: { bg: '#FFEDD5', text: '#9A3412' },
   DATA_PROPOSTA: { bg: '#FEF3C7', text: '#92400E' },
   DATA_CONTROPROPOSTA: { bg: '#FEF3C7', text: '#92400E' },
   CONFERMATA: { bg: '#D1FAE5', text: '#065F46' },
   COMPLETATA: { bg: '#E5E7EB', text: '#374151' },
   ANNULLATA: { bg: '#FEE2E2', text: '#991B1B' },
+  RIFIUTATA: { bg: '#FEE2E2', text: '#991B1B' },
 }
+
+const tagStyle = { fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '1px 6px', marginLeft: 6 }
 
 function StoricoIcon({ sessioneId }) {
   const [log, setLog] = useState(null)
@@ -112,7 +120,7 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
           <thead>
             <tr>
               <th>Corso</th>
-              <th>Negozio</th>
+              <th>Negozio / Fornitore</th>
               <th>Stato</th>
               <th>Partecipanti</th>
               <th>Programmazione</th>
@@ -124,8 +132,17 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
               const stato = STATO_COLORS[s.stato] || { bg: '#F3F4F6', text: '#374151' }
               return (
                 <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => onSelect(s.id)}>
-                  <td><strong>{s.corso_nome}</strong></td>
-                  <td>{s.negozio_nome}</td>
+                  <td>
+                    <strong>{s.corso_nome}</strong>
+                    {s.modalita === 'ONLINE' && <span style={{ ...tagStyle, background: '#E0F2FE', color: '#075985' }}>ONLINE</span>}
+                    {s.eccezionale && <span style={{ ...tagStyle, background: '#EDE9FE', color: '#5B21B6' }}>ECCEZIONALE</span>}
+                  </td>
+                  <td>
+                    {s.negozio_nome}
+                    <div style={{ fontSize: 12, color: '#6B7280' }}>
+                      {s.fornitore_nome || (s.fornitore_richiesto_nome ? `${s.fornitore_richiesto_nome} (richiesto)` : '—')}
+                    </div>
+                  </td>
                   <td>
                     <span style={{
                       background: stato.bg, color: stato.text,

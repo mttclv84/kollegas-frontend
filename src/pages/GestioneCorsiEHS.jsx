@@ -1,17 +1,91 @@
 import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
+import { useAuth } from '../context/AuthContext'
 import DataTable from '../components/ui/DataTable'
 import Modal from '../components/ui/Modal'
 import './EHS.css'
 
 const EMPTY_FORM = {
-  nome: '', durata_ore: '', scadenza_giorni: '', descrizione: '', fornitore: '',
+  nome: '', durata_ore: '', scadenza_giorni: '', descrizione: '', offerte: [],
+}
+const NUOVA_OFFERTA = { fornitore: '', tutti_negozi: true, negozi: [] }
+
+// Elenco negozi con ricerca, per limitare un abbinamento corso-fornitore a una parte dei negozi.
+function NegoziPicker({ stores, selezionati, onChange }) {
+  const [cerca, setCerca] = useState('')
+  const visibili = stores.filter(s => !cerca || s.nome.toLowerCase().includes(cerca.toLowerCase()))
+  const toggle = (id) => onChange(selezionati.includes(id) ? selezionati.filter(x => x !== id) : [...selezionati, id])
+  return (
+    <div style={{ marginTop: 6 }}>
+      <input className="form-control" placeholder="Cerca negozio..." value={cerca}
+        onChange={e => setCerca(e.target.value)} style={{ marginBottom: 6 }} />
+      <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: 6, padding: '4px 8px' }}>
+        {visibili.map(s => (
+          <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, padding: '2px 0' }}>
+            <input type="checkbox" checked={selezionati.includes(s.id)} onChange={() => toggle(s.id)} />
+            {s.nome}{s.codice_store ? ` (${s.codice_store})` : ''}
+          </label>
+        ))}
+        {visibili.length === 0 && <div style={{ fontSize: 12, color: '#9CA3AF', padding: 4 }}>Nessun negozio.</div>}
+      </div>
+      <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>{selezionati.length} negozi selezionati</div>
+    </div>
+  )
+}
+
+function SharepointConfig() {
+  const { can } = useAuth()
+  const puoModificare = can(['admin', 'admin_ehs'])
+  const [url, setUrl] = useState('')
+  const [salvato, setSalvato] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    api.get('/ehs/configurazione/').then(({ data }) => {
+      setUrl(data.sharepoint_attestati_url || '')
+      setSalvato(data.sharepoint_attestati_url || '')
+    }).catch(() => {})
+  }, [])
+
+  const salva = async () => {
+    setSaving(true)
+    try {
+      const { data } = await api.patch('/ehs/configurazione/', { sharepoint_attestati_url: url.trim() })
+      setSalvato(data.sharepoint_attestati_url)
+      toast.success('Link SharePoint salvato.')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card-body" style={{ padding: '12px 16px' }}>
+        <label className="form-label">Cartella SharePoint per gli attestati</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input className="form-control" placeholder="https://azienda.sharepoint.com/..." value={url}
+            onChange={e => setUrl(e.target.value)} disabled={!puoModificare} />
+          {puoModificare && (
+            <button className="btn btn-primary" disabled={saving || url.trim() === salvato} onClick={salva}>
+              {saving ? 'Salvataggio...' : 'Salva'}
+            </button>
+          )}
+        </div>
+        <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
+          I fornitori aprono questo link dalla sessione completata per caricare gli attestati.
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function GestioneCorsiEHS() {
   const [corsi, setCorsi] = useState([])
   const [fornitori, setFornitori] = useState([])
+  const [stores, setStores] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -30,30 +104,43 @@ export default function GestioneCorsiEHS() {
 
   useEffect(() => { fetchCorsi() }, [fetchCorsi])
   useEffect(() => {
-    api.get('/ehs/fornitori/').then(({ data }) => setFornitori(data)).catch(() => {})
+    api.get('/ehs/fornitori/').then(({ data }) => setFornitori(data.filter(f => f.is_active))).catch(() => {})
+    api.get('/stores/').then(({ data }) => setStores(data.results || data)).catch(() => {})
   }, [])
 
-  const openCreate = () => { setForm(EMPTY_FORM); setModal({ mode: 'create' }) }
+  const openCreate = () => { setForm({ ...EMPTY_FORM, offerte: [{ ...NUOVA_OFFERTA }] }); setModal({ mode: 'create' }) }
   const openEdit = (c) => {
     setForm({
       nome: c.nome, durata_ore: c.durata_ore,
       scadenza_giorni: c.scadenza_giorni ?? '', descrizione: c.descrizione || '',
-      fornitore: c.fornitore ?? '',
+      offerte: c.offerte.length
+        ? c.offerte.map(o => ({ fornitore: o.fornitore, tutti_negozi: o.tutti_negozi, negozi: o.negozi }))
+        : [{ ...NUOVA_OFFERTA }],
     })
     setModal({ mode: 'edit', data: c })
   }
 
   const setF = (key, val) => setForm(f => ({ ...f, [key]: val }))
+  const setOfferta = (i, key, val) => setForm(f => ({
+    ...f, offerte: f.offerte.map((o, j) => j === i ? { ...o, [key]: val } : o),
+  }))
+  const aggiungiOfferta = () => setForm(f => ({ ...f, offerte: [...f.offerte, { ...NUOVA_OFFERTA }] }))
+  const rimuoviOfferta = (i) => setForm(f => ({ ...f, offerte: f.offerte.filter((_, j) => j !== i) }))
 
   const handleSave = async (e) => {
     e.preventDefault()
-    if (!form.fornitore) { toast.error('Seleziona il fornitore abbinato al corso.'); return }
+    const offerte = form.offerte.filter(o => o.fornitore)
+    if (offerte.length === 0) { toast.error('Abbina almeno un fornitore al corso.'); return }
+    const senzaNegozi = offerte.find(o => !o.tutti_negozi && o.negozi.length === 0)
+    if (senzaNegozi) { toast.error('Seleziona almeno un negozio per ogni fornitore non abilitato a tutti i negozi.'); return }
     setSaving(true)
     try {
       const payload = {
         nome: form.nome, durata_ore: form.durata_ore,
         scadenza_giorni: form.scadenza_giorni || null, descrizione: form.descrizione,
-        fornitore: form.fornitore,
+        offerte: offerte.map(o => ({
+          fornitore: Number(o.fornitore), tutti_negozi: o.tutti_negozi, negozi: o.tutti_negozi ? [] : o.negozi,
+        })),
       }
       if (modal.mode === 'create') {
         await api.post('/ehs/corsi/', payload)
@@ -65,7 +152,8 @@ export default function GestioneCorsiEHS() {
       setModal(null)
       fetchCorsi()
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Errore.')
+      const data = err.response?.data
+      toast.error(data?.detail || (data?.offerte && [].concat(data.offerte).join(' ')) || 'Errore.')
     } finally {
       setSaving(false)
     }
@@ -92,10 +180,14 @@ export default function GestioneCorsiEHS() {
     }
   }
 
+  const descriviOfferte = (c) => c.offerte.length === 0 ? '— nessuno —' : c.offerte.map(o =>
+    `${o.fornitore_nome} (${o.tutti_negozi ? 'tutti i negozi' : `${o.negozi.length} negozi`})`
+  ).join(', ')
+
   const columns = [
     { key: 'codice', label: 'Codice', sortable: true },
     { key: 'nome', label: 'Nome corso', sortable: true },
-    { key: 'fornitore_nome', label: 'Fornitore', accessor: c => c.fornitore_nome || '— nessuno —' },
+    { key: 'fornitori', label: 'Fornitori', accessor: descriviOfferte },
     { key: 'durata_ore', label: 'Durata (ore)', accessor: c => c.durata_ore },
     { key: 'scadenza_giorni', label: 'Scadenza (giorni)', accessor: c => c.scadenza_giorni ?? '— nessuna —' },
     {
@@ -104,12 +196,16 @@ export default function GestioneCorsiEHS() {
     },
   ]
 
+  const fornitoriUsati = form.offerte.map(o => String(o.fornitore)).filter(Boolean)
+
   return (
     <div className="ehs-section">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 className="page-title" style={{ marginBottom: 0 }}>Gestione Corsi EHS</h1>
         <button className="btn btn-primary" onClick={openCreate}>+ Nuovo Corso</button>
       </div>
+
+      <SharepointConfig />
 
       <div className="card">
         {loading ? (
@@ -136,7 +232,7 @@ export default function GestioneCorsiEHS() {
         <Modal
           title={modal.mode === 'create' ? 'Nuovo Corso EHS' : `Modifica — ${modal.data?.nome}`}
           onClose={() => setModal(null)}
-          size="md"
+          size="lg"
         >
           <form onSubmit={handleSave}>
             {modal.mode === 'edit' && (
@@ -156,16 +252,51 @@ export default function GestioneCorsiEHS() {
               <input className="form-control" value={form.nome}
                 onChange={e => setF('nome', e.target.value)} required autoFocus />
             </div>
+
             <div className="form-group">
-              <label className="form-label">Fornitore *</label>
-              <select className="form-control" value={form.fornitore}
-                onChange={e => setF('fornitore', e.target.value)} required>
-                <option value="">Seleziona fornitore...</option>
-                {fornitori.map(f => (
-                  <option key={f.id} value={f.id}>{f.fornitore_ragione_sociale} — {f.nome_completo}</option>
-                ))}
-              </select>
+              <label className="form-label">Fornitori che erogano il corso *</label>
+              <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>
+                Ogni fornitore può servire tutti i negozi o solo alcuni. Gli store vedranno solo i fornitori
+                abilitati per il proprio negozio; gli altri sono richiedibili con una richiesta eccezionale.
+              </div>
+              {form.offerte.map((o, i) => (
+                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <select className="form-control" value={o.fornitore}
+                      onChange={e => setOfferta(i, 'fornitore', e.target.value)}>
+                      <option value="">Seleziona fornitore...</option>
+                      {fornitori
+                        .filter(f => String(f.id) === String(o.fornitore) || !fornitoriUsati.includes(String(f.id)))
+                        .map(f => (
+                          <option key={f.id} value={f.id}>{f.fornitore_ragione_sociale} — {f.nome_completo}</option>
+                        ))}
+                    </select>
+                    {form.offerte.length > 1 && (
+                      <button type="button" className="btn btn-ghost btn-sm btn-icon" title="Rimuovi fornitore"
+                        onClick={() => rimuoviOfferta(i)}>🗑️</button>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 13 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input type="radio" checked={o.tutti_negozi} onChange={() => setOfferta(i, 'tutti_negozi', true)} />
+                      Tutti i negozi
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input type="radio" checked={!o.tutti_negozi} onChange={() => setOfferta(i, 'tutti_negozi', false)} />
+                      Solo alcuni negozi
+                    </label>
+                  </div>
+                  {!o.tutti_negozi && (
+                    <NegoziPicker stores={stores} selezionati={o.negozi} onChange={v => setOfferta(i, 'negozi', v)} />
+                  )}
+                </div>
+              ))}
+              <button type="button" className="btn btn-secondary btn-sm" onClick={aggiungiOfferta}
+                disabled={fornitoriUsati.length >= fornitori.length}>
+                + Aggiungi fornitore
+              </button>
             </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
               <div className="form-group">
                 <label className="form-label">Durata (ore) *</label>

@@ -100,7 +100,10 @@ export default function GestionePartecipanti() {
     ? Math.ceil((new Date(evento.data) - new Date().setHours(0, 0, 0, 0)) / 86400000)
     : 99
   const isPastEvent = daysUntilEvent < 0
-  const isWithin20Days = daysUntilEvent >= 0 && daysUntilEvent < 20
+  // Per le formazioni EHS lo store può cancellare un iscritto fino a 7 giorni prima;
+  // per gli altri eventi la soglia resta di 20 giorni.
+  const giorniBlocco = evento?.is_ehs ? 7 : 20
+  const isWithin20Days = daysUntilEvent >= 0 && daysUntilEvent < giorniBlocco
 
   const handleAssegna = async (userId) => {
     try {
@@ -339,6 +342,9 @@ export default function GestionePartecipanti() {
                                   onClick={() => setRichiestaModal(i)}
                                 >⚠ Richiedi cancellazione</button>
                               )
+                            }
+                            if (evento?.is_ehs) {
+                              return <button className="btn btn-danger btn-sm" onClick={() => handleElimina(i.id)}>✕</button>
                             }
                             return null
                           })()}

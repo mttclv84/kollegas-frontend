@@ -12,7 +12,8 @@ const NAV_ITEMS = [
     roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'],
     className: 'nav-item-ehs',
     children: [
-      { to: '/ehs', label: 'EHS Calendar & Richieste', icon: '📅', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
+      // lockedRoles: la voce resta visibile ma con lucchetto e non cliccabile.
+      { to: '/ehs', label: 'EHS Calendar & Richieste', icon: '📅', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'], lockedRoles: ['area'] },
       { to: '/ehs/fornitori', label: 'Gestione Fornitori EHS', icon: '🏢', roles: ['admin', 'admin_ehs', 'ho'] },
       { to: '/ehs/corsi', label: 'Gestione Corsi EHS', icon: '📚', roles: ['admin', 'admin_ehs', 'ho'] },
     ],
@@ -132,6 +133,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
                   {!collapsed && (
                     <>
                       <span className="nav-label">{item.group}</span>
+                      {visibleChildren.every(c => c.lockedRoles && can(c.lockedRoles)) && <span className="nav-lock">🔒</span>}
                       <span className={`nav-group-chevron ${open ? 'open' : ''}`}>
                         <span className="nav-chevron-icon">▼</span>
                       </span>
@@ -143,6 +145,20 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
                   <div className={`nav-group-children ${collapsed ? 'collapsed-children' : ''}`}>
                     {visibleChildren.map(child => {
                       const hasAccBadge = child.accountBadge && accountBadge > 0 && can(['admin', 'ho'])
+                      if (child.lockedRoles && can(child.lockedRoles)) {
+                        return (
+                          <span
+                            key={child.to}
+                            className="nav-item nav-child nav-locked"
+                            title="Sezione non ancora disponibile per il tuo ruolo"
+                            aria-disabled="true"
+                          >
+                            <span className="nav-icon">{child.icon}</span>
+                            {!collapsed && <span className="nav-label">{child.label}</span>}
+                            <span className="nav-lock">🔒</span>
+                          </span>
+                        )
+                      }
                       return (
                         <NavLink
                           key={child.to}
