@@ -3,20 +3,21 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/client'
 import kollegalogo from '../../assets/kollegas-logo.jpeg'
+import EhsIcon from './EhsIcon'
 import './Sidebar.css'
 
 const NAV_ITEMS = [
   {
     group: 'EHS',
-    icon: '⛑️',
+    icon: <EhsIcon nome="casco" />,
     roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'],
     className: 'nav-item-ehs',
     children: [
       // lockedRoles: la voce resta visibile ma con lucchetto e non cliccabile.
-      { to: '/ehs', label: 'EHS Calendar & Richieste', icon: '📅', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'], lockedRoles: ['area'] },
-      { to: '/ehs/fornitori', label: 'Gestione Fornitori EHS', icon: '🏢', roles: ['admin', 'admin_ehs', 'ho'] },
-      { to: '/ehs/corsi', label: 'Gestione Corsi EHS', icon: '📚', roles: ['admin', 'admin_ehs', 'ho'] },
-      { to: '/ehs/obblighi', label: 'Formazione obbligatoria', icon: '🎓', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store'] },
+      { to: '/ehs', label: 'EHS Calendar & Richieste', icon: <EhsIcon nome="calendario" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'], lockedRoles: ['area'] },
+      { to: '/ehs/fornitori', label: 'Gestione Fornitori EHS', icon: <EhsIcon nome="fornitori" />, roles: ['admin', 'admin_ehs', 'ho'] },
+      { to: '/ehs/corsi', label: 'Gestione Corsi EHS', icon: <EhsIcon nome="corsi" />, roles: ['admin', 'admin_ehs', 'ho'] },
+      { to: '/ehs/obblighi', label: 'Formazione obbligatoria', icon: <EhsIcon nome="obblighi" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store'] },
     ],
   },
   { divider: true },

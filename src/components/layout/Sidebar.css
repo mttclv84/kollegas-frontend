@@ -103,9 +103,18 @@
 .sidebar.collapsed .nav-lock { position: absolute; top: 4px; right: 6px; font-size: 10px; margin: 0; }
 .nav-item.nav-locked { position: relative; }
 
-.nav-group[data-group="EHS"] .nav-icon {
-  filter: grayscale(1) sepia(1) hue-rotate(-40deg) saturate(15) brightness(0.75);
+/* Icone EHS: simbolo bianco su quadratino rosso (componente EhsIcon) */
+.ehs-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  background: #DC2626;
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
+.ehs-icon svg { width: 14px; height: 14px; }
 
 /* Gestione: icona del gruppo bianca, voci interne bianche semitrasparenti.
    Report: icone a colori originali (nessun filtro). */
