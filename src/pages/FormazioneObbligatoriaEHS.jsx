@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import Modal from '../components/ui/Modal'
+import EHSCompletamentoObblighi from '../components/ehs/EHSCompletamentoObblighi'
 import './EHS.css'
 import '../components/calendario/EventoModal.css'
 
@@ -352,7 +353,7 @@ function PersoneRegistro({ matrice }) {
 export default function FormazioneObbligatoriaEHS() {
   const { can } = useAuth()
   const modificabile = can(['admin', 'admin_ehs'])
-  const [tab, setTab] = useState('matrice')
+  const [tab, setTab] = useState('completamento')
   const [matrice, setMatrice] = useState(null)
 
   useEffect(() => {
@@ -373,6 +374,9 @@ export default function FormazioneObbligatoriaEHS() {
     <div className="ehs-section">
       <h1 className="page-title">Formazione obbligatoria EHS</h1>
       <div className="ehs-tabs" style={{ marginBottom: 16 }}>
+        <button className={`ehs-tab ${tab === 'completamento' ? 'active' : ''}`} onClick={() => setTab('completamento')}>
+          📈 Completamento
+        </button>
         <button className={`ehs-tab ${tab === 'matrice' ? 'active' : ''}`} onClick={() => setTab('matrice')}>
           📋 Cosa deve fare chi
         </button>
@@ -381,7 +385,8 @@ export default function FormazioneObbligatoriaEHS() {
         </button>
       </div>
 
-      {!matrice && <div className="loading-center"><div className="spinner" /></div>}
+      {tab === 'completamento' && <EHSCompletamentoObblighi />}
+      {!matrice && tab !== 'completamento' && <div className="loading-center"><div className="spinner" /></div>}
       {matrice && tab === 'matrice' && <Matrice matrice={matrice} modificabile={modificabile} onCambia={cambiaCella} />}
       {matrice && tab === 'persone' && <PersoneRegistro matrice={matrice} />}
     </div>
