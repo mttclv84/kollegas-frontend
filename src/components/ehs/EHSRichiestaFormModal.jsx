@@ -34,7 +34,7 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
   const setF = (key, val) => setForm(f => ({ ...f, [key]: val }))
 
   useEffect(() => {
-    api.get('/ehs/corsi/').then(({ data }) => {
+    api.get('/ehs/corsi/', { params: { richiedibili: 1 } }).then(({ data }) => {
       const attivi = data.filter(c => c.attivo)
       setCorsi(attivi)
       if (attivi.length === 1) setForm(f => ({ ...f, corso: attivi[0].id }))

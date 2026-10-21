@@ -24,6 +24,7 @@ import IscrizioniStore from './pages/IscrizioniStore'
 import EHS from './pages/EHS'
 import GestioneFornitoriEHS from './pages/GestioneFornitoriEHS'
 import GestioneCorsiEHS from './pages/GestioneCorsiEHS'
+import FormazioneObbligatoriaEHS from './pages/FormazioneObbligatoriaEHS'
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth()
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
       { path: 'ehs', element: <ProtectedRoute roles={['admin','admin_ehs','ho','store','base','fornitore']}><EHS /></ProtectedRoute> },
       { path: 'ehs/fornitori', element: <ProtectedRoute roles={['admin','admin_ehs','ho']}><GestioneFornitoriEHS /></ProtectedRoute> },
       { path: 'ehs/corsi', element: <ProtectedRoute roles={['admin','admin_ehs','ho']}><GestioneCorsiEHS /></ProtectedRoute> },
+      { path: 'ehs/obblighi', element: <ProtectedRoute roles={['admin','admin_ehs','ho','area','store']}><FormazioneObbligatoriaEHS /></ProtectedRoute> },
       { path: 'corsi', element: <ElencoCorsi /> },
       { path: 'iscrizioni', element: <GestionePartecipanti /> },
       { path: 'account', element: <ProtectedRoute roles={['admin','ho','store']}><GestioneAccount /></ProtectedRoute> },

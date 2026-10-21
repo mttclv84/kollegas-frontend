@@ -7,7 +7,7 @@ import Modal from '../components/ui/Modal'
 import './EHS.css'
 
 const EMPTY_FORM = {
-  nome: '', durata_ore: '', scadenza_giorni: '', descrizione: '', offerte: [],
+  nome: '', durata_ore: '', scadenza_giorni: '', ore_aggiornamento: '', descrizione: '', offerte: [],
 }
 const NUOVA_OFFERTA = { fornitore: '', tutti_negozi: true, negozi: [] }
 
@@ -112,7 +112,8 @@ export default function GestioneCorsiEHS() {
   const openEdit = (c) => {
     setForm({
       nome: c.nome, durata_ore: c.durata_ore,
-      scadenza_giorni: c.scadenza_giorni ?? '', descrizione: c.descrizione || '',
+      scadenza_giorni: c.scadenza_giorni ?? '', ore_aggiornamento: c.ore_aggiornamento ?? '',
+      descrizione: c.descrizione || '',
       offerte: c.offerte.length
         ? c.offerte.map(o => ({ fornitore: o.fornitore, tutti_negozi: o.tutti_negozi, negozi: o.negozi }))
         : [{ ...NUOVA_OFFERTA }],
@@ -130,14 +131,14 @@ export default function GestioneCorsiEHS() {
   const handleSave = async (e) => {
     e.preventDefault()
     const offerte = form.offerte.filter(o => o.fornitore)
-    if (offerte.length === 0) { toast.error('Abbina almeno un fornitore al corso.'); return }
     const senzaNegozi = offerte.find(o => !o.tutti_negozi && o.negozi.length === 0)
     if (senzaNegozi) { toast.error('Seleziona almeno un negozio per ogni fornitore non abilitato a tutti i negozi.'); return }
     setSaving(true)
     try {
       const payload = {
         nome: form.nome, durata_ore: form.durata_ore,
-        scadenza_giorni: form.scadenza_giorni || null, descrizione: form.descrizione,
+        scadenza_giorni: form.scadenza_giorni || null, ore_aggiornamento: form.ore_aggiornamento || null,
+        descrizione: form.descrizione,
         offerte: offerte.map(o => ({
           fornitore: Number(o.fornitore), tutti_negozi: o.tutti_negozi, negozi: o.tutti_negozi ? [] : o.negozi,
         })),
@@ -254,10 +255,11 @@ export default function GestioneCorsiEHS() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Fornitori che erogano il corso *</label>
+              <label className="form-label">Fornitori che erogano il corso</label>
               <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>
                 Ogni fornitore può servire tutti i negozi o solo alcuni. Gli store vedranno solo i fornitori
                 abilitati per il proprio negozio; gli altri sono richiedibili con una richiesta eccezionale.
+                Senza fornitori il corso non compare in "Nuova richiesta" (es. moduli e-learning da registrare a mano).
               </div>
               {form.offerte.map((o, i) => (
                 <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: 8, padding: 10, marginBottom: 8 }}>
@@ -300,13 +302,18 @@ export default function GestioneCorsiEHS() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
               <div className="form-group">
                 <label className="form-label">Durata (ore) *</label>
-                <input type="number" min="0" step="0.5" className="form-control" value={form.durata_ore}
+                <input type="number" min="0" step="0.25" className="form-control" value={form.durata_ore}
                   onChange={e => setF('durata_ore', e.target.value)} required />
               </div>
               <div className="form-group">
                 <label className="form-label">Scadenza (giorni)</label>
                 <input type="number" min="0" className="form-control" placeholder="Vuoto = nessuna scadenza"
                   value={form.scadenza_giorni} onChange={e => setF('scadenza_giorni', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Ore corso di aggiornamento</label>
+                <input type="number" min="0" step="0.25" className="form-control" placeholder="Vuoto = nessun aggiornamento"
+                  value={form.ore_aggiornamento} onChange={e => setF('ore_aggiornamento', e.target.value)} />
               </div>
             </div>
             <div className="form-group">

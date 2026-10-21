@@ -16,6 +16,7 @@ const NAV_ITEMS = [
       { to: '/ehs', label: 'EHS Calendar & Richieste', icon: '📅', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'], lockedRoles: ['area'] },
       { to: '/ehs/fornitori', label: 'Gestione Fornitori EHS', icon: '🏢', roles: ['admin', 'admin_ehs', 'ho'] },
       { to: '/ehs/corsi', label: 'Gestione Corsi EHS', icon: '📚', roles: ['admin', 'admin_ehs', 'ho'] },
+      { to: '/ehs/obblighi', label: 'Formazione obbligatoria', icon: '🎓', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store'] },
     ],
   },
   { divider: true },
