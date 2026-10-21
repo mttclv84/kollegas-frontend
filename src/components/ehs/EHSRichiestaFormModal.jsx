@@ -8,7 +8,9 @@ import '../calendario/EventoModal.css'
 
 const fornitoreLabel = (f) => `${f.fornitore_ragione_sociale}${f.nome_completo ? ` — ${f.nome_completo}` : ''}`
 
-export default function EHSRichiestaFormModal({ onClose, onCreated }) {
+// `iniziale` precompila il modulo (es. 'Richiedi aula' dal Completamento formazione obbligatoria):
+// { corso, negozio, partecipanti_previsti, note }.
+export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {} }) {
   const { user, can } = useAuth()
   const isAdminHO = can(['admin', 'admin_ehs', 'ho'])
 
@@ -16,16 +18,16 @@ export default function EHSRichiestaFormModal({ onClose, onCreated }) {
   const [stores, setStores] = useState([])
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
-    corso: '',
-    negozio: user?.store_id || '',
+    corso: iniziale.corso || '',
+    negozio: iniziale.negozio || user?.store_id || '',
     modalita: 'PRESENZA',
     fornitore: '',
     eccezionale: false,
     motivazione_eccezione: '',
     contatto_negozio_nome: '',
-    partecipanti_previsti: '',
+    partecipanti_previsti: iniziale.partecipanti_previsti || '',
     data_suggerita_store: '',
-    note: '',
+    note: iniziale.note || '',
   })
   // Fornitori che erogano il corso per il negozio ('idonei') e quelli richiedibili
   // solo con una richiesta eccezionale da approvare dall'EHS Admin.

@@ -68,6 +68,16 @@ export default function EHS() {
   }, [isApprovatore])
   useEffect(() => { fetchEccezioni() }, [fetchEccezioni])
 
+  // Contatore sulla tab Scadenze per l'EHS Admin: formazioni che scadono entro 45 giorni
+  // in tutti i negozi e non hanno ancora un rinnovo pianificato.
+  const [scadenzeDaPianificare, setScadenzeDaPianificare] = useState(0)
+  useEffect(() => {
+    if (!isApprovatore) return
+    api.get('/ehs/scadenze/')
+      .then(({ data }) => setScadenzeDaPianificare(data.filter(s => s.giorni_mancanti >= 0 && !s.rinnovo_pianificato).length))
+      .catch(() => {})
+  }, [isApprovatore])
+
   const canVedereScadenze = can(['store', 'admin', 'admin_ehs', 'ho'])
 
   const handleTabClick = (nuovaTab) => {
@@ -164,8 +174,16 @@ export default function EHS() {
             <button
               className={`ehs-tab ${tab === 'scadenze' ? 'active' : ''}`}
               onClick={() => handleTabClick('scadenze')}
+              style={{ position: 'relative' }}
             >
               ⏰ Scadenze
+              {scadenzeDaPianificare > 0 && (
+                <span title="Scadenze entro 45 giorni senza rinnovo pianificato" style={{
+                  position: 'absolute', top: -8, right: -8, minWidth: 18, height: 18, padding: '0 5px',
+                  borderRadius: 9, background: '#EF4444', color: '#fff', fontSize: 11, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff',
+                }}>{scadenzeDaPianificare}</span>
+              )}
             </button>
           )}
         </div>

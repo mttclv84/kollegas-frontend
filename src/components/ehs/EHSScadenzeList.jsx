@@ -116,7 +116,7 @@ export default function EHSScadenzeList() {
                 {visibili.map(s => {
                   const stile = countdownStile(s.giorni_mancanti)
                   return (
-                    <tr key={s.partecipante_id}>
+                    <tr key={s.formazione_id}>
                       <td>
                         <span style={{
                           background: stile.bg, color: stile.text, borderRadius: 4,

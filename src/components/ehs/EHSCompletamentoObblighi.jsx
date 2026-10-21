@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import Modal from '../ui/Modal'
+import EHSRichiestaFormModal from './EHSRichiestaFormModal'
 
 // Stesse soglie colore della pagina Completamento GWU.
 const coloreDa = (pct) => pct == null ? '#9CA3AF' : pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444'
@@ -89,8 +90,17 @@ function Legenda() {
   )
 }
 
+// Chi va messo in aula per un corso: chi non l'ha mai fatto, l'ha scaduto o lo ha in scadenza.
+const daMettereInAula = (dati, corsoId) => dati.persone.filter(p => {
+  const s = p.stati[corsoId]
+  return s && !s.facoltativo && ['mancante', 'scaduta', 'in_scadenza'].includes(s.stato)
+})
+
 export function DettaglioNegozio({ negozioId }) {
+  const { can } = useAuth()
+  const puoRichiedere = can(['store', 'admin', 'admin_ehs', 'ho'])
   const [dati, setDati] = useState(null)
+  const [richiesta, setRichiesta] = useState(null) // valori iniziali di 'Nuova richiesta'
 
   useEffect(() => {
     setDati(null)
@@ -124,15 +134,28 @@ export function DettaglioNegozio({ negozioId }) {
           const r = dati.riepilogo[c.id]
           if (!r.dovuti) return null
           const n = daFormare(r)
+          const inAula = daMettereInAula(dati, c.id)
           return (
             <div key={c.id} style={{
               borderRadius: 8, padding: '8px 12px', fontSize: 13, background: sfondoDa(r.percentuale),
-              border: `1px solid ${coloreDa(r.percentuale)}`,
+              border: `1px solid ${coloreDa(r.percentuale)}`, display: 'flex', alignItems: 'center', gap: 8,
             }}>
-              <strong>{c.nome}</strong>{' '}
-              {n > 0 ? <span style={{ color: '#991B1B' }}>— {n} da formare</span> : <span style={{ color: '#065F46' }}>— tutti in regola</span>}
-              {r.in_scadenza > 0 && <span style={{ color: '#92400E' }}> · {r.in_scadenza} in scadenza</span>}
-              {r.iscritta > 0 && <span style={{ color: '#1D4ED8' }}> · {r.iscritta} iscritti</span>}
+              <span>
+                <strong>{c.nome}</strong>{' '}
+                {n > 0 ? <span style={{ color: '#991B1B' }}>— {n} da formare</span> : <span style={{ color: '#065F46' }}>— tutti in regola</span>}
+                {r.in_scadenza > 0 && <span style={{ color: '#92400E' }}> · {r.in_scadenza} in scadenza</span>}
+                {r.iscritta > 0 && <span style={{ color: '#1D4ED8' }}> · {r.iscritta} iscritti</span>}
+              </span>
+              {puoRichiedere && c.richiedibile && inAula.length > 0 && (
+                <button type="button" className="btn btn-primary btn-sm" style={{ padding: '2px 10px', fontSize: 12 }}
+                  title={`Apre 'Nuova richiesta' per ${inAula.length} persone`}
+                  onClick={() => setRichiesta({
+                    corso: c.id, negozio: negozioId, partecipanti_previsti: inAula.length,
+                    note: `Da formare: ${inAula.map(p => p.nome_completo).join(', ')}`,
+                  })}>
+                  Richiedi aula
+                </button>
+              )}
             </div>
           )
         })}
@@ -164,6 +187,11 @@ export function DettaglioNegozio({ negozioId }) {
           </tbody>
         </table>
       </div>
+
+      {richiesta && (
+        <EHSRichiestaFormModal iniziale={richiesta} onClose={() => setRichiesta(null)}
+          onCreated={() => setRichiesta(null)} />
+      )}
     </div>
   )
 }
