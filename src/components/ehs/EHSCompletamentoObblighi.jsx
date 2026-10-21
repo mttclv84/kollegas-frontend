@@ -96,7 +96,7 @@ const daMettereInAula = (dati, corsoId) => dati.persone.filter(p => {
   return s && !s.facoltativo && ['mancante', 'scaduta', 'in_scadenza'].includes(s.stato)
 })
 
-export function DettaglioNegozio({ negozioId }) {
+export function DettaglioNegozio({ negozioId, conAnelli = false }) {
   const { can } = useAuth()
   const puoRichiedere = can(['store', 'admin', 'admin_ehs', 'ho'])
   const [dati, setDati] = useState(null)
@@ -128,6 +128,15 @@ export function DettaglioNegozio({ negozioId }) {
 
   return (
     <div>
+      {conAnelli && (
+        <>
+          <p style={{ fontSize: 12, color: '#6B7280', marginTop: 0 }}>
+            {dati.negozio.nome} · % = persone in regola sul totale di chi ha l'obbligo (Retail Assistant esclusi) ·
+            tratteggio = iscritti a un'aula confermata · ⭐ = facoltativa fatta in anticipo, non conteggiata nella %.
+          </p>
+          <GrigliaCorsi corsi={dati.corsi} riepilogo={dati.riepilogo} />
+        </>
+      )}
       {/* Cosa fare, in una riga per corso: è la prima cosa che il negozio deve leggere. */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         {dati.corsi.map(c => {
@@ -267,7 +276,8 @@ export default function EHSCompletamentoObblighi() {
     api.get('/ehs/completamento/').then(({ data }) => setDati(data))
   }, [isStore])
 
-  if (isStore) return <DettaglioNegozio negozioId={user.store_id} />
+  // Lo store vede la stessa vista, ma solo del proprio negozio (il backend rifiuta gli altri).
+  if (isStore) return <DettaglioNegozio negozioId={user.store_id} conAnelli />
   if (!dati) return <div className="loading-center"><div className="spinner" /></div>
 
   const riepilogo = area ? dati.aree.find(a => a.numero === Number(area))?.corsi || {} : dati.italia
