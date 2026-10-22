@@ -7,8 +7,7 @@ import EventoBadge from '../components/calendario/EventoBadge'
 import EHSSessioneModal from '../components/ehs/EHSSessioneModal'
 import EHSRichiesteList from '../components/ehs/EHSRichiesteList'
 import EHSRichiestaFormModal from '../components/ehs/EHSRichiestaFormModal'
-import EHSRegistriList from '../components/ehs/EHSRegistriList'
-import EHSScadenzeList from '../components/ehs/EHSScadenzeList'
+import EHSCercaFormazioni from '../components/ehs/EHSCercaFormazioni'
 import './Calendario.css'
 import './EHS.css'
 
@@ -67,18 +66,6 @@ export default function EHS() {
       .then(({ data }) => setEccezioniInAttesa(data.length)).catch(() => {})
   }, [isApprovatore])
   useEffect(() => { fetchEccezioni() }, [fetchEccezioni])
-
-  // Contatore sulla tab Scadenze per l'EHS Admin: formazioni che scadono entro 45 giorni
-  // in tutti i negozi e non hanno ancora un rinnovo pianificato.
-  const [scadenzeDaPianificare, setScadenzeDaPianificare] = useState(0)
-  useEffect(() => {
-    if (!isApprovatore) return
-    api.get('/ehs/scadenze/')
-      .then(({ data }) => setScadenzeDaPianificare(data.filter(s => s.giorni_mancanti >= 0 && !s.rinnovo_pianificato).length))
-      .catch(() => {})
-  }, [isApprovatore])
-
-  const canVedereScadenze = can(['store', 'admin', 'admin_ehs', 'ho'])
 
   const handleTabClick = (nuovaTab) => {
     setTab(nuovaTab)
@@ -164,28 +151,6 @@ export default function EHS() {
               }} />
             )}
           </button>
-          <button
-            className={`ehs-tab ${tab === 'registri' ? 'active' : ''}`}
-            onClick={() => handleTabClick('registri')}
-          >
-            📁 Registri
-          </button>
-          {canVedereScadenze && (
-            <button
-              className={`ehs-tab ${tab === 'scadenze' ? 'active' : ''}`}
-              onClick={() => handleTabClick('scadenze')}
-              style={{ position: 'relative' }}
-            >
-              ⏰ Scadenze
-              {scadenzeDaPianificare > 0 && (
-                <span title="Scadenze entro 45 giorni senza rinnovo pianificato" style={{
-                  position: 'absolute', top: -8, right: -8, minWidth: 18, height: 18, padding: '0 5px',
-                  borderRadius: 9, background: '#EF4444', color: '#fff', fontSize: 11, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff',
-                }}>{scadenzeDaPianificare}</span>
-              )}
-            </button>
-          )}
         </div>
         {canCreaRichiesta && (
           <button className="btn btn-primary btn-sm" onClick={() => setShowRichiestaForm(true)}>
@@ -198,6 +163,7 @@ export default function EHS() {
         <div className="calendario-page">
           <div className="cal-main">
             <h2 className="ehs-cal-title">CALENDARIO EHS</h2>
+            <EHSCercaFormazioni onApri={setSelectedSessioneId} />
             <div className="cal-header">
               <button className="btn btn-ghost btn-sm" onClick={() => setCurrentDate(d => subMonths(d, 1))}>
                 ← Precedente
@@ -239,12 +205,8 @@ export default function EHS() {
             </div>
           </aside>
         </div>
-      ) : tab === 'richieste' ? (
-        <EHSRichiesteList ref={richiesteListRef} onSelect={setSelectedSessioneId} />
-      ) : tab === 'scadenze' ? (
-        <EHSScadenzeList />
       ) : (
-        <EHSRegistriList />
+        <EHSRichiesteList ref={richiesteListRef} onSelect={setSelectedSessioneId} />
       )}
 
       {selectedSessioneId && (

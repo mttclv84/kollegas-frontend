@@ -291,6 +291,37 @@ function EHSNotificaConfermaStorePopup({ notifica, onOk }) {
   )
 }
 
+// Minimo partecipanti non raggiunto (avviso 4 giorni prima) o formazione cancellata in automatico.
+function EHSAvvisoPopup({ avviso, onOk }) {
+  if (!avviso) return null
+  const annullata = avviso.tipo === 'annullata_minimo'
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      zIndex: 2700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 14, padding: 32, maxWidth: 440, width: '92%',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.4)', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>{annullata ? '❌' : '⚠️'}</div>
+        <h2 style={{ margin: '0 0 16px', fontSize: 18, color: '#991B1B' }}>
+          {annullata ? 'Formazione EHS cancellata' : 'Minimo partecipanti non raggiunto'}
+        </h2>
+        <div style={{
+          background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: 10,
+          padding: '14px 18px', marginBottom: 24, textAlign: 'left', fontSize: 14, color: '#374151',
+        }}>
+          {avviso.testo}
+        </div>
+        <button className="btn btn-primary" style={{ minWidth: 140, fontSize: 15 }} onClick={onOk}>
+          OK, ho capito
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function EHSNotificaRichiestaPopup({ notifica, onOk }) {
   if (!notifica) return null
   return (
@@ -501,8 +532,28 @@ export default function AppLayout() {
     setNotificheConfermaStoreEHS(prev => prev.slice(1))
   }
 
+  const [avvisiEHS, setAvvisiEHS] = useState([])
+
+  useEffect(() => {
+    if (!user || !can(['store', 'fornitore', 'admin_ehs'])) return
+    const fetch = () => {
+      api.get('/ehs/avvisi/').then(({ data }) => setAvvisiEHS(data)).catch(() => {})
+    }
+    fetch()
+    const timer = setInterval(fetch, 3600000)
+    return () => clearInterval(timer)
+  }, [user])
+
+  const handleOkAvvisoEHS = async () => {
+    const avviso = avvisiEHS[0]
+    if (!avviso) return
+    try { await api.patch(`/ehs/avvisi/${avviso.id}/`) } catch {}
+    setAvvisiEHS(prev => prev.slice(1))
+  }
+
   return (
     <div className={`app-layout ${collapsed ? 'sidebar-collapsed' : ''}`}>
+      <EHSAvvisoPopup avviso={avvisiEHS[0] || null} onOk={handleOkAvvisoEHS} />
       <NotifichePopup notifiche={notifiche} onClose={handleCloseNotifiche} />
       <NotificaEventoPopup
         notifica={notificheEvento[0] || null}

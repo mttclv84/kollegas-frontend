@@ -54,7 +54,9 @@ export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {
         setFornitori(data)
         setForm(f => ({
           ...f,
-          fornitore: data.idonei.length === 1 ? data.idonei[0].id : '',
+          // Proposto il fornitore principale (i secondari vanno validati dall'EHS Admin).
+          fornitore: (data.idonei.filter(x => !x.secondario).length === 1 ? data.idonei.find(x => !x.secondario)
+            : data.idonei.length === 1 ? data.idonei[0] : { id: '' }).id,
           // Nessun fornitore nel perimetro: l'unica strada è la richiesta eccezionale.
           eccezionale: data.idonei.length === 0 && data.eccezionali.length > 0,
         }))
@@ -66,13 +68,14 @@ export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {
   const idonei = fornitori?.idonei || []
   const eccezionali = fornitori?.eccezionali || []
   const nessunFornitore = fornitori && idonei.length === 0 && eccezionali.length === 0
+  const principali = idonei.filter(f => !f.secondario)
   const elencoFornitori = form.eccezionale ? eccezionali : idonei
 
   const toggleEccezionale = (val) => {
     setForm(f => ({
       ...f,
       eccezionale: val,
-      fornitore: !val && idonei.length === 1 ? idonei[0].id : '',
+      fornitore: !val && principali.length === 1 ? principali[0].id : !val && idonei.length === 1 ? idonei[0].id : '',
     }))
   }
 
@@ -194,7 +197,11 @@ export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {
                   <select className="form-control" value={form.fornitore}
                     onChange={e => setF('fornitore', e.target.value)} required>
                     <option value="">Seleziona fornitore...</option>
-                    {elencoFornitori.map(f => <option key={f.id} value={f.id}>{fornitoreLabel(f)}</option>)}
+                    {elencoFornitori.map(f => (
+                      <option key={f.id} value={f.id}>
+                        {fornitoreLabel(f)}{f.secondario ? ' (secondario — da validare EHS Admin)' : ''}
+                      </option>
+                    ))}
                   </select>
                 )}
                 {idonei.length > 0 && eccezionali.length > 0 && (

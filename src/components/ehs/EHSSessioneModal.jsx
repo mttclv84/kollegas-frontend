@@ -8,7 +8,7 @@ import EHSDataOraPicker from './EHSDataOraPicker'
 import '../calendario/EventoModal.css'
 
 const STATO_LABELS = {
-  IN_APPROVAZIONE: 'Richiesta eccezionale — in approvazione EHS',
+  IN_APPROVAZIONE: 'In validazione EHS Admin',
   RICHIESTA_INVIATA: 'Richiesta inviata',
   NON_DISPONIBILE: 'Fornitore non disponibile',
   DATA_PROPOSTA: 'Data proposta',
@@ -20,6 +20,7 @@ const STATO_LABELS = {
 }
 
 const GIORNI_LIMITE_CANCELLAZIONE = 7
+const PARTECIPANTI_MINIMI = 3
 
 const partecipanteLabel = (p) => `${p.utente_nome}${p.utente_store_nome ? ` (${p.utente_store_nome})` : ''}`
 const fornitoreLabel = (f) => `${f.fornitore_ragione_sociale}${f.nome_completo ? ` — ${f.nome_completo}` : ''}`
@@ -37,6 +38,8 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const [docenteNome, setDocenteNome] = useState('')
   const [docenteTelefono, setDocenteTelefono] = useState('')
   const [linkOnline, setLinkOnline] = useState('')
+  const [partMin, setPartMin] = useState(String(PARTECIPANTI_MINIMI))
+  const [partMax, setPartMax] = useState('')
   const [modificaLink, setModificaLink] = useState(false)
 
   // Riassegnazione / richiesta eccezionale (store), non disponibilità (fornitore),
@@ -177,11 +180,17 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
     if (!docenteNome.trim() || !docenteTelefono.trim()) { toast.error('Nome e telefono del docente sono obbligatori.'); return }
     const link = linkOnline.trim() || sessione.link_online
     if (isOnline && !link) { toast.error('Inserisci il link alla call.'); return }
+    const minimo = Number(partMin), massimo = Number(partMax)
+    if (!partMin || !partMax) { toast.error('Indica il numero minimo e massimo di partecipanti.'); return }
+    if (minimo < PARTECIPANTI_MINIMI) { toast.error(`Il minimo non può essere inferiore a ${PARTECIPANTI_MINIMI}.`); return }
+    if (massimo < minimo) { toast.error('Il massimo non può essere inferiore al minimo.'); return }
     run(async () => {
       await api.patch(`/ehs/sessioni/${sessioneId}/proponi-data/`, {
         data_proposta: arrotondaMezzora(nuovaData).toISOString(),
         docente_nome: docenteNome.trim(),
         docente_telefono: docenteTelefono.trim(),
+        partecipanti_min: minimo,
+        partecipanti_max: massimo,
         ...(isOnline ? { link_online: link } : {}),
       })
       toast.success('Proposta inviata.')
@@ -292,6 +301,16 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
     <input className="form-control" placeholder="Link alla call (Teams, Zoom...) *" value={linkOnline}
       onChange={e => setLinkOnline(e.target.value)} style={{ marginBottom: 8 }} />
   )
+  const campiPartecipanti = (
+    <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', fontSize: 13 }}>
+      <span>Partecipanti</span>
+      <input type="number" className="form-control" style={{ maxWidth: 110 }} min={PARTECIPANTI_MINIMI}
+        placeholder="Minimo *" title={`Minimo (almeno ${PARTECIPANTI_MINIMI})`} value={partMin}
+        onChange={e => setPartMin(e.target.value)} />
+      <input type="number" className="form-control" style={{ maxWidth: 110 }} min={partMin || PARTECIPANTI_MINIMI}
+        placeholder="Massimo *" title="Massimo" value={partMax} onChange={e => setPartMax(e.target.value)} />
+    </div>
+  )
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -319,6 +338,12 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                 </div>
               )}
               <div className="detail-row"><span>Fornitore</span><strong>{sessione.fornitore_nome || '—'}</strong></div>
+              {sessione.fornitore_secondario && (
+                <div className="detail-row">
+                  <span>Fornitore secondario</span>
+                  <strong>{sessione.fornitore_richiesto_nome || '—'} — da validare dall'EHS Admin</strong>
+                </div>
+              )}
               {sessione.eccezionale && (
                 <div className="detail-row">
                   <span>Richiesta eccezionale</span>
@@ -335,13 +360,30 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               <div className="detail-row"><span>Data confermata</span><strong>{sessione.data_confermata ? new Date(sessione.data_confermata).toLocaleString('it-IT') : '—'}</strong></div>
               <div className="detail-row"><span>Docente</span><strong>{sessione.docente_nome || '—'} {sessione.docente_telefono ? `— ${sessione.docente_telefono}` : ''}</strong></div>
               <div className="detail-row"><span>Contatto negozio</span><strong>{sessione.contatto_negozio_nome}</strong></div>
-              <div className="detail-row"><span>Partecipanti iscritti</span><strong>{sessione.partecipanti_count}</strong></div>
+              <div className="detail-row">
+                <span>Partecipanti iscritti</span>
+                <strong style={{ color: sessione.sotto_minimo ? '#DC2626' : undefined }}>
+                  {sessione.partecipanti_count}
+                  <span style={{ fontWeight: 400, color: '#6B7280' }}>
+                    {' '}(min {sessione.minimo_effettivo}{sessione.partecipanti_max ? ` · max ${sessione.partecipanti_max}` : ''})
+                  </span>
+                </strong>
+              </div>
             </div>
+
+            {sessione.sotto_minimo && (
+              <div style={boxInfo('#FEE2E2', '#991B1B')}>
+                ⚠️ Iscritti sotto il minimo di {sessione.minimo_effettivo}: 4 giorni prima della formazione parte l'avviso
+                e, se il minimo non viene raggiunto entro 24 ore, la formazione viene cancellata automaticamente.
+              </div>
+            )}
 
             {/* --- Richiesta eccezionale: decisione EHS Admin --- */}
             {sessione.stato === 'IN_APPROVAZIONE' && isApprovatore && (
               <div className="form-group" style={{ marginTop: 12 }}>
-                <label className="form-label">Approva la richiesta eccezionale</label>
+                <label className="form-label">
+                  {sessione.fornitore_secondario ? 'Valida il fornitore secondario' : 'Approva la richiesta eccezionale'}
+                </label>
                 <textarea className="form-control" rows="2" placeholder="Nota (obbligatoria in caso di rifiuto)"
                   value={notaDecisione} onChange={e => setNotaDecisione(e.target.value)} style={{ marginBottom: 8 }} />
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -376,7 +418,9 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                         <select className="form-control" value={fornitoreScelto} onChange={e => setFornitoreScelto(e.target.value)}>
                           <option value="">Seleziona fornitore...</option>
                           {fornitori.idonei.filter(f => f.id !== sessione.fornitore).map(f => (
-                            <option key={f.id} value={f.id}>{fornitoreLabel(f)}</option>
+                            <option key={f.id} value={f.id}>
+                              {fornitoreLabel(f)}{f.secondario ? ' (secondario — da validare EHS Admin)' : ''}
+                            </option>
                           ))}
                         </select>
                         <button className="btn btn-primary btn-sm" disabled={busy} onClick={handleAssegnaFornitore}>Assegna</button>
@@ -419,6 +463,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                   <input className="form-control" placeholder="Telefono docente *" value={docenteTelefono}
                     onChange={e => setDocenteTelefono(e.target.value)} />
                 </div>
+                {campiPartecipanti}
                 {isOnline && campoLinkOnline}
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn btn-success btn-sm" disabled={busy} onClick={handleProponiData}>Invia proposta</button>
@@ -462,6 +507,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                   <input className="form-control" placeholder="Telefono docente *" value={docenteTelefono}
                     onChange={e => setDocenteTelefono(e.target.value)} />
                 </div>
+                {campiPartecipanti}
                 <button className="btn btn-secondary btn-sm" disabled={busy} onClick={handleProponiData}>Proponi nuova data</button>
               </div>
             )}

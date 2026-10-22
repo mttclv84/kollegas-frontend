@@ -182,7 +182,7 @@ export default function GestioneCorsiEHS() {
   }
 
   const descriviOfferte = (c) => c.offerte.length === 0 ? '— nessuno —' : c.offerte.map(o =>
-    `${o.fornitore_nome} (${o.tutti_negozi ? 'tutti i negozi' : `${o.negozi.length} negozi`})`
+    `${o.fornitore_nome}${o.secondario ? ' [secondario]' : ''} (${o.tutti_negozi ? 'tutti i negozi' : `${o.negozi.length} negozi`})`
   ).join(', ')
 
   const columns = [
@@ -263,6 +263,9 @@ export default function GestioneCorsiEHS() {
               </div>
               {form.offerte.map((o, i) => (
                 <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6, color: i === 0 ? '#065F46' : '#92400E' }}>
+                    {i === 0 ? 'Fornitore principale' : 'Fornitore secondario — se scelto dallo store va validato dall\'EHS Admin'}
+                  </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <select className="form-control" value={o.fornitore}
                       onChange={e => setOfferta(i, 'fornitore', e.target.value)}>

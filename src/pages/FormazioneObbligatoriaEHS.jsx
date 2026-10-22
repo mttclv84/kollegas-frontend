@@ -4,6 +4,8 @@ import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import Modal from '../components/ui/Modal'
 import EHSCompletamentoObblighi from '../components/ehs/EHSCompletamentoObblighi'
+import EHSRegistriList from '../components/ehs/EHSRegistriList'
+import EHSScadenzeList from '../components/ehs/EHSScadenzeList'
 import './EHS.css'
 import '../components/calendario/EventoModal.css'
 
@@ -350,15 +352,36 @@ function PersoneRegistro({ matrice }) {
   )
 }
 
+// Schede della pagina e livelli che le vedono: "Cosa deve fare chi" è per tutti,
+// modificabile solo da Admin ed EHS Admin.
+const TABS = [
+  { key: 'completamento', label: '📈 Completamento', ruoli: ['admin', 'admin_ehs', 'ho', 'area', 'store'] },
+  { key: 'matrice', label: '📋 Cosa deve fare chi', ruoli: null },
+  { key: 'persone', label: '👥 Persone e registro', ruoli: ['admin', 'admin_ehs', 'ho', 'area', 'store'] },
+  { key: 'scadenze', label: '⏰ Scadenze', ruoli: ['admin', 'admin_ehs', 'ho', 'store'] },
+  { key: 'registri', label: '📁 Registri', ruoli: ['admin', 'admin_ehs', 'ho', 'store', 'fornitore'] },
+]
+
 export default function FormazioneObbligatoriaEHS() {
   const { can } = useAuth()
   const modificabile = can(['admin', 'admin_ehs'])
-  const [tab, setTab] = useState('completamento')
+  const tabs = TABS.filter(t => !t.ruoli || can(t.ruoli))
+  const [tab, setTab] = useState(tabs[0].key)
   const [matrice, setMatrice] = useState(null)
 
   useEffect(() => {
     api.get('/ehs/matrice/').then(({ data }) => setMatrice(data))
   }, [])
+
+  // Contatore sulla scheda Scadenze per l'EHS Admin: formazioni che scadono entro 45 giorni
+  // in tutti i negozi e non hanno ancora un rinnovo pianificato.
+  const [scadenzeDaPianificare, setScadenzeDaPianificare] = useState(0)
+  useEffect(() => {
+    if (!modificabile) return
+    api.get('/ehs/scadenze/')
+      .then(({ data }) => setScadenzeDaPianificare(data.filter(s => s.giorni_mancanti >= 0 && !s.rinnovo_pianificato).length))
+      .catch(() => {})
+  }, [modificabile])
 
   const cambiaCella = async (corso, riga, stato) => {
     try {
@@ -374,19 +397,25 @@ export default function FormazioneObbligatoriaEHS() {
     <div className="ehs-section">
       <h1 className="page-title">Formazione obbligatoria EHS</h1>
       <div className="ehs-tabs" style={{ marginBottom: 16 }}>
-        <button className={`ehs-tab ${tab === 'completamento' ? 'active' : ''}`} onClick={() => setTab('completamento')}>
-          📈 Completamento
-        </button>
-        <button className={`ehs-tab ${tab === 'matrice' ? 'active' : ''}`} onClick={() => setTab('matrice')}>
-          📋 Cosa deve fare chi
-        </button>
-        <button className={`ehs-tab ${tab === 'persone' ? 'active' : ''}`} onClick={() => setTab('persone')}>
-          👥 Persone e registro
-        </button>
+        {tabs.map(t => (
+          <button key={t.key} className={`ehs-tab ${tab === t.key ? 'active' : ''}`} onClick={() => setTab(t.key)}
+            style={{ position: 'relative' }}>
+            {t.label}
+            {t.key === 'scadenze' && scadenzeDaPianificare > 0 && (
+              <span title="Scadenze entro 45 giorni senza rinnovo pianificato" style={{
+                position: 'absolute', top: -8, right: -8, minWidth: 18, height: 18, padding: '0 5px',
+                borderRadius: 9, background: '#EF4444', color: '#fff', fontSize: 11, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff',
+              }}>{scadenzeDaPianificare}</span>
+            )}
+          </button>
+        ))}
       </div>
 
       {tab === 'completamento' && <EHSCompletamentoObblighi />}
-      {!matrice && tab !== 'completamento' && <div className="loading-center"><div className="spinner" /></div>}
+      {tab === 'scadenze' && <EHSScadenzeList />}
+      {tab === 'registri' && <EHSRegistriList />}
+      {!matrice && ['matrice', 'persone'].includes(tab) && <div className="loading-center"><div className="spinner" /></div>}
       {matrice && tab === 'matrice' && <Matrice matrice={matrice} modificabile={modificabile} onCambia={cambiaCella} />}
       {matrice && tab === 'persone' && <PersoneRegistro matrice={matrice} />}
     </div>

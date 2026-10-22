@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
+import EHSSessioneModal from '../components/ehs/EHSSessioneModal'
 
 const STATO_CFG = {
   pending:   { label: 'In attesa',  bg: '#DBEAFE', color: '#1E40AF' },
@@ -19,9 +20,57 @@ function StatoBadge({ stato }) {
   )
 }
 
-export default function RichiesteModifica() {
+// Fornitori secondari ed eccezionali in attesa di validazione: si decidono dal dettaglio della richiesta.
+function FornitoriDaValidare() {
+  const [sessioni, setSessioni] = useState([])
+  const [aperta, setAperta] = useState(null)
+  const carica = () => {
+    api.get('/ehs/sessioni/', { params: { stato: 'IN_APPROVAZIONE' } }).then(({ data }) => setSessioni(data)).catch(() => {})
+  }
+  useEffect(carica, [])
+
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card-header">
+        Fornitori da validare <span className="badge badge-neutral">{sessioni.length}</span>
+      </div>
+      {sessioni.length === 0 ? (
+        <div className="card-body" style={{ color: '#9CA3AF' }}>Nessun fornitore da validare.</div>
+      ) : (
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Negozio</th><th>Corso</th><th>Fornitore richiesto</th><th>Tipo</th><th>Data richiesta</th><th></th></tr>
+            </thead>
+            <tbody>
+              {sessioni.map(s => (
+                <tr key={s.id}>
+                  <td><span className="badge badge-neutral">{s.negozio_nome}</span></td>
+                  <td style={{ fontWeight: 600 }}>{s.corso_nome}</td>
+                  <td>{s.fornitore_richiesto_nome}</td>
+                  <td>{s.fornitore_secondario ? 'Fornitore secondario' : 'Fuori perimetro'}</td>
+                  <td style={{ whiteSpace: 'nowrap', color: '#6B7280', fontSize: 12 }}>
+                    {new Date(s.creata_il).toLocaleDateString('it-IT')}
+                  </td>
+                  <td><button className="btn btn-primary btn-sm" onClick={() => setAperta(s.id)}>Valuta</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {aperta && (
+        <EHSSessioneModal sessioneId={aperta} onClose={() => setAperta(null)} onChanged={carica} />
+      )}
+    </div>
+  )
+}
+
+export default function RichiesteModifica({ ambito = 'altro' }) {
   const { can } = useAuth()
-  const isAdminHO = can(['admin', 'ho'])
+  const isEHS = ambito === 'ehs'
+  // Le richieste EHS le valida l'EHS Admin, le altre Admin/HO; l'Admin vede e decide entrambe.
+  const isAdminHO = can(isEHS ? ['admin', 'admin_ehs'] : ['admin', 'ho'])
 
   const [richieste, setRichieste] = useState([])
   const [loading, setLoading] = useState(true)
@@ -31,7 +80,7 @@ export default function RichiesteModifica() {
   const fetchRichieste = async () => {
     setLoading(true)
     try {
-      const params = {}
+      const params = { ambito }
       if (filtroStato) params.stato = filtroStato
       const { data } = await api.get('/richieste-cancellazione/', { params })
       setRichieste(data)
@@ -40,7 +89,7 @@ export default function RichiesteModifica() {
     }
   }
 
-  useEffect(() => { fetchRichieste() }, [filtroStato])
+  useEffect(() => { fetchRichieste() }, [filtroStato, ambito])
 
   const handleProcess = async (id, stato) => {
     if (!window.confirm(`Vuoi ${stato === 'approvata' ? 'approvare' : 'rifiutare'} questa richiesta?`)) return
@@ -58,7 +107,10 @@ export default function RichiesteModifica() {
 
   return (
     <div>
-      <h1 className="page-title">🔔 Richieste di Modifica</h1>
+      <h1 className="page-title">🔔 Richieste di Modifica{isEHS ? ' EHS' : ''}</h1>
+
+      {isEHS && <FornitoriDaValidare />}
+      {isEHS && <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>Cancellazioni di iscritti a formazioni EHS</h3>}
 
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-body">

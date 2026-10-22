@@ -104,6 +104,8 @@ export default function GestionePartecipanti() {
   // per gli altri eventi la soglia resta di 20 giorni.
   const giorniBlocco = evento?.is_ehs ? 7 : 20
   const isWithin20Days = daysUntilEvent >= 0 && daysUntilEvent < giorniBlocco
+  // Da una formazione EHS si torna al calendario EHS, dagli altri eventi al calendario principale.
+  const paginaRitorno = evento?.is_ehs ? '/ehs' : '/'
 
   const handleAssegna = async (userId) => {
     try {
@@ -119,8 +121,14 @@ export default function GestionePartecipanti() {
     if (evento?.is_ehs && evento.ehs_corso_id) {
       try {
         const { data } = await api.get('/ehs/verifica-partecipante/', {
-          params: { utente: u.id, corso: evento.ehs_corso_id },
+          params: { utente: u.id, corso: evento.ehs_corso_id, evento: eventoId },
         })
+        if (data.bloccato) {
+          // Corso ancora valido: si rinnova solo negli ultimi 120 giorni prima della scadenza.
+          toast.error(`${u.cognome} ${u.nome}: corso valido fino al ${new Date(data.scadenza_formazione).toLocaleDateString('it-IT')}. `
+            + `Si può rinnovare con un'aula dal ${new Date(data.rinnovabile_dal).toLocaleDateString('it-IT')}.`, { duration: 6000 })
+          return
+        }
         if (data.valido) {
           setConfermaAssegna({ userId: u.id, corsoNome: data.corso_nome, scadenza: data.scadenza_formazione })
           return
@@ -250,6 +258,14 @@ export default function GestionePartecipanti() {
             <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               Iscritti
               <span className="badge badge-neutral">{iscritti.length}</span>
+              {evento?.is_ehs && (
+                <span title="Sotto il minimo la formazione viene cancellata in automatico 3 giorni prima"
+                  style={{ fontSize: 12, fontWeight: 600, color: iscritti.length < Math.max(3, evento.ehs_partecipanti_min || 0) ? '#DC2626' : '#065F46' }}>
+                  min {Math.max(3, evento.ehs_partecipanti_min || 0)}
+                  {evento.max_partecipanti > 0 ? ` · max ${evento.max_partecipanti}` : ''}
+                  {iscritti.length < Math.max(3, evento.ehs_partecipanti_min || 0) && ' ⚠️ sotto il minimo'}
+                </span>
+              )}
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                 {evento && iscritti.length > 0 && (
                   <button
@@ -262,14 +278,14 @@ export default function GestionePartecipanti() {
                 )}
                 <button
                   className="btn btn-primary btn-sm"
-                  onClick={() => { toast.success('Modifiche salvate.'); navigate('/') }}
+                  onClick={() => { toast.success('Modifiche salvate.'); navigate(paginaRitorno) }}
                 >
                   Salva
                 </button>
                 <button
                   className="btn btn-sm"
                   style={{ background: '#EF4444', color: '#fff', border: 'none' }}
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate(paginaRitorno)}
                 >
                   Esci
                 </button>
