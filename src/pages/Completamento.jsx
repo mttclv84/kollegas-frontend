@@ -360,6 +360,9 @@ export default function Completamento() {
 
             {/* Per area — admin/ho/area */}
             {can(['admin', 'admin_ehs', 'ho', 'area']) && (
+              <>
+              {/* Divider tra i totali Italia e le aree */}
+              <div style={{ height: 6, background: '#E5E7EB', borderRadius: 3, margin: '28px 0' }} />
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
                 {italiaData.aree.filter(a => a.corsi.some(c => c.totale > 0)).map(area => (
                   <div key={area.numero} className="card">
@@ -409,6 +412,7 @@ export default function Completamento() {
                   </div>
                 ))}
               </div>
+              </>
             )}
           </>
         )}
