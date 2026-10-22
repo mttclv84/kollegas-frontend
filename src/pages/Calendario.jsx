@@ -4,19 +4,23 @@ import { it } from 'date-fns/locale'
 import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import EventoModal from '../components/calendario/EventoModal'
-import EventoBadge, { TIPOLOGIA_COLORS } from '../components/calendario/EventoBadge'
-import EHSAulaInfoModal from '../components/ehs/EHSAulaInfoModal'
+import { useNavigate } from 'react-router-dom'
+import EventoBadge, { TIPOLOGIA_COLORS, ROSSO_FUOCO_EHS } from '../components/calendario/EventoBadge'
+import '../components/calendario/EventoModal.css'
 import { isAulaChiusa } from '../utils/aule'
 import MiniCalendario from '../components/calendario/MiniCalendario'
 import './Calendario.css'
 
 const DIPARTIMENTI = [
-  ['ld', 'L&D'], ['recruiting', 'Recruiting'], ['ehs', 'EHS'], ['payroll', 'Payroll'], ['altro', 'Altro'],
+  ['ld', 'L&D'], ['recruiting', 'Recruiting'], ['payroll', 'Payroll'], ['altro', 'Altro'],
 ]
 
 export default function Calendario() {
   const { can } = useAuth()
-  const canEdit = can(['admin', 'admin_ehs', 'ho', 'area'])
+  const navigate = useNavigate()
+  // L'utente Area visualizza soltanto: non crea formazioni.
+  const canEdit = can(['admin', 'admin_ehs', 'ho'])
+  const canAreaEHS = can(['admin', 'admin_ehs', 'ho', 'store', 'base', 'fornitore'])
   const isAdmin = can(['admin'])
 
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -94,8 +98,8 @@ export default function Calendario() {
     }
   }
 
-  // Ogni evento è aperto all'iscrizione da parte di tutti gli store: le aule EHS
-  // aprono la scheda in sola lettura con il pulsante per iscrivere le persone.
+  // Ogni evento è aperto all'iscrizione da parte di tutti gli store. Le formazioni
+  // EHS qui sono solo un promemoria: si gestiscono nell'area EHS dedicata.
   const handleEventoClick = (e, evento) => {
     e.stopPropagation()
     if (evento.is_ehs) { setAulaEHS(evento); return }
@@ -146,6 +150,7 @@ export default function Calendario() {
               evento={ev}
               onClick={(e) => handleEventoClick(e, ev)}
               dimmed={isAulaChiusa(ev.data)}
+              ehsRidotto={ev.is_ehs}
             />
           ))}
         </div>
@@ -213,6 +218,9 @@ export default function Calendario() {
             <div className="legenda-item">
               <span className="legenda-dot" style={{ background: '#F97316' }} /> GWU RA-TM
             </div>
+            <div className="legenda-item">
+              <span className="legenda-dot" style={{ background: '#F3F4F6', border: `2px solid ${ROSSO_FUOCO_EHS}` }} /> EHS (area dedicata)
+            </div>
           </div>
         </div>
       </aside>
@@ -229,7 +237,24 @@ export default function Calendario() {
         />
       )}
 
-      {aulaEHS && <EHSAulaInfoModal evento={aulaEHS} onClose={() => setAulaEHS(null)} />}
+      {aulaEHS && (
+        <div className="modal-overlay" onClick={() => setAulaEHS(null)}>
+          <div className="modal-box" style={{ maxWidth: 380, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: 24 }}>
+              <div style={{ width: 48, height: 48, margin: '0 auto 12px', borderRadius: '50%', border: `3px solid ${ROSSO_FUOCO_EHS}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: ROSSO_FUOCO_EHS }}>EHS</div>
+              <h3 style={{ margin: '0 0 6px', fontSize: 17 }}>Formazione EHS</h3>
+              <p style={{ margin: '0 0 20px', fontSize: 14, color: '#4B5563' }}>Entra nell'area dedicata.</p>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                <button className="btn btn-secondary" onClick={() => setAulaEHS(null)}>Chiudi</button>
+                {canAreaEHS && (
+                  <button className="btn btn-primary" onClick={() => navigate('/ehs')}>Vai all'area EHS</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -15,6 +15,23 @@ const TIME_SLOTS = (() => {
   return slots
 })()
 
+function ElencoPartecipanti({ titolo, colore, persone }) {
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: colore, marginBottom: 4 }}>{titolo} ({persone.length})</div>
+      {persone.length === 0 ? (
+        <div style={{ fontSize: 13, color: '#9CA3AF' }}>Nessuno</div>
+      ) : (
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151', maxHeight: 160, overflowY: 'auto' }}>
+          {persone.map(p => (
+            <li key={p.id}>{p.user_cognome} {p.user_nome}{p.store_nome ? <span style={{ color: '#9CA3AF' }}> — {p.store_nome}</span> : null}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export default function EventoModal({ mode, selectedDay, evento, onClose, onSaved, canEdit, solaLettura = false }) {
   const navigate = useNavigate()
   const [attivita, setAttivita] = useState([])
@@ -25,6 +42,15 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
   const [deleteModal, setDeleteModal] = useState(false)
   const [motivazione, setMotivazione] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [partecipanti, setPartecipanti] = useState(null)
+
+  useEffect(() => {
+    if (!solaLettura || !evento) return
+    api.get('/iscrizioni/', { params: { evento: evento.id } })
+      .then(({ data }) => setPartecipanti(data.results || data))
+      .catch(() => setPartecipanti([]))
+  }, [solaLettura, evento])
+
   const [form, setForm] = useState({
     data: selectedDay ? format(selectedDay, 'yyyy-MM-dd') : '',
     ora_inizio: '',
@@ -246,14 +272,33 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
               <div className="detail-row"><span>Iscritti</span><strong>{evento.iscritti_count}{evento.max_partecipanti > 0 ? ` su ${evento.max_partecipanti} posti` : ''}</strong></div>
               {evento.nota && <div className="detail-row"><span>Nota</span><strong>{evento.nota}</strong></div>}
             </div>
-            <div className="modal-actions">
-              {canEdit && (
-                <button className="btn btn-danger btn-sm" onClick={handleDelete}>Elimina</button>
-              )}
-              <button className="btn btn-primary" onClick={() => navigate(`/iscrizioni?evento=${evento.id}`)}>
-                {solaLettura ? 'Visualizza partecipanti' : 'Gestione Partecipanti'}
-              </button>
-            </div>
+            {solaLettura ? (
+              <>
+                {/* Aula chiusa: solo consultazione dei partecipanti confermati e dei non presenti */}
+                {partecipanti === null ? (
+                  <div className="loading-center"><div className="spinner" /></div>
+                ) : (
+                  <>
+                    <ElencoPartecipanti titolo="Partecipanti confermati" colore="#065F46"
+                      persone={partecipanti.filter(p => p.stato === 'partecipato')} />
+                    <ElencoPartecipanti titolo="Non presenti" colore="#991B1B"
+                      persone={partecipanti.filter(p => p.stato === 'assente')} />
+                  </>
+                )}
+                <div className="modal-actions">
+                  <button className="btn btn-secondary" onClick={onClose}>Chiudi</button>
+                </div>
+              </>
+            ) : (
+              <div className="modal-actions">
+                {canEdit && (
+                  <button className="btn btn-danger btn-sm" onClick={handleDelete}>Elimina</button>
+                )}
+                <button className="btn btn-primary" onClick={() => navigate(`/iscrizioni?evento=${evento.id}`)}>
+                  Gestione Partecipanti
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

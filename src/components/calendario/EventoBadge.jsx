@@ -13,8 +13,13 @@ export function getEventColor(evento) {
   return TIPOLOGIA_COLORS[evento.attivita_tipologia] || '#6B7280'
 }
 
-export default function EventoBadge({ evento, onClick, dimmed = false, clickable = true }) {
-  const color = dimmed ? '#9CA3AF' : getEventColor(evento)
+// Rosso fuoco del profilo delle formazioni EHS mostrate sul calendario principale.
+export const ROSSO_FUOCO_EHS = '#E8170B'
+
+// `ehsRidotto`: formazione EHS vista dal calendario principale — casella grigia larga
+// la metà, solo profilo rosso fuoco e senza numero di iscritti (si gestisce nell'area EHS).
+export default function EventoBadge({ evento, onClick, dimmed = false, clickable = true, ehsRidotto = false }) {
+  const color = dimmed || ehsRidotto ? '#9CA3AF' : getEventColor(evento)
 
   const hasLimit = evento.max_partecipanti > 0
   const countsText = hasLimit
@@ -25,8 +30,10 @@ export default function EventoBadge({ evento, onClick, dimmed = false, clickable
   // numero store, invece del titolo generico fisso "EHS".
   // Calendario EHS del fornitore: le attività altrui arrivano già anonimizzate
   // dal backend (solo store + "Occupato"), senza conteggi iscritti.
-  const occupato = !!evento.occupato
-  const labelTesto = occupato
+  const occupato = !!evento.occupato || ehsRidotto
+  const labelTesto = ehsRidotto
+    ? `EHS · Store ${evento.ehs_negozio_codice || ''}`
+    : occupato
     ? [evento.location_display, 'Occupato'].filter(Boolean).join(' · ')
     : evento.is_ehs && evento.ehs_corso_nome
     ? `${evento.ehs_corso_nome.split(' ').slice(0, 2).join(' ')} · Store ${evento.ehs_negozio_codice || ''}`
@@ -54,12 +61,16 @@ export default function EventoBadge({ evento, onClick, dimmed = false, clickable
     </>
   )
 
+  const stileRidotto = ehsRidotto
+    ? { width: '50%', border: `1.5px solid ${ROSSO_FUOCO_EHS}`, background: '#F3F4F6', color: '#6B7280' }
+    : {}
+
   return (
     <div className="tooltip-wrap">
       {clickable ? (
         <button
           className="evento-badge"
-          style={{ '--badge-color': color, opacity: dimmed ? 0.65 : 1 }}
+          style={{ '--badge-color': color, opacity: dimmed ? 0.65 : 1, ...stileRidotto }}
           onClick={onClick}
           title={tooltip}
         >
@@ -68,7 +79,7 @@ export default function EventoBadge({ evento, onClick, dimmed = false, clickable
       ) : (
         <div
           className="evento-badge evento-badge-readonly"
-          style={{ '--badge-color': color, opacity: dimmed ? 0.65 : 1 }}
+          style={{ '--badge-color': color, opacity: dimmed ? 0.65 : 1, ...stileRidotto }}
           title={tooltip}
           onClick={e => e.stopPropagation()}
         >
