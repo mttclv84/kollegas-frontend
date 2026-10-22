@@ -71,6 +71,19 @@ function PresenzaButton({ simbolo, colore, titolo, attivo, onClick }) {
   )
 }
 
+function CestinoButton({ onClick }) {
+  return (
+    <button type="button" title="Elimina iscritto" onClick={onClick} style={{
+      width: 30, height: 30, borderRadius: 6, cursor: 'pointer', border: '1px solid #FCA5A5',
+      background: '#FEF2F2', color: '#DC2626', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
+      </svg>
+    </button>
+  )
+}
+
 export default function GestionePartecipanti() {
   const { user, can } = useAuth()
   const navigate = useNavigate()
@@ -389,9 +402,9 @@ export default function GestionePartecipanti() {
                         </td>
                         <td>
                           {editable && (() => {
-                            if (can(['admin', 'admin_ehs', 'ho', 'area'])) {
-                              return <button className="btn btn-danger btn-sm" onClick={() => handleElimina(i.id)}>✕</button>
-                            }
+                            // Eliminare un iscritto: solo Admin (gli altri ruoli di sede segnano solo le presenze).
+                            if (can(['admin'])) return <CestinoButton onClick={() => handleElimina(i.id)} />
+                            if (can(['admin_ehs', 'ho', 'area'])) return null
                             if (i.richiesta_pendente_id) {
                               return (
                                 <span style={{
@@ -417,9 +430,7 @@ export default function GestionePartecipanti() {
                                 >⚠ Richiedi cancellazione</button>
                               )
                             }
-                            if (evento?.is_ehs) {
-                              return <button className="btn btn-danger btn-sm" onClick={() => handleElimina(i.id)}>✕</button>
-                            }
+                            if (evento?.is_ehs) return <CestinoButton onClick={() => handleElimina(i.id)} />
                             return null
                           })()}
                         </td>
