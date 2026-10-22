@@ -106,6 +106,8 @@ export default function GestionePartecipanti() {
   const isWithin20Days = daysUntilEvent >= 0 && daysUntilEvent < giorniBlocco
   // Da una formazione EHS si torna al calendario EHS, dagli altri eventi al calendario principale.
   const paginaRitorno = evento?.is_ehs ? '/ehs' : '/'
+  // Iscrizioni aperte a tutti gli store fino a esaurimento posti (0 = senza limite).
+  const postiEsauriti = evento?.max_partecipanti > 0 && iscritti.length >= evento.max_partecipanti
 
   const handleAssegna = async (userId) => {
     try {
@@ -385,6 +387,11 @@ export default function GestionePartecipanti() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+            {postiEsauriti && (
+              <div style={{ fontSize: 13, color: '#991B1B', background: '#FEE2E2', padding: '8px 16px' }}>
+                Posti esauriti: tutti i {evento.max_partecipanti} posti sono occupati.
+              </div>
+            )}
             <div className="table-wrapper">
               <table>
                 <thead>
@@ -402,7 +409,7 @@ export default function GestionePartecipanti() {
                       <td><span className="badge badge-neutral">{u.store_nome || '—'}</span></td>
                       <td>{u.cognome} {u.nome}</td>
                       <td>
-                        <button className="btn btn-primary btn-sm" onClick={() => avviaAssegna(u)}>
+                        <button className="btn btn-primary btn-sm" disabled={postiEsauriti} onClick={() => avviaAssegna(u)}>
                           + Assegna
                         </button>
                       </td>

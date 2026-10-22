@@ -4,11 +4,16 @@ import { it } from 'date-fns/locale'
 import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import EventoModal from '../components/calendario/EventoModal'
-import EventoBadge from '../components/calendario/EventoBadge'
+import EventoBadge, { TIPOLOGIA_COLORS } from '../components/calendario/EventoBadge'
+import EHSAulaInfoModal from '../components/ehs/EHSAulaInfoModal'
 import MiniCalendario from '../components/calendario/MiniCalendario'
 import './Calendario.css'
 
 const TODAY = new Date().toISOString().slice(0, 10)
+
+const DIPARTIMENTI = [
+  ['ld', 'L&D'], ['recruiting', 'Recruiting'], ['ehs', 'EHS'], ['payroll', 'Payroll'], ['altro', 'Altro'],
+]
 
 export default function Calendario() {
   const { can } = useAuth()
@@ -21,6 +26,7 @@ export default function Calendario() {
   const [selectedDay, setSelectedDay] = useState(null)
   const [selectedEvento, setSelectedEvento] = useState(null)
   const [modalMode, setModalMode] = useState(null) // 'create' | 'detail'
+  const [aulaEHS, setAulaEHS] = useState(null)
   const [activeDaysPrev, setActiveDaysPrev] = useState(new Set())
   const [activeDaysNext, setActiveDaysNext] = useState(new Set())
   const [eccezioni, setEccezioni] = useState({}) // { 'yyyy-MM-dd': nome_evento }
@@ -89,9 +95,11 @@ export default function Calendario() {
     }
   }
 
+  // Ogni evento è aperto all'iscrizione da parte di tutti gli store: le aule EHS
+  // aprono la scheda in sola lettura con il pulsante per iscrivere le persone.
   const handleEventoClick = (e, evento) => {
     e.stopPropagation()
-    if (evento.is_ehs) return
+    if (evento.is_ehs) { setAulaEHS(evento); return }
     setSelectedEvento(evento)
     setModalMode('detail')
   }
@@ -134,9 +142,8 @@ export default function Calendario() {
             <EventoBadge
               key={ev.id}
               evento={ev}
-              clickable={!ev.is_ehs}
-              onClick={ev.is_ehs ? undefined : (e) => handleEventoClick(e, ev)}
-              dimmed={ev.is_ehs || (isStore && ev.data < TODAY)}
+              onClick={(e) => handleEventoClick(e, ev)}
+              dimmed={isStore && ev.data < TODAY}
             />
           ))}
         </div>
@@ -194,6 +201,16 @@ export default function Calendario() {
             <div className="legenda-item">
               <span className="legenda-dot oggi-color" /> Oggi
             </div>
+            {/* Colore dell'evento in base al dipartimento che lo pubblica */}
+            <h4 className="legenda-title" style={{ marginTop: 12 }}>Dipartimenti</h4>
+            {DIPARTIMENTI.map(([tipologia, nome]) => (
+              <div key={tipologia} className="legenda-item">
+                <span className="legenda-dot" style={{ background: TIPOLOGIA_COLORS[tipologia] }} /> {nome}
+              </div>
+            ))}
+            <div className="legenda-item">
+              <span className="legenda-dot" style={{ background: '#F97316' }} /> GWU RA-TM
+            </div>
           </div>
         </div>
       </aside>
@@ -208,6 +225,8 @@ export default function Calendario() {
           canEdit={canEdit}
         />
       )}
+
+      {aulaEHS && <EHSAulaInfoModal evento={aulaEHS} onClose={() => setAulaEHS(null)} />}
     </div>
   )
 }

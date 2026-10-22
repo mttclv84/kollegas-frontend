@@ -8,12 +8,16 @@ import EHSSessioneModal from '../components/ehs/EHSSessioneModal'
 import EHSRichiesteList from '../components/ehs/EHSRichiesteList'
 import EHSRichiestaFormModal from '../components/ehs/EHSRichiestaFormModal'
 import EHSCercaFormazioni from '../components/ehs/EHSCercaFormazioni'
+import EHSAulaInfoModal from '../components/ehs/EHSAulaInfoModal'
+import EventoModal from '../components/calendario/EventoModal'
 import './Calendario.css'
 import './EHS.css'
 
 export default function EHS() {
-  const { can } = useAuth()
+  const { user, can } = useAuth()
   const [tab, setTab] = useState('calendario')
+  const [aulaInfo, setAulaInfo] = useState(null)
+  const [eventoDettaglio, setEventoDettaglio] = useState(null)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [eventi, setEventi] = useState([])
   const [loading, setLoading] = useState(true)
@@ -93,10 +97,27 @@ export default function EHS() {
 
   const isSunday = (d) => getDay(d) === 0
 
-  const handleEventoClick = (e, ev) => {
+  // Regole di click sul calendario EHS:
+  // - Admin / Admin EHS: tutto cliccabile (sessione EHS completa o dettaglio evento);
+  // - Store: la sessione del proprio negozio si apre completa, le aule degli altri
+  //   negozi in sola lettura con l'iscrizione delle persone; HO come gli store;
+  // - Fornitore: solo le proprie sessioni (le altre arrivano già come "Occupato").
+  const isAdmin = can(['admin', 'admin_ehs'])
+  const isEventoCliccabile = (ev) => !ev.occupato && (isAdmin || (ev.is_ehs && !!ev.ehs_sessione_id))
+
+  const handleEventoClick = async (e, ev) => {
     e.stopPropagation()
-    if (!ev.is_ehs || !ev.ehs_sessione_id) return
-    setSelectedSessioneId(ev.ehs_sessione_id)
+    if (!isEventoCliccabile(ev)) return
+    if (!ev.is_ehs) {
+      try {
+        const { data } = await api.get(`/eventi/${ev.id}/`)
+        setEventoDettaglio(data)
+      } catch {}
+      return
+    }
+    const sessioneMia = isAdmin || isFornitore || (can(['store']) && ev.ehs_negozio_id === user?.store_id)
+    if (sessioneMia) setSelectedSessioneId(ev.ehs_sessione_id)
+    else setAulaInfo(ev)
   }
 
   const renderGiorno = (giorno) => {
@@ -116,8 +137,8 @@ export default function EHS() {
             <EventoBadge
               key={ev.id}
               evento={ev}
-              clickable={ev.is_ehs}
-              onClick={ev.is_ehs ? (e) => handleEventoClick(e, ev) : undefined}
+              clickable={isEventoCliccabile(ev)}
+              onClick={isEventoCliccabile(ev) ? (e) => handleEventoClick(e, ev) : undefined}
               dimmed={!ev.is_ehs}
             />
           ))}
@@ -196,10 +217,10 @@ export default function EHS() {
               <div className="card-body">
                 <h4 className="legenda-title">Legenda</h4>
                 <div className="legenda-item">
-                  <span className="legenda-dot" style={{ background: '#10B981' }} /> {isFornitore ? 'Tue sessioni EHS (cliccabili)' : 'Evento EHS (cliccabile)'}
+                  <span className="legenda-dot" style={{ background: '#10B981' }} /> {isFornitore ? 'Tue sessioni EHS (cliccabili)' : 'Aula EHS (cliccabile per iscrivere)'}
                 </div>
                 <div className="legenda-item">
-                  <span className="legenda-dot" style={{ background: '#9CA3AF' }} /> {isFornitore ? 'Store occupato da altre attività' : 'Altre attività (sola vista)'}
+                  <span className="legenda-dot" style={{ background: '#9CA3AF' }} /> {isFornitore ? 'Store occupato da altre attività' : isAdmin ? 'Altre attività' : 'Altre attività (sola vista)'}
                 </div>
               </div>
             </div>
@@ -214,6 +235,18 @@ export default function EHS() {
           sessioneId={selectedSessioneId}
           onClose={() => setSelectedSessioneId(null)}
           onChanged={() => { fetchEventi(); fetchEccezioni(); richiesteListRef.current?.refresh() }}
+        />
+      )}
+
+      {aulaInfo && <EHSAulaInfoModal evento={aulaInfo} onClose={() => setAulaInfo(null)} />}
+
+      {eventoDettaglio && (
+        <EventoModal
+          mode="detail"
+          evento={eventoDettaglio}
+          canEdit={isAdmin}
+          onClose={() => setEventoDettaglio(null)}
+          onSaved={() => { setEventoDettaglio(null); fetchEventi() }}
         />
       )}
 
