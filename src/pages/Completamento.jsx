@@ -161,13 +161,16 @@ function ItaliaCorsoRing({ corso }) {
 
 function MiniBar({ percentuale, completato, totale }) {
   const pct = percentuale || 0
-  const color = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444'
+  // Nessuna persona nel target (0/0): la percentuale non è significativa → "n.s." in grigio.
+  const ns = !totale
+  const color = ns ? '#9CA3AF' : pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div style={{ flex: 1, height: 6, background: '#E5E7EB', borderRadius: 3, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width .4s' }} />
       </div>
-      <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 32, textAlign: 'right' }}>{pct}%</span>
+      <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 32, textAlign: 'right' }}
+        title={ns ? 'Non significativo: nessuna persona nel ruolo' : undefined}>{ns ? 'n.s.' : `${pct}%`}</span>
       <span style={{ fontSize: 10, color: '#9CA3AF', minWidth: 36 }}>{completato}/{totale}</span>
     </div>
   )
@@ -252,6 +255,8 @@ function AreaDetailModal({ area, onClose }) {
 export default function Completamento() {
   const { user, can } = useAuth()
   const isStore = user?.livello_accesso === 'store'
+  // Gli utenti area vedono solo il completamento Italia/aree, senza il riquadro del singolo negozio.
+  const isArea = user?.livello_accesso === 'area'
   const [stores, setStores] = useState([])
   const [storeId, setStoreId] = useState('')
   const [data, setData] = useState(null)
@@ -261,6 +266,7 @@ export default function Completamento() {
   const [areaModal, setAreaModal] = useState(null) // area object
 
   useEffect(() => {
+    if (isArea) return
     if (isStore) {
       setStoreId(String(user.store_id))
     } else {
@@ -270,7 +276,7 @@ export default function Completamento() {
         if (list.length > 0) setStoreId(String(list[0].id))
       })
     }
-  }, [isStore, user])
+  }, [isStore, isArea, user])
 
   useEffect(() => {
     if (!storeId) return
@@ -292,7 +298,7 @@ export default function Completamento() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
         <h1 className="page-title" style={{ marginBottom: 0 }}>Completamento GWU RA-TM</h1>
-        {!isStore && (
+        {!isStore && !isArea && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <label className="form-label" style={{ marginBottom: 0 }}>Store:</label>
             <select
@@ -335,7 +341,7 @@ export default function Completamento() {
       )}
 
       {/* Sezione Italia — admin/ho: totali + aree; store: solo totali */}
-      <div style={{ marginTop: 36 }}>
+      <div style={{ marginTop: isArea ? 0 : 36 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: '#374151', marginBottom: 16, paddingBottom: 8, borderBottom: '2px solid #E5E7EB' }}>
           🇮🇹 Completamento Italia — tutti i negozi
         </h2>
