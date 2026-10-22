@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
@@ -40,6 +41,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const [linkOnline, setLinkOnline] = useState('')
   const [partMin, setPartMin] = useState(String(PARTECIPANTI_MINIMI))
   const [partMax, setPartMax] = useState('')
+  const [modalitaScelta, setModalitaScelta] = useState('PRESENZA')
   const [modificaLink, setModificaLink] = useState(false)
 
   // Riassegnazione / richiesta eccezionale (store), non disponibilità (fornitore),
@@ -106,6 +108,23 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const statoLabel = sessione
     ? (isFornitore && sessione.stato === 'RICHIESTA_INVIATA' ? 'Richiesta Ricevuta' : (STATO_LABELS[sessione.stato] || sessione.stato))
     : ''
+
+  // Modulo del fornitore precompilato: data e ora chieste dallo store (contro-proposta o
+  // data suggerita nella richiesta), docente, modalità e partecipanti già indicati.
+  const dataStore = sessione?.stato === 'DATA_CONTROPROPOSTA' ? sessione.data_proposta
+    : sessione?.stato === 'RICHIESTA_INVIATA' ? sessione.data_suggerita_store : null
+  useEffect(() => {
+    if (!sessione || !['RICHIESTA_INVIATA', 'DATA_CONTROPROPOSTA'].includes(sessione.stato)) return
+    setNuovaData(dataStore ? format(new Date(dataStore), "yyyy-MM-dd'T'HH:mm") : '')
+    setDocenteNome(sessione.docente_nome || '')
+    setDocenteTelefono(sessione.docente_telefono || '')
+    setModalitaScelta(sessione.modalita || 'PRESENZA')
+    if (sessione.partecipanti_min) setPartMin(String(sessione.partecipanti_min))
+    if (sessione.partecipanti_max) setPartMax(String(sessione.partecipanti_max))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessione?.id, sessione?.stato])
+  const confermaDataStore = !!dataStore && !!nuovaData
+    && arrotondaMezzora(nuovaData).getTime() === new Date(dataStore).getTime()
 
   useEffect(() => {
     if (senzaFornitore && isStoreLato && fornitori === null) {
@@ -178,12 +197,14 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const handleProponiData = () => {
     if (!nuovaData) { toast.error('Seleziona data e ora.'); return }
     if (!docenteNome.trim() || !docenteTelefono.trim()) { toast.error('Nome e telefono del docente sono obbligatori.'); return }
+    const online = modalitaScelta === 'ONLINE'
     const link = linkOnline.trim() || sessione.link_online
-    if (isOnline && !link) { toast.error('Inserisci il link alla call.'); return }
+    if (online && !link) { toast.error('Inserisci il link alla call.'); return }
     const minimo = Number(partMin), massimo = Number(partMax)
     if (!partMin || !partMax) { toast.error('Indica il numero minimo e massimo di partecipanti.'); return }
     if (minimo < PARTECIPANTI_MINIMI) { toast.error(`Il minimo non può essere inferiore a ${PARTECIPANTI_MINIMI}.`); return }
     if (massimo < minimo) { toast.error('Il massimo non può essere inferiore al minimo.'); return }
+    const conferma = confermaDataStore
     run(async () => {
       await api.patch(`/ehs/sessioni/${sessioneId}/proponi-data/`, {
         data_proposta: arrotondaMezzora(nuovaData).toISOString(),
@@ -191,10 +212,11 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
         docente_telefono: docenteTelefono.trim(),
         partecipanti_min: minimo,
         partecipanti_max: massimo,
-        ...(isOnline ? { link_online: link } : {}),
+        modalita: modalitaScelta,
+        ...(online ? { link_online: link } : {}),
       })
-      toast.success('Proposta inviata.')
-      setNuovaData(''); setDocenteNome(''); setDocenteTelefono(''); setLinkOnline('')
+      toast.success(conferma ? 'Formazione confermata: ora è sul calendario EHS.' : 'Proposta inviata allo store.')
+      setLinkOnline('')
     })
   }
 
@@ -223,13 +245,6 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
       })
       toast.success('Contro-proposta inviata.')
       setNuovaData('')
-    })
-  }
-
-  const handleAccettaControproposta = () => {
-    run(async () => {
-      await api.patch(`/ehs/sessioni/${sessioneId}/accetta-controproposta/`)
-      toast.success('Sessione confermata! Ora appare sul calendario EHS.')
     })
   }
 
@@ -330,7 +345,9 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
           <div className="evento-detail">
             <div className="detail-grid">
               <div className="detail-row"><span>Stato</span><strong>{statoLabel}</strong></div>
-              <div className="detail-row"><span>Modalità</span><strong>{isOnline ? '💻 Online' : '🏬 In presenza'}</strong></div>
+              <div className="detail-row"><span>Modalità</span><strong>{
+                ['IN_APPROVAZIONE', 'RICHIESTA_INVIATA', 'NON_DISPONIBILE'].includes(sessione.stato)
+                  ? 'Da indicare dal fornitore' : isOnline ? '💻 Online' : '🏬 In presenza'}</strong></div>
               {isOnline && sessione.link_online && (
                 <div className="detail-row">
                   <span>Link call</span>
@@ -451,9 +468,19 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
             )}
 
             {/* --- Azioni per stato/ruolo --- */}
-            {sessione.stato === 'RICHIESTA_INVIATA' && isFornitoreLato && sessione.fornitore && (
+            {/* --- Fornitore: conferma la data chiesta dallo store o ne propone un'altra --- */}
+            {((sessione.stato === 'RICHIESTA_INVIATA' && sessione.fornitore) || sessione.stato === 'DATA_CONTROPROPOSTA')
+              && isFornitoreLato && (
               <div className="form-group">
-                <label className="form-label">Proponi data, ora e docente</label>
+                <label className="form-label">
+                  {dataStore ? 'Conferma la data chiesta dallo store o proponine un\'altra' : 'Proponi data, ora e docente'}
+                </label>
+                {dataStore && (
+                  <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 6 }}>
+                    Lo store ha chiesto il {new Date(dataStore).toLocaleString('it-IT')}: se la lasci invariata la
+                    formazione è confermata subito, se la cambi diventa una proposta da accettare dallo store.
+                  </div>
+                )}
                 <div style={{ marginBottom: 8 }}>
                   <EHSDataOraPicker value={nuovaData} onChange={setNuovaData} />
                 </div>
@@ -464,9 +491,20 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                     onChange={e => setDocenteTelefono(e.target.value)} />
                 </div>
                 {campiPartecipanti}
-                {isOnline && campoLinkOnline}
+                <div style={{ display: 'flex', gap: 16, marginBottom: 8, fontSize: 13, alignItems: 'center' }}>
+                  <span>Modalità *</span>
+                  {[['PRESENZA', 'In presenza'], ['ONLINE', 'Online']].map(([val, label]) => (
+                    <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input type="radio" name="modalita" checked={modalitaScelta === val} onChange={() => setModalitaScelta(val)} />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                {modalitaScelta === 'ONLINE' && campoLinkOnline}
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-success btn-sm" disabled={busy} onClick={handleProponiData}>Invia proposta</button>
+                  <button className="btn btn-success btn-sm" disabled={busy} onClick={handleProponiData}>
+                    {confermaDataStore ? '✓ Conferma data' : 'Invia proposta'}
+                  </button>
                   <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => setMostraNonDisponibile(v => !v)}>Non disponibile</button>
                 </div>
               </div>
@@ -485,33 +523,6 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               </div>
             )}
 
-            {sessione.stato === 'DATA_CONTROPROPOSTA' && isFornitoreLato && (
-              <div className="form-group">
-                <label className="form-label">Rispondi alla contro-proposta dello store</label>
-                {isOnline && !sessione.link_online && (
-                  <div style={{ fontSize: 12, color: '#92400E', marginBottom: 6 }}>Inserisci il link alla call per poter accettare.</div>
-                )}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                  <button className="btn btn-success btn-sm" disabled={busy || (isOnline && !sessione.link_online)} onClick={handleAccettaControproposta}>
-                    ✓ Accetta questa data
-                  </button>
-                  <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => setMostraNonDisponibile(v => !v)}>Non disponibile</button>
-                </div>
-                <label className="form-label">...oppure proponi un'altra data, ora e docente</label>
-                <div style={{ marginBottom: 8 }}>
-                  <EHSDataOraPicker value={nuovaData} onChange={setNuovaData} />
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <input className="form-control" placeholder="Nome docente *" value={docenteNome}
-                    onChange={e => setDocenteNome(e.target.value)} />
-                  <input className="form-control" placeholder="Telefono docente *" value={docenteTelefono}
-                    onChange={e => setDocenteTelefono(e.target.value)} />
-                </div>
-                {campiPartecipanti}
-                <button className="btn btn-secondary btn-sm" disabled={busy} onClick={handleProponiData}>Proponi nuova data</button>
-              </div>
-            )}
-
             {mostraNonDisponibile && ['RICHIESTA_INVIATA', 'DATA_CONTROPROPOSTA'].includes(sessione.stato) && isFornitoreLato && (
               <div className="form-group">
                 <label className="form-label">Segnala non disponibilità allo store</label>
@@ -522,7 +533,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
             )}
 
             {/* --- Link call per sessioni online ancora da svolgere --- */}
-            {isOnline && isFornitoreLato && ['DATA_PROPOSTA', 'DATA_CONTROPROPOSTA', 'CONFERMATA'].includes(sessione.stato) && (
+            {isOnline && isFornitoreLato && ['DATA_PROPOSTA', 'CONFERMATA'].includes(sessione.stato) && (
               modificaLink || !sessione.link_online ? (
                 <div className="form-group">
                   <label className="form-label">Link alla call</label>

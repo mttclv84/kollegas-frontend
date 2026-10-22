@@ -8,6 +8,24 @@ import '../calendario/EventoModal.css'
 
 const fornitoreLabel = (f) => `${f.fornitore_ragione_sociale}${f.nome_completo ? ` — ${f.nome_completo}` : ''}`
 
+// Riquadro di scelta per un gruppo di fornitori (principale / secondari).
+function AreaFornitori({ titolo, nota, colore, sfondo, elenco, scelto, onScegli }) {
+  return (
+    <div style={{ border: `1px solid ${colore}33`, background: sfondo, borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: colore, marginBottom: 4 }}>{titolo}</div>
+      {elenco.length === 0 ? (
+        <div style={{ fontSize: 13, color: '#9CA3AF' }}>Nessuno per questo corso.</div>
+      ) : elenco.map(f => (
+        <label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, padding: '2px 0' }}>
+          <input type="radio" name="fornitore" checked={String(scelto) === String(f.id)} onChange={() => onScegli(f.id)} />
+          {fornitoreLabel(f)}
+        </label>
+      ))}
+      {nota && elenco.length > 0 && <div style={{ fontSize: 11, color: colore, marginTop: 4 }}>{nota}</div>}
+    </div>
+  )
+}
+
 // `iniziale` precompila il modulo (es. 'Richiedi aula' dal Completamento formazione obbligatoria):
 // { corso, negozio, partecipanti_previsti, note }.
 export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {} }) {
@@ -20,7 +38,6 @@ export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {
   const [form, setForm] = useState({
     corso: iniziale.corso || '',
     negozio: iniziale.negozio || user?.store_id || '',
-    modalita: 'PRESENZA',
     fornitore: '',
     eccezionale: false,
     motivazione_eccezione: '',
@@ -89,7 +106,6 @@ export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {
     try {
       const payload = {
         corso: form.corso,
-        modalita: form.modalita,
         fornitore: form.fornitore,
         eccezionale: form.eccezionale,
         contatto_negozio_nome: form.contatto_negozio_nome,
@@ -102,9 +118,12 @@ export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {
         payload.data_suggerita_store = arrotondaMezzora(form.data_suggerita_store).toISOString()
       }
       await api.post('/ehs/sessioni/', payload)
+      const secondario = !form.eccezionale && idonei.find(f => String(f.id) === String(form.fornitore))?.secondario
       toast.success(form.eccezionale
         ? 'Richiesta eccezionale inviata: in attesa di approvazione EHS Admin.'
-        : 'Richiesta inviata al fornitore.')
+        : secondario
+          ? 'Richiesta inviata: il fornitore secondario va validato dall\'EHS Admin.'
+          : 'Richiesta inviata al fornitore.')
       onCreated()
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Errore durante l\'invio della richiesta.')
@@ -158,23 +177,6 @@ export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {
           )}
 
           <div className="form-group">
-            <label className="form-label">Modalità *</label>
-            <div style={{ display: 'flex', gap: 16 }}>
-              {[['PRESENZA', 'In presenza'], ['ONLINE', 'Online']].map(([val, label]) => (
-                <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
-                  <input type="radio" name="modalita" checked={form.modalita === val} onChange={() => setF('modalita', val)} />
-                  {label}
-                </label>
-              ))}
-            </div>
-            {form.modalita === 'ONLINE' && (
-              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
-                Il fornitore inserirà il link alla call: lo riceverai via email e lo troverai nella sessione.
-              </div>
-            )}
-          </div>
-
-          <div className="form-group">
             <label className="form-label">Fornitore *</label>
             {!form.corso || !form.negozio ? (
               <input className="form-control" value="—" disabled />
@@ -191,18 +193,21 @@ export default function EHSRichiestaFormModal({ onClose, onCreated, iniziale = {
                     Nessun fornitore della tua rete eroga questo corso: puoi inviare una richiesta eccezionale.
                   </div>
                 )}
-                {!form.eccezionale && idonei.length === 1 ? (
-                  <input className="form-control" value={fornitoreLabel(idonei[0])} disabled />
-                ) : (
+                {form.eccezionale ? (
                   <select className="form-control" value={form.fornitore}
                     onChange={e => setF('fornitore', e.target.value)} required>
                     <option value="">Seleziona fornitore...</option>
-                    {elencoFornitori.map(f => (
-                      <option key={f.id} value={f.id}>
-                        {fornitoreLabel(f)}{f.secondario ? ' (secondario — da validare EHS Admin)' : ''}
-                      </option>
-                    ))}
+                    {elencoFornitori.map(f => <option key={f.id} value={f.id}>{fornitoreLabel(f)}</option>)}
                   </select>
+                ) : (
+                  <>
+                    <AreaFornitori titolo="Fornitore principale" colore="#065F46" sfondo="#ECFDF5"
+                      elenco={principali} scelto={form.fornitore} onScegli={id => setF('fornitore', id)} />
+                    <AreaFornitori titolo="Fornitori secondari" colore="#92400E" sfondo="#FFFBEB"
+                      nota="Se scegli un fornitore secondario, la richiesta parte solo dopo la validazione dell'EHS Admin."
+                      elenco={idonei.filter(f => f.secondario)} scelto={form.fornitore}
+                      onScegli={id => setF('fornitore', id)} />
+                  </>
                 )}
                 {idonei.length > 0 && eccezionali.length > 0 && (
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginTop: 8 }}>
