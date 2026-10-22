@@ -255,8 +255,9 @@ function AreaDetailModal({ area, onClose }) {
 export default function Completamento() {
   const { user, can } = useAuth()
   const isStore = user?.livello_accesso === 'store'
-  // Gli utenti area vedono solo il completamento Italia/aree, senza il riquadro del singolo negozio.
-  const isArea = user?.livello_accesso === 'area'
+  // Il riquadro del singolo negozio lo vedono solo admin (tutti i negozi) e store (il proprio):
+  // area, HO e admin EHS vedono solo il completamento Italia/aree.
+  const soloItalia = !isStore && user?.livello_accesso !== 'admin'
   const [stores, setStores] = useState([])
   const [storeId, setStoreId] = useState('')
   const [data, setData] = useState(null)
@@ -266,7 +267,7 @@ export default function Completamento() {
   const [areaModal, setAreaModal] = useState(null) // area object
 
   useEffect(() => {
-    if (isArea) return
+    if (soloItalia) return
     if (isStore) {
       setStoreId(String(user.store_id))
     } else {
@@ -276,7 +277,7 @@ export default function Completamento() {
         if (list.length > 0) setStoreId(String(list[0].id))
       })
     }
-  }, [isStore, isArea, user])
+  }, [isStore, soloItalia, user])
 
   useEffect(() => {
     if (!storeId) return
@@ -298,7 +299,7 @@ export default function Completamento() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
         <h1 className="page-title" style={{ marginBottom: 0 }}>Completamento GWU RA-TM</h1>
-        {!isStore && !isArea && (
+        {!isStore && !soloItalia && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <label className="form-label" style={{ marginBottom: 0 }}>Store:</label>
             <select
@@ -341,7 +342,7 @@ export default function Completamento() {
       )}
 
       {/* Sezione Italia — admin/ho: totali + aree; store: solo totali */}
-      <div style={{ marginTop: isArea ? 0 : 36 }}>
+      <div style={{ marginTop: soloItalia ? 0 : 36 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: '#374151', marginBottom: 16, paddingBottom: 8, borderBottom: '2px solid #E5E7EB' }}>
           🇮🇹 Completamento Italia — tutti i negozi
         </h2>
