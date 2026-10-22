@@ -15,7 +15,7 @@ const TIME_SLOTS = (() => {
   return slots
 })()
 
-export default function EventoModal({ mode, selectedDay, evento, onClose, onSaved, canEdit }) {
+export default function EventoModal({ mode, selectedDay, evento, onClose, onSaved, canEdit, solaLettura = false }) {
   const navigate = useNavigate()
   const [attivita, setAttivita] = useState([])
   const [hosts, setHosts] = useState([])
@@ -251,7 +251,7 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
                 <button className="btn btn-danger btn-sm" onClick={handleDelete}>Elimina</button>
               )}
               <button className="btn btn-primary" onClick={() => navigate(`/iscrizioni?evento=${evento.id}`)}>
-                Gestione Partecipanti
+                {solaLettura ? 'Visualizza partecipanti' : 'Gestione Partecipanti'}
               </button>
             </div>
           </div>

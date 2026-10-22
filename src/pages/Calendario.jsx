@@ -6,10 +6,9 @@ import { useAuth } from '../context/AuthContext'
 import EventoModal from '../components/calendario/EventoModal'
 import EventoBadge, { TIPOLOGIA_COLORS } from '../components/calendario/EventoBadge'
 import EHSAulaInfoModal from '../components/ehs/EHSAulaInfoModal'
+import { isAulaChiusa } from '../utils/aule'
 import MiniCalendario from '../components/calendario/MiniCalendario'
 import './Calendario.css'
-
-const TODAY = new Date().toISOString().slice(0, 10)
 
 const DIPARTIMENTI = [
   ['ld', 'L&D'], ['recruiting', 'Recruiting'], ['ehs', 'EHS'], ['payroll', 'Payroll'], ['altro', 'Altro'],
@@ -18,7 +17,7 @@ const DIPARTIMENTI = [
 export default function Calendario() {
   const { can } = useAuth()
   const canEdit = can(['admin', 'admin_ehs', 'ho', 'area'])
-  const isStore = can(['store'])
+  const isAdmin = can(['admin'])
 
   const [currentDate, setCurrentDate] = useState(new Date())
   const [eventi, setEventi] = useState([])
@@ -104,6 +103,9 @@ export default function Calendario() {
     setModalMode('detail')
   }
 
+  // Aula chiusa (oltre 7 giorni): per tutti tranne l'Admin solo info e partecipanti.
+  const solaLettura = !isAdmin && isAulaChiusa(selectedEvento?.data)
+
   const handleModalClose = () => {
     setModalMode(null)
     setSelectedEvento(null)
@@ -143,7 +145,7 @@ export default function Calendario() {
               key={ev.id}
               evento={ev}
               onClick={(e) => handleEventoClick(e, ev)}
-              dimmed={isStore && ev.data < TODAY}
+              dimmed={isAulaChiusa(ev.data)}
             />
           ))}
         </div>
@@ -222,7 +224,8 @@ export default function Calendario() {
           evento={selectedEvento}
           onClose={handleModalClose}
           onSaved={handleSaved}
-          canEdit={canEdit}
+          canEdit={canEdit && !solaLettura}
+          solaLettura={solaLettura}
         />
       )}
 

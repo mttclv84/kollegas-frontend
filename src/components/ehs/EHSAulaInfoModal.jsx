@@ -1,15 +1,17 @@
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import { isAulaChiusa } from '../../utils/aule'
 import '../calendario/EventoModal.css'
 
-const TODAY = new Date().toISOString().slice(0, 10)
-
 // Scheda di sola lettura di un'aula EHS confermata: dal calendario ogni store (e HO)
-// può vederla e iscrivere le proprie persone fino a esaurimento posti.
+// può vederla e iscrivere le proprie persone fino a esaurimento posti. Passati 7
+// giorni l'aula è chiusa e resta solo la consultazione dei partecipanti (tranne Admin).
 export default function EHSAulaInfoModal({ evento, onClose }) {
   const navigate = useNavigate()
+  const { can } = useAuth()
   const hasLimit = evento.max_partecipanti > 0
   const pieno = hasLimit && (evento.posti_disponibili ?? 0) <= 0
-  const passato = evento.data < TODAY
+  const chiusa = !can(['admin']) && isAulaChiusa(evento.data)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -29,18 +31,16 @@ export default function EHSAulaInfoModal({ evento, onClose }) {
               <strong>{evento.iscritti_count}{hasLimit ? ` su ${evento.max_partecipanti} posti` : ''}</strong>
             </div>
           </div>
-          {pieno && !passato && (
+          {pieno && !chiusa && (
             <div style={{ fontSize: 13, color: '#991B1B', background: '#FEE2E2', borderRadius: 6, padding: '8px 12px', marginTop: 12 }}>
               Posti esauriti: non è possibile iscrivere altre persone.
             </div>
           )}
           <div className="modal-actions">
             <button className="btn btn-secondary" onClick={onClose}>Chiudi</button>
-            {!passato && (
-              <button className="btn btn-primary" onClick={() => navigate(`/iscrizioni?evento=${evento.id}`)}>
-                {pieno ? 'Vedi partecipanti' : 'Iscrivi persone'}
-              </button>
-            )}
+            <button className="btn btn-primary" onClick={() => navigate(`/iscrizioni?evento=${evento.id}`)}>
+              {chiusa || pieno ? 'Visualizza partecipanti' : 'Iscrivi persone'}
+            </button>
           </div>
         </div>
       </div>

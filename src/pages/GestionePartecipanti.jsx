@@ -4,6 +4,7 @@ import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import RichiestaModal from '../components/ui/RichiestaModal'
+import { isAulaChiusa } from '../utils/aule'
 
 const STATO_LABELS = { iscritto: 'Iscritto', partecipato: 'Partecipato', assente: 'Assente' }
 const STATO_BADGE = { iscritto: 'primary', partecipato: 'success', assente: 'danger' }
@@ -71,6 +72,7 @@ export default function GestionePartecipanti() {
   const [disponibili, setDisponibili] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [filtroNegozio, setFiltroNegozio] = useState('')
   const [richiestaModal, setRichiestaModal] = useState(null)
   const [confermaAssegna, setConfermaAssegna] = useState(null)
 
@@ -108,6 +110,10 @@ export default function GestionePartecipanti() {
   const paginaRitorno = evento?.is_ehs ? '/ehs' : '/'
   // Iscrizioni aperte a tutti gli store fino a esaurimento posti (0 = senza limite).
   const postiEsauriti = evento?.max_partecipanti > 0 && iscritti.length >= evento.max_partecipanti
+  // Aula chiusa (oltre 7 giorni dalla data): tranne l'Admin, i partecipanti sono solo consultabili.
+  const isAdmin = can(['admin'])
+  const aulaChiusa = !isAdmin && isAulaChiusa(evento?.data)
+  const nascondiDaAssegnare = (can(['store']) && isPastEvent) || aulaChiusa
 
   const handleAssegna = async (userId) => {
     try {
@@ -167,14 +173,17 @@ export default function GestionePartecipanti() {
   }
 
   const canModify = (iscrizione) => {
+    if (aulaChiusa) return false
     if (can(['admin', 'admin_ehs', 'ho', 'area'])) return true
     if (can(['store']) && iscrizione.store_id === user.store_id) return true
     return false
   }
 
+  // Filtro per negozio sui collaboratori da assegnare (solo Admin).
+  const negoziDisponibili = [...new Set(disponibili.map(u => u.store_nome).filter(Boolean))].sort()
   const filteredDisponibili = disponibili.filter(u =>
-    search === '' ||
-    `${u.cognome} ${u.nome}`.toLowerCase().includes(search.toLowerCase())
+    (!filtroNegozio || u.store_nome === filtroNegozio) &&
+    (search === '' || `${u.cognome} ${u.nome}`.toLowerCase().includes(search.toLowerCase()))
   )
 
   if (!eventoId) {
@@ -237,6 +246,15 @@ export default function GestionePartecipanti() {
         )}
       </h1>
 
+      {aulaChiusa && (
+        <div style={{
+          background: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: 8,
+          padding: '10px 16px', marginBottom: 16, fontSize: 13, color: '#374151',
+        }}>
+          🔒 Aula chiusa: sono passati più di 7 giorni, i partecipanti sono solo consultabili.
+        </div>
+      )}
+
       {can(['store']) && isWithin20Days && !isPastEvent && (
         <div style={{
           background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8,
@@ -254,7 +272,7 @@ export default function GestionePartecipanti() {
       {loading ? (
         <div className="loading-center"><div className="spinner" /></div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: can(['store']) && isPastEvent ? '1fr' : '1fr 1fr', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: nascondiDaAssegnare ? '1fr' : '1fr 1fr', gap: 20 }}>
           {/* Iscritti */}
           <div className="card">
             <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -278,12 +296,14 @@ export default function GestionePartecipanti() {
                     ⬇ PDF
                   </button>
                 )}
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => { toast.success('Modifiche salvate.'); navigate(paginaRitorno) }}
-                >
-                  Salva
-                </button>
+                {!aulaChiusa && (
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => { toast.success('Modifiche salvate.'); navigate(paginaRitorno) }}
+                  >
+                    Salva
+                  </button>
+                )}
                 <button
                   className="btn btn-sm"
                   style={{ background: '#EF4444', color: '#fff', border: 'none' }}
@@ -376,9 +396,20 @@ export default function GestionePartecipanti() {
           </div>
 
           {/* Da assegnare */}
-          <div className="card" style={can(['store']) && isPastEvent ? { display: 'none' } : {}}>
+          <div className="card" style={nascondiDaAssegnare ? { display: 'none' } : {}}>
             <div className="card-header">
               Da assegnare
+              {isAdmin && (
+                <select
+                  className="form-control"
+                  style={{ maxWidth: 200, fontWeight: 400, fontSize: '13px' }}
+                  value={filtroNegozio}
+                  onChange={e => setFiltroNegozio(e.target.value)}
+                >
+                  <option value="">Tutti i negozi</option>
+                  {negoziDisponibili.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              )}
               <input
                 className="form-control"
                 style={{ maxWidth: 200, fontWeight: 400, fontSize: '13px' }}
