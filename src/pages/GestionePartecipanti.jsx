@@ -61,6 +61,16 @@ function downloadPdf(evento, iscritti) {
   setTimeout(() => w.print(), 400)
 }
 
+// Pulsante presenza (V verde / X rossa): pieno quando selezionato, a contorno altrimenti.
+function PresenzaButton({ simbolo, colore, titolo, attivo, onClick }) {
+  return (
+    <button type="button" title={titolo} onClick={onClick} style={{
+      width: 30, height: 30, borderRadius: 6, cursor: 'pointer', fontSize: 15, fontWeight: 800, lineHeight: 1,
+      border: `2px solid ${colore}`, background: attivo ? colore : '#fff', color: attivo ? '#fff' : colore,
+    }}>{simbolo}</button>
+  )
+}
+
 export default function GestionePartecipanti() {
   const { user, can } = useAuth()
   const navigate = useNavigate()
@@ -152,13 +162,43 @@ export default function GestionePartecipanti() {
     if (userId) handleAssegna(userId)
   }
 
-  const handleStatoChange = async (iscrizioneId, stato) => {
+  // Presenze: Admin e HO segnano V (partecipato) o X (assente); le scelte restano in
+  // sospeso finché non si preme Salva, che le registra e aggiorna il report.
+  const canMarcarePresenze = can(['admin', 'ho'])
+  const [presenze, setPresenze] = useState({}) // { iscrizioneId: stato }
+  const [salvataggio, setSalvataggio] = useState(false)
+  const statoDi = (i) => presenze[i.id] ?? i.stato
+
+  const segnaPresenza = (i, stato) => {
+    // Un secondo clic sullo stesso simbolo lo annulla (torna "iscritto").
+    const nuovo = statoDi(i) === stato ? 'iscritto' : stato
+    setPresenze(prev => {
+      const next = { ...prev }
+      if (nuovo === i.stato) delete next[i.id]
+      else next[i.id] = nuovo
+      return next
+    })
+  }
+
+  const handleSalva = async () => {
+    const modifiche = Object.entries(presenze)
+    setSalvataggio(true)
     try {
-      await api.patch(`/iscrizioni/${iscrizioneId}/`, { stato })
-      setIscritti(prev => prev.map(i => i.id === iscrizioneId ? { ...i, stato } : i))
-    } catch {
-      toast.error('Errore aggiornamento stato.')
+      await Promise.all(modifiche.map(([id, stato]) => api.patch(`/iscrizioni/${id}/`, { stato })))
+      toast.success(modifiche.length ? 'Presenze salvate.' : 'Modifiche salvate.')
+      navigate(paginaRitorno)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore nel salvataggio delle presenze.')
+      setPresenze({})
+      fetchData()
+    } finally {
+      setSalvataggio(false)
     }
+  }
+
+  const handleEsci = () => {
+    if (Object.keys(presenze).length && !window.confirm('Ci sono presenze non salvate. Uscire senza salvare?')) return
+    navigate(paginaRitorno)
   }
 
   const handleElimina = async (iscrizioneId) => {
@@ -297,17 +337,14 @@ export default function GestionePartecipanti() {
                   </button>
                 )}
                 {!aulaChiusa && (
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => { toast.success('Modifiche salvate.'); navigate(paginaRitorno) }}
-                  >
-                    Salva
+                  <button className="btn btn-primary btn-sm" disabled={salvataggio} onClick={handleSalva}>
+                    {salvataggio ? 'Salvataggio...' : 'Salva'}
                   </button>
                 )}
                 <button
                   className="btn btn-sm"
                   style={{ background: '#EF4444', color: '#fff', border: 'none' }}
-                  onClick={() => navigate(paginaRitorno)}
+                  onClick={handleEsci}
                 >
                   Esci
                 </button>
@@ -334,17 +371,16 @@ export default function GestionePartecipanti() {
                         </td>
                         <td>{i.user_cognome} {i.user_nome}</td>
                         <td>
-                          {editable && can(['admin', 'admin_ehs', 'ho', 'area']) ? (
-                            <select
-                              className="form-control"
-                              style={{ padding: '4px 8px', fontSize: '12px' }}
-                              value={i.stato}
-                              onChange={e => handleStatoChange(i.id, e.target.value)}
-                            >
-                              <option value="iscritto">Iscritto</option>
-                              <option value="partecipato">Partecipato</option>
-                              <option value="assente">Assente</option>
-                            </select>
+                          {editable && canMarcarePresenze ? (
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <PresenzaButton simbolo="✓" colore="#10B981" titolo="Partecipato"
+                                attivo={statoDi(i) === 'partecipato'} onClick={() => segnaPresenza(i, 'partecipato')} />
+                              <PresenzaButton simbolo="✕" colore="#EF4444" titolo="Non presente"
+                                attivo={statoDi(i) === 'assente'} onClick={() => segnaPresenza(i, 'assente')} />
+                              {presenze[i.id] && (
+                                <span title="Da salvare" style={{ fontSize: 10, color: '#D97706', fontWeight: 700 }}>●</span>
+                              )}
+                            </div>
                           ) : (
                             <span className={`badge badge-${STATO_BADGE[i.stato]}`}>
                               {STATO_LABELS[i.stato]}
