@@ -121,8 +121,9 @@ function ItaliaCorsoRing({ corso }) {
   const tmPct   = corso.team_manager.totale > 0 ? Math.round(100 * corso.team_manager.completato / corso.team_manager.totale) : 0
 
   return (
-    <div className="completamento-card card">
-      <div className="completamento-card-header">{corso.nome_breve}</div>
+    // Interno azzurro chiaro per distinguere i totali Italia dalle card delle aree.
+    <div className="completamento-card card" style={{ background: '#F5F9FF', borderColor: '#BFDBFE' }}>
+      <div className="completamento-card-header" style={{ borderBottomColor: '#DBEAFE' }}>{corso.nome_breve}</div>
       <div className="completamento-card-body">
         {/* Ring più piccolo e con stile distinto: r=42, stroke 5, linecap butt */}
         <div style={{ position: 'relative', width: 100, height: 100 }}>
