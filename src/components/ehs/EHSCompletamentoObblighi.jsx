@@ -4,9 +4,23 @@ import { useAuth } from '../../context/AuthContext'
 import Modal from '../ui/Modal'
 import EHSRichiestaFormModal from './EHSRichiestaFormModal'
 
-// Stesse soglie colore della pagina Completamento GWU.
-const coloreDa = (pct) => pct == null ? '#9CA3AF' : pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444'
-const sfondoDa = (pct) => pct == null ? '#F9FAFB' : pct >= 80 ? '#D1FAE5' : pct >= 50 ? '#FEF3C7' : '#FEE2E2'
+// Semaforo di un gruppo di persone su un corso:
+// rosso = almeno uno scaduto o non ancora formato (anche se iscritto a un'aula),
+// giallo = tutti formati ma almeno uno in scadenza, verde = tutti formati e validi.
+const SEMAFORO_GRUPPO = {
+  verde:  { colore: '#10B981', sfondo: '#D1FAE5' },
+  giallo: { colore: '#F59E0B', sfondo: '#FEF3C7' },
+  rosso:  { colore: '#EF4444', sfondo: '#FEE2E2' },
+  nessuno: { colore: '#9CA3AF', sfondo: '#F9FAFB' },
+}
+const semaforoDi = (d) => {
+  if (!d || !d.dovuti) return SEMAFORO_GRUPPO.nessuno
+  if (d.scaduta + d.mancante + d.iscritta > 0) return SEMAFORO_GRUPPO.rosso
+  if (d.in_scadenza > 0) return SEMAFORO_GRUPPO.giallo
+  return SEMAFORO_GRUPPO.verde
+}
+const coloreDi = (d) => semaforoDi(d).colore
+const sfondoDi = (d) => semaforoDi(d).sfondo
 
 const SEMAFORO = {
   valida:      { icona: '🟢', label: 'Valida' },
@@ -21,8 +35,7 @@ const daFormare = (c) => c.mancante + c.scaduta
 
 const C = 2 * Math.PI * 34
 
-function Anello({ pct, iscrittePct }) {
-  const colore = coloreDa(pct)
+function Anello({ pct, iscrittePct, colore }) {
   const pieno = ((pct || 0) / 100) * C
   const tratteggio = ((iscrittePct || 0) / 100) * C
   return (
@@ -46,9 +59,9 @@ function CardCorso({ corso, dati }) {
       <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>{corso.nome}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ position: 'relative' }}>
-          <Anello pct={pct} iscrittePct={iscrittePct} />
+          <Anello pct={pct} iscrittePct={iscrittePct} colore={coloreDi(dati)} />
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 800, fontSize: 16, color: coloreDa(pct) }}>
+            fontWeight: 800, fontSize: 16, color: coloreDi(dati) }}>
             {pct == null ? '—' : `${pct}%`}
           </div>
         </div>
@@ -146,8 +159,8 @@ export function DettaglioNegozio({ negozioId, conAnelli = false }) {
           const inAula = daMettereInAula(dati, c.id)
           return (
             <div key={c.id} style={{
-              borderRadius: 8, padding: '8px 12px', fontSize: 13, background: sfondoDa(r.percentuale),
-              border: `1px solid ${coloreDa(r.percentuale)}`, display: 'flex', alignItems: 'center', gap: 8,
+              borderRadius: 8, padding: '8px 12px', fontSize: 13, background: sfondoDi(r),
+              border: `1px solid ${coloreDi(r)}`, display: 'flex', alignItems: 'center', gap: 8,
             }}>
               <span>
                 <strong>{c.nome}</strong>{' '}
@@ -210,7 +223,7 @@ function CellaPct({ dati }) {
   return (
     <td style={{ textAlign: 'center', padding: 3 }}>
       <div title={`${dati.conformi}/${dati.dovuti} in regola · ${daFormare(dati)} da formare · ${dati.iscritta} iscritti`}
-        style={{ background: sfondoDa(dati.percentuale), color: coloreDa(dati.percentuale), borderRadius: 6,
+        style={{ background: sfondoDi(dati), color: coloreDi(dati), borderRadius: 6,
           padding: '4px 2px', fontWeight: 700, fontSize: 12 }}>
         {dati.percentuale}%
         <div style={{ fontWeight: 400, fontSize: 10, color: '#6B7280' }}>{dati.conformi}/{dati.dovuti}</div>
@@ -292,6 +305,9 @@ export default function EHSCompletamentoObblighi() {
         </select>
       </div>
       <p style={{ fontSize: 12, color: '#6B7280', marginTop: 0 }}>
+        <span style={{ color: '#10B981', fontWeight: 700 }}>verde</span> = tutti formati ·{' '}
+        <span style={{ color: '#B45309', fontWeight: 700 }}>giallo</span> = qualcuno in scadenza (45 gg) ·{' '}
+        <span style={{ color: '#EF4444', fontWeight: 700 }}>rosso</span> = almeno uno scaduto o da formare ·
         % = persone in regola sul totale di chi ha l'obbligo (Retail Assistant esclusi) · tratteggio = iscritti a un'aula confermata ·
         ⭐ = facoltativa fatta in anticipo, non conteggiata nella %.
       </p>
