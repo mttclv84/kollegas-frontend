@@ -352,10 +352,13 @@ export default function Completamento() {
         {italiaData && !italiaLoading && (
           <>
             {/* Italia totals — visibile a tutti */}
-            <div className="completamento-grid" style={{ marginBottom: 20 }}>
-              {italiaData.italia.map(c => (
-                <ItaliaCorsoRing key={c.nome_breve} corso={c} />
-              ))}
+            {/* Fascia azzurra leggera dietro i totali Italia */}
+            <div style={{ background: '#EFF6FF', border: '1px solid #DBEAFE', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+              <div className="completamento-grid" style={{ marginBottom: 0 }}>
+                {italiaData.italia.map(c => (
+                  <ItaliaCorsoRing key={c.nome_breve} corso={c} />
+                ))}
+              </div>
             </div>
 
             {/* Per area — admin/ho/area */}
