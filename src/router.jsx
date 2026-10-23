@@ -79,4 +79,6 @@ export const router = createBrowserRouter([
       { path: 'iscrizioni-store', element: <ProtectedRoute roles={['store']}><IscrizioniStore /></ProtectedRoute> },
     ],
   },
+  // Indirizzo inesistente (link vecchio o digitato male): si torna alla home.
+  { path: '*', element: <Navigate to="/" replace /> },
 ])
