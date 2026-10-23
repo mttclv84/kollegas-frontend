@@ -219,7 +219,7 @@ export default function Calendario() {
               <span className="legenda-dot" style={{ background: '#F97316' }} /> GWU RA-TM
             </div>
             <div className="legenda-item">
-              <span className="legenda-dot" style={{ background: '#F3F4F6', border: `2px solid ${ROSSO_FUOCO_EHS}` }} /> EHS (area dedicata)
+              <span className="legenda-dot" style={{ background: '#9CA3AF' }} /> EHS (area dedicata)
             </div>
           </div>
         </div>

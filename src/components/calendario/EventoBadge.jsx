@@ -17,7 +17,7 @@ export function getEventColor(evento) {
 export const ROSSO_FUOCO_EHS = '#E8170B'
 
 // `ehsRidotto`: formazione EHS vista dal calendario principale — casella grigia larga
-// la metà, solo profilo rosso fuoco e senza numero di iscritti (si gestisce nell'area EHS).
+// la metà e senza numero di iscritti (si gestisce nell'area EHS).
 export default function EventoBadge({ evento, onClick, dimmed = false, clickable = true, ehsRidotto = false }) {
   const color = dimmed || ehsRidotto ? '#9CA3AF' : getEventColor(evento)
 
@@ -62,7 +62,7 @@ export default function EventoBadge({ evento, onClick, dimmed = false, clickable
   )
 
   const stileRidotto = ehsRidotto
-    ? { width: '50%', border: `1.5px solid ${ROSSO_FUOCO_EHS}`, background: '#F3F4F6', color: '#6B7280' }
+    ? { width: '50%', background: '#F3F4F6', color: '#6B7280' }
     : {}
 
   return (
