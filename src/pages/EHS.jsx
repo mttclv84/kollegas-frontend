@@ -9,6 +9,7 @@ import EHSRichiesteList from '../components/ehs/EHSRichiesteList'
 import EHSRichiestaFormModal from '../components/ehs/EHSRichiestaFormModal'
 import EHSCercaFormazioni from '../components/ehs/EHSCercaFormazioni'
 import EHSAulaInfoModal from '../components/ehs/EHSAulaInfoModal'
+import EHSFormazioniPianificateModal from '../components/ehs/EHSFormazioniPianificateModal'
 import EventoModal from '../components/calendario/EventoModal'
 import './Calendario.css'
 import './EHS.css'
@@ -23,6 +24,7 @@ export default function EHS() {
   const [loading, setLoading] = useState(true)
   const [selectedSessioneId, setSelectedSessioneId] = useState(null)
   const [showRichiestaForm, setShowRichiestaForm] = useState(false)
+  const [showPianificate, setShowPianificate] = useState(false)
   const richiesteListRef = useRef(null)
 
   const anno = currentDate.getFullYear()
@@ -173,11 +175,18 @@ export default function EHS() {
             )}
           </button>
         </div>
-        {canCreaRichiesta && (
-          <button className="btn btn-primary btn-sm" onClick={() => setShowRichiestaForm(true)}>
-            + Nuova richiesta
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {isAdmin && (
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowPianificate(true)}>
+              🗂 Formazioni pianificate
+            </button>
+          )}
+          {canCreaRichiesta && (
+            <button className="btn btn-primary btn-sm" onClick={() => setShowRichiestaForm(true)}>
+              + Nuova richiesta
+            </button>
+          )}
+        </div>
       </div>
 
       {tab === 'calendario' ? (
@@ -235,6 +244,13 @@ export default function EHS() {
           sessioneId={selectedSessioneId}
           onClose={() => setSelectedSessioneId(null)}
           onChanged={() => { fetchEventi(); fetchEccezioni(); richiesteListRef.current?.refresh() }}
+        />
+      )}
+
+      {showPianificate && (
+        <EHSFormazioniPianificateModal
+          onClose={() => setShowPianificate(false)}
+          onChanged={() => { fetchEventi(); richiesteListRef.current?.refresh() }}
         />
       )}
 
