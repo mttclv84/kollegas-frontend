@@ -3,7 +3,10 @@ import toast from 'react-hot-toast'
 import api from '../api/client'
 import DataTable from '../components/ui/DataTable'
 import Modal from '../components/ui/Modal'
+import { useAuth } from '../context/AuthContext'
 import './EHS.css'
+
+const TESTO_CONFERMA = 'ELIMINA DEFINITIVAMENTE'
 
 const EMPTY_FORM = {
   fornitore_ragione_sociale: '', nome: '', email: '', telefono: '', indirizzo: '',
@@ -16,6 +19,11 @@ export default function GestioneFornitoriEHS() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  // Cancellazione definitiva: solo Admin / Admin EHS, digitando la frase di conferma.
+  const { can } = useAuth()
+  const canEliminare = can(['admin', 'admin_ehs'])
+  const [eliminaTarget, setEliminaTarget] = useState(null)
+  const [confermaTesto, setConfermaTesto] = useState('')
   const [emailSbloccata, setEmailSbloccata] = useState(false)
   const [nomeAziendaSbloccato, setNomeAziendaSbloccato] = useState(false)
 
@@ -82,6 +90,19 @@ export default function GestioneFornitoriEHS() {
     }
   }
 
+  const apriEliminazione = (f) => { setEliminaTarget(f); setConfermaTesto('') }
+
+  const confermaEliminazione = async () => {
+    try {
+      await api.delete(`/ehs/fornitori/${eliminaTarget.id}/`, { data: { definitivo: true, conferma: confermaTesto } })
+      toast.success('Fornitore eliminato definitivamente.')
+      setEliminaTarget(null)
+      fetchFornitori()
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore.')
+    }
+  }
+
   const columns = [
     { key: 'fornitore_ragione_sociale', label: 'Nome Azienda', sortable: true },
     { key: 'nome_completo', label: 'Nome di riferimento', sortable: true },
@@ -112,7 +133,10 @@ export default function GestioneFornitoriEHS() {
               <div style={{ display: 'flex', gap: 2 }}>
                 <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(f)} title="Modifica">✏️</button>
                 {f.is_active && (
-                  <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setDeleteTarget(f)} title="Disattiva">🗑️</button>
+                  <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setDeleteTarget(f)} title="Disattiva">🚫</button>
+                )}
+                {canEliminare && (
+                  <button className="btn btn-ghost btn-sm btn-icon" onClick={() => apriEliminazione(f)} title="Elimina definitivamente">🗑️</button>
                 )}
               </div>
             )}
@@ -191,6 +215,26 @@ export default function GestioneFornitoriEHS() {
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button className="btn btn-secondary" onClick={() => setDeleteTarget(null)}>Annulla</button>
             <button className="btn btn-danger" onClick={confirmDelete}>Disattiva</button>
+          </div>
+        </Modal>
+      )}
+
+      {eliminaTarget && (
+        <Modal title="Elimina fornitore" onClose={() => setEliminaTarget(null)} size="sm">
+          <p style={{ marginBottom: 8 }}>
+            Eliminare definitivamente il fornitore <strong>{eliminaTarget.fornitore_ragione_sociale}</strong>?
+          </p>
+          <p style={{ marginBottom: 12, color: '#991B1B' }}>
+            Verranno cancellati l'account e i corsi che eroga. L'operazione non è reversibile.
+          </p>
+          <label className="form-label">Per confermare digita <strong>{TESTO_CONFERMA}</strong></label>
+          <input className="form-control" value={confermaTesto} autoFocus
+            onChange={e => setConfermaTesto(e.target.value)} />
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+            <button className="btn btn-secondary" onClick={() => setEliminaTarget(null)}>Annulla</button>
+            <button className="btn btn-danger" disabled={confermaTesto !== TESTO_CONFERMA} onClick={confermaEliminazione}>
+              Elimina definitivamente
+            </button>
           </div>
         </Modal>
       )}
