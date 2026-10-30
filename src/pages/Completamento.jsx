@@ -253,6 +253,67 @@ function AreaDetailModal({ area, onClose }) {
   )
 }
 
+// ZOOM (store): chi ha fatto cosa tra i corsi obbligatori, persona per persona.
+function ZoomModal({ storeId, onClose }) {
+  const [zoom, setZoom] = useState(null)
+
+  useEffect(() => {
+    api.get(`/stores/${storeId}/completamento/zoom/`).then(({ data }) => setZoom(data)).catch(() => setZoom({ utenti: [], corsi: [] }))
+  }, [storeId])
+
+  const cella = { padding: '8px 10px', borderBottom: '1px solid #F3F4F6', fontSize: 13 }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)' }} onClick={onClose} />
+      <div style={{ position: 'relative', background: '#fff', borderRadius: 12, width: '92vw', maxWidth: 780, maxHeight: '85vh', overflowY: 'auto', padding: 24, zIndex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>ZOOM — chi ha fatto cosa</h3>
+            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>GWU RA-TM e Team Manager del negozio</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#6B7280', lineHeight: 1 }}>✕</button>
+        </div>
+
+        {!zoom && <div className="loading-center"><div className="spinner" /></div>}
+
+        {zoom && zoom.utenti.length === 0 && (
+          <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>Nessun GWU RA-TM o Team Manager in questo negozio.</p>
+        )}
+
+        {zoom && zoom.utenti.length > 0 && (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#F9FAFB' }}>
+                  <th style={{ ...cella, textAlign: 'left' }}>Collaboratore</th>
+                  <th style={{ ...cella, textAlign: 'left' }}>Ruolo</th>
+                  {zoom.corsi.map(c => <th key={c.id} style={{ ...cella, textAlign: 'center' }}>{c.nome_breve}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {zoom.utenti.map(u => (
+                  <tr key={u.id}>
+                    <td style={{ ...cella, fontWeight: 600, color: '#1F2937' }}>{u.cognome} {u.nome}</td>
+                    <td style={{ ...cella, color: '#6B7280' }}>{u.ruolo === 'Team Manager' ? 'TM' : u.ruolo}</td>
+                    {zoom.corsi.map(c => (
+                      <td key={c.id} style={{ ...cella, textAlign: 'center' }}>
+                        {u.fatti.includes(c.id)
+                          ? <span title="Fatto" style={{ color: '#16A34A', fontSize: 18, fontWeight: 700 }}>✓</span>
+                          : <span title="Da fare" style={{ display: 'inline-block', width: 16, height: 3, borderRadius: 2, background: '#D1D5DB', verticalAlign: 'middle' }} />}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Completamento() {
   const { user, can } = useAuth()
   const isStore = user?.livello_accesso === 'store'
@@ -266,6 +327,7 @@ export default function Completamento() {
   const [italiaData, setItaliaData] = useState(null)
   const [italiaLoading, setItaliaLoading] = useState(false)
   const [areaModal, setAreaModal] = useState(null) // area object
+  const [showZoom, setShowZoom] = useState(false)
 
   useEffect(() => {
     if (soloItalia) return
@@ -313,7 +375,12 @@ export default function Completamento() {
             </select>
           </div>
         )}
+        {isStore && storeId && (
+          <button className="btn btn-primary btn-sm" onClick={() => setShowZoom(true)}>🔍 ZOOM</button>
+        )}
       </div>
+
+      {showZoom && <ZoomModal storeId={storeId} onClose={() => setShowZoom(false)} />}
 
       {loading && <div className="loading-center"><div className="spinner" /></div>}
 
