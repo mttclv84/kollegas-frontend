@@ -57,18 +57,28 @@ export default function Report() {
     } catch { toast.error('Errore durante l\'eliminazione.') }
   }
 
-  const exportCSV = () => {
-    const headers = ['Data','Attività','Ore','Tipologia','Store','Collaboratore','Sesso','Location','Stato']
-    const rows = dati.map(d => [
-      d.evento_data, d.attivita_nome, d.evento_ore, d.attivita_tipologia,
-      d.store_nome, `${d.user_cognome} ${d.user_nome}`, d.user_sesso,
-      d.location_display, d.stato,
-    ])
-    const csv = [headers, ...rows].map(r => r.map(v => `"${v ?? ''}"`).join(',')).join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = 'report_popsquare.csv'; a.click()
-    URL.revokeObjectURL(url)
+  // Il file Excel lo genera il server con gli stessi filtri della pagina.
+  const [esportando, setEsportando] = useState(false)
+  const exportExcel = async () => {
+    setEsportando(true)
+    try {
+      const params = {}
+      if (filters.data_da) params.data_da = filters.data_da
+      if (filters.data_a) params.data_a = filters.data_a
+      if (filters.ruolo) params.ruolo = filters.ruolo
+      if (filters.store && can(['admin', 'admin_ehs', 'ho', 'area'])) params.store = filters.store
+      const { data } = await api.get('/report/excel/', { params, responseType: 'blob' })
+      const url = URL.createObjectURL(data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `dettaglio_${new Date().toISOString().slice(0, 10)}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error("Errore durante l'esportazione.")
+    } finally {
+      setEsportando(false)
+    }
   }
 
   const columns = [
@@ -99,8 +109,8 @@ export default function Report() {
               🗑 Elimina assenti ({assentiCount})
             </button>
           )}
-          <button className="btn btn-secondary" onClick={exportCSV} disabled={dati.length === 0}>
-            ⬇ Export CSV
+          <button className="btn btn-secondary" onClick={exportExcel} disabled={dati.length === 0 || esportando}>
+            {esportando ? 'Esportazione…' : '⬇ Export Excel'}
           </button>
         </div>
       </div>
