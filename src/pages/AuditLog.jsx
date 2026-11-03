@@ -7,6 +7,7 @@ const AZIONE_CFG = {
   elimina:    { label: 'Eliminazione',    bg: '#F3E8FF', color: '#6B21A8' },
   disattiva:  { label: 'Disattivazione',  bg: '#FEE2E2', color: '#991B1B' },
   riattiva:   { label: 'Riattivazione',   bg: '#FEF3C7', color: '#92400E' },
+  accesso:    { label: 'Accesso',         bg: '#F3F4F6', color: '#374151' },
 }
 
 const TIPO_LABEL = {
@@ -138,7 +139,7 @@ export default function AuditLog() {
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Operazioni</span>
               <span style={{ fontWeight: 400, fontSize: 13, color: '#6B7280' }}>
-                {logs.length} risultati{logs.length === 500 ? ' (limite massimo)' : ''}
+                {logs.length} risultati{logs.length === 2000 ? ' (ultime 2000: usa i filtri per restringere)' : ''}
               </span>
             </div>
             <div className="table-wrapper">
@@ -161,6 +162,9 @@ export default function AuditLog() {
                       </td>
                       <td style={{ fontWeight: 600 }}>
                         {log.actor_nome || <span style={{ color: '#9CA3AF' }}>—</span>}
+                        {log.actor_livello && (
+                          <div style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF' }}>{log.actor_livello}</div>
+                        )}
                       </td>
                       <td><AzioneBadge azione={log.azione} /></td>
                       <td style={{ color: '#6B7280', fontSize: 13 }}>
