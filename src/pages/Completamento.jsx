@@ -177,7 +177,76 @@ function MiniBar({ percentuale, completato, totale }) {
   )
 }
 
-function AreaDetailModal({ area, onClose }) {
+// Vista compatta per l'utente Area: un negozio per riga, per ogni corso la % dei due
+// ruoli in una cella colorata (verde ≥80, arancio ≥50, rosso sotto), 0/0 = n.s.
+function PercCella({ completato, totale }) {
+  if (!totale) {
+    return <td title="Non significativo: nessuna persona nel ruolo"
+      style={{ padding: '6px 4px', textAlign: 'center', fontSize: 12, color: '#9CA3AF', background: '#F9FAFB' }}>n.s.</td>
+  }
+  const pct = Math.round(100 * completato / totale)
+  const [bg, fg] = pct >= 80 ? ['#D1FAE5', '#065F46'] : pct >= 50 ? ['#FEF3C7', '#92400E'] : ['#FEE2E2', '#991B1B']
+  return (
+    <td title={`${completato}/${totale}`}
+      style={{ padding: '6px 4px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: fg, background: bg }}>
+      {pct}%
+    </td>
+  )
+}
+
+function AreaTabella({ stores }) {
+  const corsi = stores[0]?.corsi.map(c => c.nome_breve) || []
+  const bordo = '2px solid #fff'
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+        <colgroup>
+          <col style={{ width: 190 }} />
+          {corsi.flatMap(n => [<col key={`${n}-g`} />, <col key={`${n}-t`} />])}
+        </colgroup>
+        <thead>
+          <tr>
+            <th />
+            {corsi.map(n => (
+              <th key={n} colSpan={2} style={{ padding: '4px', fontSize: 12, fontWeight: 700, color: '#374151', textAlign: 'center', borderLeft: bordo }}>{n}</th>
+            ))}
+          </tr>
+          <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
+            <th style={{ textAlign: 'left', padding: '4px 8px', fontSize: 11, color: '#6B7280', fontWeight: 600 }}>Negozio</th>
+            {corsi.flatMap(n => [
+              <th key={`${n}-g`} style={{ padding: '4px', fontSize: 10.5, color: '#6B7280', fontWeight: 600, borderLeft: bordo }}>GWU RA-TM</th>,
+              <th key={`${n}-t`} style={{ padding: '4px', fontSize: 10.5, color: '#6B7280', fontWeight: 600 }}>TM</th>,
+            ])}
+          </tr>
+        </thead>
+        <tbody>
+          {stores.map(s => (
+            <tr key={s.id} style={{ borderBottom: bordo }}>
+              <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600, color: '#1F2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                title={s.alert ? 'Negozio con maggior numero di persone ancora da formare' : undefined}>
+                {s.alert && <span style={{ color: '#DC2626', marginRight: 4 }}>●</span>}
+                {s.codice_store ? `${s.codice_store} — ` : ''}{s.nome}
+              </td>
+              {s.corsi.flatMap(c => [
+                <PercCella key={`${c.nome_breve}-g`} {...c.gwu_ratm} />,
+                <PercCella key={`${c.nome_breve}-t`} {...c.team_manager} />,
+              ])}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 11, color: '#6B7280', marginTop: 12 }}>
+        <span><span style={{ color: '#065F46', fontWeight: 700 }}>■</span> ≥ 80%</span>
+        <span><span style={{ color: '#D97706', fontWeight: 700 }}>■</span> 50–79%</span>
+        <span><span style={{ color: '#DC2626', fontWeight: 700 }}>■</span> &lt; 50%</span>
+        <span>n.s. = nessuna persona nel ruolo</span>
+        <span><span style={{ color: '#DC2626' }}>●</span> priorità formazione</span>
+      </div>
+    </div>
+  )
+}
+
+function AreaDetailModal({ area, onClose, compatta = false }) {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -192,7 +261,7 @@ function AreaDetailModal({ area, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)' }} onClick={onClose} />
-      <div style={{ position: 'relative', background: '#fff', borderRadius: 12, width: '92vw', maxWidth: 780, maxHeight: '85vh', overflowY: 'auto', padding: 24, zIndex: 1 }}>
+      <div style={{ position: 'relative', background: '#fff', borderRadius: 12, width: '92vw', maxWidth: compatta ? 960 : 780, maxHeight: '85vh', overflowY: 'auto', padding: 24, zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Area {area.numero} — dettaglio negozi</h3>
@@ -209,7 +278,9 @@ function AreaDetailModal({ area, onClose }) {
 
         {loading && <div className="loading-center"><div className="spinner" /></div>}
 
-        {detail && !loading && (
+        {detail && !loading && compatta && detail.stores.length > 0 && <AreaTabella stores={detail.stores} />}
+
+        {detail && !loading && !compatta && (
           <>
             {detail.stores.length === 0 && (
               <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>Nessun negozio configurato per questa area.</p>
@@ -489,7 +560,10 @@ export default function Completamento() {
         )}
       </div>
 
-      {areaModal && <AreaDetailModal area={areaModal} onClose={() => setAreaModal(null)} />}
+      {areaModal && (
+        <AreaDetailModal area={areaModal} onClose={() => setAreaModal(null)}
+          compatta={user?.livello_accesso === 'area'} />
+      )}
     </div>
   )
 }
