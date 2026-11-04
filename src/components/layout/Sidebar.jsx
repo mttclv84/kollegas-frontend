@@ -30,7 +30,8 @@ const NAV_ITEMS = [
     roles: ['admin', 'admin_ehs', 'ho', 'area', 'store'],
     children: [
       { to: '/completamento', label: '% Completamento', icon: '📈', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store'] },
-      { to: '/report',        label: 'Dettaglio',        icon: '🔍', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store'] },
+      { to: '/iscrizioni-store', label: 'Iscrizioni',   icon: '📋', roles: ['store'] },
+      { to: '/report',       label: 'Dettaglio',        icon: '🔍', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store'] },
       { to: '/mapping',       label: 'Mapping',          icon: '🗂️', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store'] },
     ],
   },
@@ -51,7 +52,6 @@ const NAV_ITEMS = [
     ],
   },
   { divider: true },
-  { to: '/iscrizioni-store', label: 'Iscrizioni',            icon: '📋', roles: ['store'] },
   { to: '/eccezioni',        label: 'Eccezioni Calendario',  icon: '📌', roles: ['admin', 'admin_ehs', 'ho'] },
   { to: '/richieste',        label: 'Richieste di Modifica', icon: '🔔', roles: ['admin', 'ho'], alertBadge: true },
   { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin', 'admin_ehs', 'ho'] },
