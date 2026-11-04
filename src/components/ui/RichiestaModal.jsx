@@ -33,7 +33,7 @@ export default function RichiestaModal({ iscrizione, onClose, onSuccess }) {
           Richiesta di cancellazione
         </h3>
         <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6B7280' }}>
-          Mancano meno di 20 giorni all'evento. La richiesta verrà inviata ad Admin/HO per approvazione.
+          Siamo a meno di 12 giorni dalla formazione (3 per l'EHS). La richiesta verrà inviata ad Admin/HO per approvazione.
         </p>
         <div style={{
           background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8,

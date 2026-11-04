@@ -185,7 +185,8 @@ export default function IscrizioniStore() {
                   {items.map(i => {
                     const days = daysUntil(i.evento_data)
                     const isPast = days < 0
-                    const within20 = days >= 0 && days < 20
+                    // Soglia oltre la quale serve la richiesta di cancellazione: 3 giorni EHS, 12 per le altre.
+                    const within20 = days >= 0 && days < (i.attivita_tipologia === 'ehs' ? 3 : 12)
                     const hasPending = Boolean(i.richiesta_pendente_id)
 
                     let action = null

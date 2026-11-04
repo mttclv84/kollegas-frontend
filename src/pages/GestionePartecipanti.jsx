@@ -126,9 +126,9 @@ export default function GestionePartecipanti() {
     ? Math.ceil((new Date(evento.data) - new Date().setHours(0, 0, 0, 0)) / 86400000)
     : 99
   const isPastEvent = daysUntilEvent < 0
-  // Per le formazioni EHS lo store può cancellare un iscritto fino a 7 giorni prima;
-  // per gli altri eventi la soglia resta di 20 giorni.
-  const giorniBlocco = evento?.is_ehs ? 7 : 20
+  // Lo store cancella direttamente un iscritto fino a 3 giorni prima (EHS) o 12 giorni prima
+  // (altre formazioni); dopo serve una richiesta di cancellazione.
+  const giorniBlocco = evento?.is_ehs ? 3 : 12
   const isWithin20Days = daysUntilEvent >= 0 && daysUntilEvent < giorniBlocco
   // Da una formazione EHS si torna al calendario EHS, dagli altri eventi al calendario principale.
   const paginaRitorno = evento?.is_ehs ? '/ehs' : '/'
@@ -431,7 +431,7 @@ export default function GestionePartecipanti() {
                                 >⚠ Richiedi cancellazione</button>
                               )
                             }
-                            // Prima della soglia (20 giorni, 7 per l'EHS) lo store toglie l'iscritto direttamente.
+                            // Prima della soglia (12 giorni, 3 per l'EHS) lo store toglie l'iscritto direttamente.
                             return <CestinoButton onClick={() => handleElimina(i.id)} />
                           })()}
                         </td>
