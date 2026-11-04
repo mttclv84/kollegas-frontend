@@ -337,7 +337,7 @@ function ZoomModal({ storeId, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)' }} onClick={onClose} />
-      <div style={{ position: 'relative', background: '#fff', borderRadius: 12, width: '92vw', maxWidth: 780, maxHeight: '85vh', overflowY: 'auto', padding: 24, zIndex: 1 }}>
+      <div style={{ position: 'relative', background: '#fff', borderRadius: 12, width: '92vw', maxWidth: 980, maxHeight: '85vh', overflowY: 'auto', padding: 24, zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>ZOOM — chi ha fatto cosa</h3>
@@ -371,6 +371,13 @@ function ZoomModal({ storeId, onClose }) {
                       <td key={c.id} style={{ ...cella, textAlign: 'center' }}>
                         {u.fatti.includes(c.id)
                           ? <span title="Fatto" style={{ color: '#16A34A', fontSize: 18, fontWeight: 700 }}>✓</span>
+                          : u.iscritti?.[c.id]
+                          ? (
+                            <span title="Iscritto a un'aula non ancora svolta"
+                              style={{ fontSize: 11, fontWeight: 700, color: '#1E40AF', background: '#DBEAFE', borderRadius: 4, padding: '2px 7px', whiteSpace: 'nowrap' }}>
+                              Iscritto · {u.iscritti[c.id].slice(8, 10)}/{u.iscritti[c.id].slice(5, 7)}
+                            </span>
+                          )
                           : <span title="Da fare" style={{ display: 'inline-block', width: 16, height: 3, borderRadius: 2, background: '#D1D5DB', verticalAlign: 'middle' }} />}
                       </td>
                     ))}

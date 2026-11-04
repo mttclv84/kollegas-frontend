@@ -113,7 +113,8 @@ export default function GestionePartecipanti() {
       setIscritti(iscrittiData)
       const iscrittiIds = new Set(iscrittiData.map(i => i.user))
       const allUsers = usersRes.data.results || usersRes.data
-      setDisponibili(allUsers.filter(u => !iscrittiIds.has(u.id)))
+      // L'account del negozio (e quello dei fornitori) non è una persona da iscrivere.
+      setDisponibili(allUsers.filter(u => !iscrittiIds.has(u.id) && !['store', 'fornitore'].includes(u.livello_accesso)))
     } finally {
       setLoading(false)
     }
@@ -430,8 +431,8 @@ export default function GestionePartecipanti() {
                                 >⚠ Richiedi cancellazione</button>
                               )
                             }
-                            if (evento?.is_ehs) return <CestinoButton onClick={() => handleElimina(i.id)} />
-                            return null
+                            // Prima della soglia (20 giorni, 7 per l'EHS) lo store toglie l'iscritto direttamente.
+                            return <CestinoButton onClick={() => handleElimina(i.id)} />
                           })()}
                         </td>
                       </tr>
