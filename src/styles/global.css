@@ -177,3 +177,9 @@ tbody tr:nth-child(even):hover { background: #F1F5F9; }
   z-index: 100;
 }
 .tooltip-wrap:hover .tooltip-content { opacity: 1; }
+
+/* Profilo in sola lettura: niente selezione/copia del testo e niente stampa */
+body.sola-lettura { -webkit-user-select: none; user-select: none; }
+@media print {
+  body.sola-lettura * { display: none !important; }
+}

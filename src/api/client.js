@@ -5,7 +5,19 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+// Profilo in sola lettura: le scritture si fermano già qui (il backend le rifiuta comunque).
+const SOLA_LETTURA_CONSENTITI = /^\/?auth\/|notifiche/
+
+function isSolaLettura() {
+  try { return !!JSON.parse(localStorage.getItem('user'))?.sola_lettura } catch { return false }
+}
+
 api.interceptors.request.use((config) => {
+  const metodo = (config.method || 'get').toLowerCase()
+  if (metodo !== 'get' && isSolaLettura() && !SOLA_LETTURA_CONSENTITI.test(config.url || '')) {
+    const detail = 'Profilo in sola lettura: operazione non consentita.'
+    return Promise.reject({ config, response: { status: 403, data: { detail } }, message: detail })
+  }
   const token = localStorage.getItem('access_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config

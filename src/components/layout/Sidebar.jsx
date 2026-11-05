@@ -235,7 +235,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
             <div className="user-avatar">{user.nome_completo?.[0] || '?'}</div>
             <div className="user-details">
               <span className="user-name">{user.nome_completo}</span>
-              <span className="user-role">{user.livello_accesso.toUpperCase()}</span>
+              <span className="user-role">{user.sola_lettura ? 'GUEST' : user.livello_accesso.toUpperCase()}</span>
             </div>
           </div>
         )}

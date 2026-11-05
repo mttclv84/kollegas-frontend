@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
+import SolaLettura from './SolaLettura'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/client'
 import './AppLayout.css'
@@ -594,6 +595,7 @@ export default function AppLayout() {
         onToggle={() => setCollapsed(c => !c)}
         mobileOpen={mobileOpen}
       />
+      {user?.sola_lettura && <SolaLettura user={user} />}
       <div className="main-area">
         <Topbar onMenuToggle={() => setMobileOpen(o => !o)} />
         <main className="page-wrapper">

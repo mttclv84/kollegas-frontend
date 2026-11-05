@@ -17,7 +17,7 @@ export default function Topbar({ onMenuToggle }) {
         {user && (
           <span className="topbar-user">
             {user.nome_completo}
-            <span className="topbar-role">{user.livello_accesso.toUpperCase()}</span>
+            <span className="topbar-role">{user.sola_lettura ? 'GUEST' : user.livello_accesso.toUpperCase()}</span>
           </span>
         )}
       </div>
