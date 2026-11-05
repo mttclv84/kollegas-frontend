@@ -2,13 +2,21 @@ import { useEffect, useMemo } from 'react'
 
 // Tasti che modificano o esportano dati: per i profili in sola lettura vengono nascosti
 // (il backend rifiuta comunque ogni scrittura). Si confronta testo e title del tasto.
-const AZIONI = /^\s*(\+|✓|✏️|♻️|🗑|🚫)|\b(salva|elimina|assegna|nuov[oa]|aggiungi|crea|invia|approva|rifiuta|accetta|conferma|contro-proponi|modifica|importa|export|esporta|scarica|stampa|pdf|disattiva|riattiva|richiedi|carica|rimuovi|registra|segna|visto|valuta|iscrivi|password|cancella)/i
+const AZIONI = /^\s*(\+|✓|✏️|♻️|🗑|🚫)|\b(salva|elimina|assegna|nuov[oa]|aggiungi|crea|invia|approva|rifiuta|accetta|conferma|contro-proponi|inserisci|gestisci|annulla attività|ho caricato|rinnovo|completata|aggiorna|applica|sostituisci|duplica|modifica|importa|export|esporta|scarica|stampa|pdf|disattiva|riattiva|richiedi|carica|rimuovi|registra|segna|visto|valuta|iscrivi|password|cancella)/i
 
 function nascondiAzioni(radice) {
   radice.querySelectorAll('button:not([data-sl])').forEach(b => {
     b.dataset.sl = '1'
     if (b.closest('.sidebar')) return
-    if (AZIONI.test(`${b.textContent} ${b.title || ''}`)) b.style.display = 'none'
+    if (AZIONI.test(`${b.textContent} ${b.title || ''}`)) {
+      b.dataset.slAzione = '1'
+      b.style.display = 'none'
+    }
+  })
+  // I moduli che servono a salvare (hanno un tasto di azione) restano visibili ma non compilabili.
+  radice.querySelectorAll('form').forEach(f => {
+    if (!f.querySelector('[data-sl-azione]')) return
+    f.querySelectorAll('input, select, textarea').forEach(c => { if (!c.disabled) c.disabled = true })
   })
 }
 

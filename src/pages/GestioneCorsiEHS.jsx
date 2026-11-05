@@ -35,8 +35,8 @@ function NegoziPicker({ stores, selezionati, onChange }) {
 }
 
 function SharepointConfig() {
-  const { can } = useAuth()
-  const puoModificare = can(['admin', 'admin_ehs'])
+  const { user, can } = useAuth()
+  const puoModificare = can(['admin', 'admin_ehs']) && !user?.sola_lettura
   const [url, setUrl] = useState('')
   const [salvato, setSalvato] = useState('')
   const [saving, setSaving] = useState(false)

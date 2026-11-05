@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api/client'
 import toast from 'react-hot-toast'
+import { useAuth } from '../context/AuthContext'
 
 const SLOTS = 10
 
@@ -9,6 +10,7 @@ export default function GestioneAree() {
   const [stores, setStores] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(null) // area numero being saved
+  const ospite = !!useAuth().user?.sola_lettura
 
   useEffect(() => {
     Promise.all([api.get('/aree/'), api.get('/stores/')]).then(([aRes, sRes]) => {
@@ -86,6 +88,7 @@ export default function GestioneAree() {
                 <label className="form-label">Area Manager Retail</label>
                 <input
                   className="form-control"
+                  disabled={ospite}
                   value={area.area_manager_retail}
                   onChange={e => setField(idx, 'area_manager_retail', e.target.value)}
                   placeholder="Nome cognome..."
@@ -96,6 +99,7 @@ export default function GestioneAree() {
                 <label className="form-label">Area BP</label>
                 <input
                   className="form-control"
+                  disabled={ospite}
                   value={area.area_bp}
                   onChange={e => setField(idx, 'area_bp', e.target.value)}
                   placeholder="Nome cognome..."
@@ -109,6 +113,7 @@ export default function GestioneAree() {
                     <select
                       key={slotIdx}
                       className="form-control"
+                  disabled={ospite}
                       value={slotVal}
                       onChange={e => setSlot(idx, slotIdx, e.target.value)}
                       style={{ fontSize: 13 }}

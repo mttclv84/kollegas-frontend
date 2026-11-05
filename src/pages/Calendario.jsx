@@ -16,10 +16,11 @@ const DIPARTIMENTI = [
 ]
 
 export default function Calendario() {
-  const { can } = useAuth()
+  const { user, can } = useAuth()
+  const ospite = !!user?.sola_lettura
   const navigate = useNavigate()
   // L'utente Area visualizza soltanto: non crea formazioni.
-  const canEdit = can(['admin', 'admin_ehs', 'ho'])
+  const canEdit = can(['admin', 'admin_ehs', 'ho']) && !ospite
   const canAreaEHS = can(['admin', 'admin_ehs', 'ho', 'store', 'base', 'fornitore'])
   const isAdmin = can(['admin'])
 
@@ -108,7 +109,7 @@ export default function Calendario() {
   }
 
   // Aula chiusa (oltre 7 giorni): per tutti tranne l'Admin solo info e partecipanti.
-  const solaLettura = !isAdmin && isAulaChiusa(selectedEvento?.data)
+  const solaLettura = ospite || (!isAdmin && isAulaChiusa(selectedEvento?.data))
 
   const handleModalClose = () => {
     setModalMode(null)
