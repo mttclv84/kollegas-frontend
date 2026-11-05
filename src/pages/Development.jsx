@@ -176,7 +176,7 @@ export default function Development() {
   const ospite = !!user?.sola_lettura
   const [ruoli, setRuoli] = useState([])
   const [stores, setStores] = useState([])
-  const [filters, setFilters] = useState({ nome: ospite ? 'Alaimo' : '', ruolo: '', store: '' })
+  const [filters, setFilters] = useState({ nome: ospite ? 'Rossi Mario' : '', ruolo: '', store: '' })
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
   const [selected, setSelected] = useState(null)   // { user, percorso }
