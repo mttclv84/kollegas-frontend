@@ -1,7 +1,10 @@
 import { useState, useMemo } from 'react'
+import { useAuth } from '../../context/AuthContext'
 import './DataTable.css'
 
 export default function DataTable({ columns, data, actions, searchable = true, pageSize = 20 }) {
+  // Profilo in sola lettura: solo la prima pagina, senza ricerca né ordinamento.
+  const ospite = !!useAuth().user?.sola_lettura
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [sortCol, setSortCol] = useState(null)
@@ -40,7 +43,7 @@ export default function DataTable({ columns, data, actions, searchable = true, p
 
   return (
     <div className="datatable">
-      {searchable && (
+      {searchable && !ospite && (
         <div className="datatable-toolbar">
           <input
             className="form-control datatable-search"
@@ -58,8 +61,8 @@ export default function DataTable({ columns, data, actions, searchable = true, p
               {columns.map(col => (
                 <th
                   key={col.key}
-                  onClick={col.sortable !== false ? () => handleSort(col.key) : undefined}
-                  className={col.sortable !== false ? 'sortable' : ''}
+                  onClick={col.sortable !== false && !ospite ? () => handleSort(col.key) : undefined}
+                  className={col.sortable !== false && !ospite ? 'sortable' : ''}
                 >
                   {col.label}
                   {sortCol === col.key && <span className="sort-indicator">{sortDir === 'asc' ? ' ↑' : ' ↓'}</span>}
@@ -84,7 +87,12 @@ export default function DataTable({ columns, data, actions, searchable = true, p
           </tbody>
         </table>
       </div>
-      {totalPages > 1 && (
+      {totalPages > 1 && ospite && (
+        <div className="datatable-pagination">
+          <span className="page-info">Pagina 1 — visualizzazione limitata</span>
+        </div>
+      )}
+      {totalPages > 1 && !ospite && (
         <div className="datatable-pagination">
           <button className="btn btn-secondary btn-sm" onClick={() => setPage(1)} disabled={page === 1}>«</button>
           <button className="btn btn-secondary btn-sm" onClick={() => setPage(p => p - 1)} disabled={page === 1}>‹</button>

@@ -170,11 +170,13 @@ function TimelineCard({ step, onDelete }) {
 }
 
 export default function Development() {
-  const { can } = useAuth()
+  const { user, can } = useAuth()
   const navigate = useNavigate()
+  // Profilo in sola lettura: vede solo il percorso di esempio (il backend filtra comunque).
+  const ospite = !!user?.sola_lettura
   const [ruoli, setRuoli] = useState([])
   const [stores, setStores] = useState([])
-  const [filters, setFilters] = useState({ nome: '', ruolo: '', store: '' })
+  const [filters, setFilters] = useState({ nome: ospite ? 'Alaimo' : '', ruolo: '', store: '' })
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
   const [selected, setSelected] = useState(null)   // { user, percorso }
@@ -189,6 +191,7 @@ export default function Development() {
       })
       setStores(list)
     })
+    if (ospite) doSearch(filters)
   }, [])
 
   const doSearch = (f) => {
@@ -258,24 +261,25 @@ export default function Development() {
                 className="form-control"
                 placeholder="Cognome o nome..."
                 value={filters.nome}
+                disabled={ospite}
                 onChange={e => setF('nome', e.target.value)}
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Filtra per ruolo</label>
-              <select className="form-control" value={filters.ruolo} onChange={e => setF('ruolo', e.target.value)}>
+              <select className="form-control" value={filters.ruolo} disabled={ospite} onChange={e => setF('ruolo', e.target.value)}>
                 <option value="">— Tutti i ruoli —</option>
                 {ruoli.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
               </select>
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Filtra per store</label>
-              <select className="form-control" value={filters.store} onChange={e => setF('store', e.target.value)}>
+              <select className="form-control" value={filters.store} disabled={ospite} onChange={e => setF('store', e.target.value)}>
                 <option value="">— Tutti gli store —</option>
                 {stores.map(s => <option key={s.id} value={s.id}>{s.codice_store ? `${s.codice_store} — ` : ''}{s.nome}</option>)}
               </select>
             </div>
-            {hasFilter && (
+            {hasFilter && !ospite && (
               <button className="btn btn-secondary" onClick={resetFilters}>Reset</button>
             )}
           </div>

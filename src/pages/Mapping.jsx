@@ -127,6 +127,28 @@ export default function Mapping() {
   const [mapping, setMapping] = useState(null)
   const [loading, setLoading] = useState(false)
   const [commentEdit, setCommentEdit] = useState(null) // { user, text }
+  const ospite = !!user?.sola_lettura
+
+  // Profilo in sola lettura: negozio fisso e pagina non scorrevole.
+  useEffect(() => {
+    if (!ospite) return
+    const blocca = (e) => e.preventDefault()
+    const tasti = (e) => { if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) e.preventDefault() }
+    const html = document.documentElement
+    const prima = [html.style.overflow, document.body.style.overflow]
+    html.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    window.scrollTo(0, 0)
+    window.addEventListener('wheel', blocca, { passive: false })
+    window.addEventListener('touchmove', blocca, { passive: false })
+    window.addEventListener('keydown', tasti)
+    return () => {
+      ;[html.style.overflow, document.body.style.overflow] = prima
+      window.removeEventListener('wheel', blocca)
+      window.removeEventListener('touchmove', blocca)
+      window.removeEventListener('keydown', tasti)
+    }
+  }, [ospite])
 
   const openCommentEdit = useCallback((user) => {
     setCommentEdit({ user, text: user.commento_mapping || '' })
@@ -205,7 +227,7 @@ export default function Mapping() {
         <h1 className="page-title" style={{ marginBottom: 0 }}>Mapping</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <label className="form-label" style={{ marginBottom: 0 }}>Store:</label>
-          <select className="form-control" style={{ minWidth: 200 }} value={storeId}
+          <select className="form-control" style={{ minWidth: 200 }} value={storeId} disabled={ospite}
             onChange={e => setStoreId(e.target.value)}>
             {stores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
           </select>
