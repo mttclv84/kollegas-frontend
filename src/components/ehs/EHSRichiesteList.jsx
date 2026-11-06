@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react'
 import api from '../../api/client'
+import EHSDocumentiSezioni from './EHSDocumentiSezioni'
 
 const STATO_LABELS = {
   IN_APPROVAZIONE: 'In approvazione EHS',
@@ -136,6 +137,7 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
                     <strong>{s.corso_nome}</strong>
                     {s.modalita === 'ONLINE' && <span style={{ ...tagStyle, background: '#E0F2FE', color: '#075985' }}>ONLINE</span>}
                     {s.eccezionale && <span style={{ ...tagStyle, background: '#EDE9FE', color: '#5B21B6' }}>ECCEZIONALE</span>}
+                    {s.creata_dal_fornitore && <span style={{ ...tagStyle, background: '#FEF3C7', color: '#92400E' }}>CREATA DAL FORNITORE</span>}
                   </td>
                   <td>
                     {s.negozio_nome}
@@ -150,6 +152,11 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
                     }}>
                       {STATO_LABELS[s.stato] || s.stato}
                     </span>
+                    {s.stato === 'COMPLETATA' && (
+                      <div style={{ marginTop: 8 }}>
+                        <EHSDocumentiSezioni sessione={s} onChanged={fetchSessioni} compatto />
+                      </div>
+                    )}
                   </td>
                   <td>{s.partecipanti_count}</td>
                   <td>{s.data_confermata ? new Date(s.data_confermata).toLocaleString('it-IT') : '—'}</td>

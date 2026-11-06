@@ -6,6 +6,7 @@ import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { arrotondaMezzora } from '../../utils/ehsTime'
 import EHSDataOraPicker from './EHSDataOraPicker'
+import EHSDocumentiSezioni from './EHSDocumentiSezioni'
 import '../calendario/EventoModal.css'
 
 const STATO_LABELS = {
@@ -54,14 +55,12 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const [motivoNonDisponibile, setMotivoNonDisponibile] = useState('')
   const [notaDecisione, setNotaDecisione] = useState('')
 
-  // Wizard "Aula completata": 0 = non avviato, 1 = marcatura presenze, 2 = upload documenti
+  // "Aula completata": 0 = non avviato, 1 = marcatura presenti/assenti. I documenti
+  // (Presenze e Attestati) si caricano dopo, dal menù Richieste.
   const [wizardStep, setWizardStep] = useState(0)
   const [presenze, setPresenze] = useState({})
   const [motivi, setMotivi] = useState({})
-  const [documenti, setDocumenti] = useState([])
   const [chiudendo, setChiudendo] = useState(false)
-
-  const [sharepointUrl, setSharepointUrl] = useState(null)
 
   const isFornitore = can(['fornitore'])
   const isFornitoreLato = can(['fornitore', 'admin', 'admin_ehs', 'ho'])
@@ -134,15 +133,6 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessione?.id, sessione?.stato, sessione?.fornitore])
-
-  useEffect(() => {
-    if (sessione?.stato === 'COMPLETATA' && isFornitoreLato && sharepointUrl === null) {
-      api.get('/ehs/configurazione/')
-        .then(({ data }) => setSharepointUrl(data.sharepoint_attestati_url || ''))
-        .catch(() => setSharepointUrl(''))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessione?.stato])
 
   const run = async (action) => {
     setBusy(true)
@@ -264,17 +254,9 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
     })
   }
 
-  const handleAttestatiCaricati = () => {
-    run(async () => {
-      await api.patch(`/ehs/sessioni/${sessioneId}/attestati-caricati/`)
-      toast.success('Caricamento attestati confermato.')
-    })
-  }
-
   const avviaWizard = () => {
     setPresenze({})
     setMotivi({})
-    setDocumenti([])
     setWizardStep(1)
   }
 
@@ -283,25 +265,24 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
     ? new Date(sessione.data_confermata).toDateString() === new Date().toDateString()
     : false
 
-  const confermaPresenze = () => setWizardStep(2)
-
-  const aggiungiDocumenti = (fileList) => {
-    const nuovi = Array.from(fileList || [])
-    setDocumenti(prev => [...prev, ...nuovi.filter(n => !prev.some(p => p.name === n.name && p.size === n.size))])
-  }
-
-  const handleInviaDocumenti = () => {
-    if (documenti.length === 0) { toast.error('Carica almeno il registro compilato.'); return }
+  const handleChiudiAula = () => {
+    const partecipanti = sessione.partecipanti || []
+    const nonIndicati = partecipanti.filter(p => presenze[p.id] === undefined)
+    if (nonIndicati.length > 0) { toast.error('Indica presente o assente per ogni partecipante.'); return }
+    const presenti = partecipanti.filter(p => presenze[p.id]).length
+    if (!window.confirm(`Chiudere l'aula con ${presenti} presenti su ${partecipanti.length}? Le presenze non saranno più modificabili.`)) return
     const fd = new FormData()
-    sessione.partecipanti.forEach(p => {
+    partecipanti.forEach(p => {
       fd.append(`presente_${p.id}`, presenze[p.id] ? 'true' : 'false')
       if (!presenze[p.id] && motivi[p.id]) fd.append(`motivo_${p.id}`, motivi[p.id])
     })
-    documenti.forEach(f => fd.append('files', f))
     setChiudendo(true)
     api.post(`/ehs/sessioni/${sessioneId}/chiudi-aula/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      .then(() => { toast.success('Aula completata: documenti inviati.'); setWizardStep(0); notify() })
-      .catch(err => toast.error(err.response?.data?.detail || 'Errore durante l\'invio.'))
+      .then(() => {
+        toast.success('Aula completata. Carica Presenze e Attestati dal menù Richieste entro 45 giorni.')
+        setWizardStep(0); notify()
+      })
+      .catch(err => toast.error(err.response?.data?.detail || 'Errore durante la chiusura.'))
       .finally(() => setChiudendo(false))
   }
 
@@ -376,7 +357,10 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               <div className="detail-row"><span>Data proposta</span><strong>{sessione.data_proposta ? new Date(sessione.data_proposta).toLocaleString('it-IT') : '—'}</strong></div>
               <div className="detail-row"><span>Data confermata</span><strong>{sessione.data_confermata ? new Date(sessione.data_confermata).toLocaleString('it-IT') : '—'}</strong></div>
               <div className="detail-row"><span>Docente</span><strong>{sessione.docente_nome || '—'} {sessione.docente_telefono ? `— ${sessione.docente_telefono}` : ''}</strong></div>
-              <div className="detail-row"><span>Contatto negozio</span><strong>{sessione.contatto_negozio_nome}</strong></div>
+              <div className="detail-row"><span>Contatto negozio</span><strong>{sessione.contatto_negozio_nome || '—'}</strong></div>
+              {sessione.creata_dal_fornitore && (
+                <div className="detail-row"><span>Origine</span><strong>Aula creata dal fornitore</strong></div>
+              )}
               <div className="detail-row">
                 <span>Partecipanti iscritti</span>
                 <strong style={{ color: sessione.sotto_minimo ? '#DC2626' : undefined }}>
@@ -631,38 +615,13 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                     )}
                     <div className="modal-actions">
                       <button className="btn btn-secondary btn-sm" onClick={() => setWizardStep(0)}>Indietro</button>
-                      <button className="btn btn-primary btn-sm" onClick={confermaPresenze}>Conferma</button>
-                    </div>
-                  </div>
-                )}
-
-                {isFornitoreLato && wizardStep === 2 && (
-                  <div style={{ marginTop: 16 }}>
-                    <label className="form-label">Carica il registro compilato e gli altri documenti</label>
-                    <input type="file" multiple className="form-control"
-                      onChange={e => { aggiungiDocumenti(e.target.files); e.target.value = '' }} />
-                    {documenti.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
-                        {documenti.map((f, i) => (
-                          <div key={`${f.name}-${i}`} style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span>📎 {f.name}</span>
-                            <button type="button" className="btn btn-ghost btn-sm btn-icon" style={{ color: '#EF4444' }}
-                              onClick={() => setDocumenti(prev => prev.filter((_, j) => j !== i))}>✕</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 6 }}>
-                      Gli attestati si caricano dopo, sulla cartella SharePoint, anche ad aula chiusa.
-                    </div>
-                    <div className="modal-actions">
-                      <button className="btn btn-secondary btn-sm" onClick={() => setWizardStep(1)}>Indietro</button>
-                      <button className="btn btn-primary btn-sm" disabled={chiudendo} onClick={handleInviaDocumenti}>
-                        {chiudendo ? 'Invio...' : `Invia${documenti.length ? ` (${documenti.length})` : ''}`}
+                      <button className="btn btn-primary btn-sm" disabled={chiudendo} onClick={handleChiudiAula}>
+                        {chiudendo ? 'Chiusura...' : 'Chiudi aula'}
                       </button>
                     </div>
                   </div>
                 )}
+
               </>
             )}
 
@@ -693,33 +652,11 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               </div>
             )}
 
-            {/* --- Attestati post-chiusura (cartella SharePoint aziendale) --- */}
+            {/* --- Documenti post-chiusura: Presenze e Attestati, entro 45 giorni --- */}
             {sessione.stato === 'COMPLETATA' && (
               <div style={{ marginTop: 16, borderTop: '1px solid #E5E7EB', paddingTop: 12 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Attestati</div>
-                {sessione.attestati_caricati_il ? (
-                  <div style={{ fontSize: 13, color: '#065F46' }}>
-                    ✓ Caricati su SharePoint il {new Date(sessione.attestati_caricati_il).toLocaleDateString('it-IT')}
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 13, color: '#92400E' }}>Da caricare</div>
-                )}
-                {isFornitoreLato && (
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                    {sharepointUrl ? (
-                      <a className="btn btn-primary btn-sm" href={sharepointUrl} target="_blank" rel="noopener noreferrer">
-                        📤 Carica attestati su SharePoint ↗
-                      </a>
-                    ) : sharepointUrl === '' && (
-                      <span style={{ fontSize: 12, color: '#9CA3AF' }}>Link alla cartella SharePoint non ancora configurato dall'EHS Admin.</span>
-                    )}
-                    {!sessione.attestati_caricati_il && (
-                      <button className="btn btn-success btn-sm" disabled={busy} onClick={handleAttestatiCaricati}>
-                        ✓ Ho caricato gli attestati
-                      </button>
-                    )}
-                  </div>
-                )}
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Documenti</div>
+                <EHSDocumentiSezioni sessione={sessione} onChanged={notify} />
               </div>
             )}
 

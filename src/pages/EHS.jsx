@@ -10,6 +10,7 @@ import EHSRichiestaFormModal from '../components/ehs/EHSRichiestaFormModal'
 import EHSCercaFormazioni from '../components/ehs/EHSCercaFormazioni'
 import EHSAulaInfoModal from '../components/ehs/EHSAulaInfoModal'
 import EHSFormazioniPianificateModal from '../components/ehs/EHSFormazioniPianificateModal'
+import EHSAulaFornitoreModal from '../components/ehs/EHSAulaFornitoreModal'
 import EventoModal from '../components/calendario/EventoModal'
 import './Calendario.css'
 import './EHS.css'
@@ -25,6 +26,8 @@ export default function EHS() {
   const [selectedSessioneId, setSelectedSessioneId] = useState(null)
   const [showRichiestaForm, setShowRichiestaForm] = useState(false)
   const [showPianificate, setShowPianificate] = useState(false)
+  // Aula creata in autonomia dal fornitore: null = chiuso, '' = senza data, 'yyyy-MM-dd' = giorno cliccato
+  const [creaAulaData, setCreaAulaData] = useState(null)
   const richiesteListRef = useRef(null)
 
   const anno = currentDate.getFullYear()
@@ -127,9 +130,14 @@ export default function EHS() {
     const eventiGiorno = eventsByDay[key] || []
     const isToday = key === format(new Date(), 'yyyy-MM-dd')
     const isSun = isSunday(giorno)
+    // Il fornitore clicca un giorno futuro del calendario per creare un'aula in quella data.
+    const creabile = isFornitore && key > format(new Date(), 'yyyy-MM-dd')
 
     return (
-      <div key={key} className={`cal-day ${isSun ? 'festivo' : ''} ${isToday ? 'oggi' : ''}`}>
+      <div key={key} className={`cal-day ${isSun ? 'festivo' : ''} ${isToday ? 'oggi' : ''}`}
+        onClick={creabile ? () => setCreaAulaData(key) : undefined}
+        title={creabile ? "Clicca per creare un'aula in questo giorno" : undefined}
+        style={creabile ? { cursor: 'pointer' } : undefined}>
         <div className="cal-day-header">
           <span className="cal-day-num">{format(giorno, 'd')}</span>
           <span className="cal-day-name">{format(giorno, 'EEE', { locale: it })}</span>
@@ -186,6 +194,11 @@ export default function EHS() {
               + Nuova richiesta
             </button>
           )}
+          {isFornitore && (
+            <button className="btn btn-primary btn-sm" onClick={() => setCreaAulaData('')}>
+              + Crea aula
+            </button>
+          )}
         </div>
       </div>
 
@@ -231,6 +244,11 @@ export default function EHS() {
                 <div className="legenda-item">
                   <span className="legenda-dot" style={{ background: '#9CA3AF' }} /> {isFornitore ? 'Store occupato da altre attività' : isAdmin ? 'Altre attività' : 'Altre attività (sola vista)'}
                 </div>
+                {isFornitore && (
+                  <div style={{ fontSize: 12, color: '#6B7280', marginTop: 8 }}>
+                    Clicca un giorno futuro (o "+ Crea aula") per programmare un'aula: è confermata subito.
+                  </div>
+                )}
               </div>
             </div>
           </aside>
@@ -251,6 +269,19 @@ export default function EHS() {
         <EHSFormazioniPianificateModal
           onClose={() => setShowPianificate(false)}
           onChanged={() => { fetchEventi(); richiesteListRef.current?.refresh() }}
+        />
+      )}
+
+      {creaAulaData !== null && (
+        <EHSAulaFornitoreModal
+          dataIniziale={creaAulaData}
+          onClose={() => setCreaAulaData(null)}
+          onCreated={(sessione) => {
+            setCreaAulaData(null)
+            fetchEventi()
+            richiesteListRef.current?.refresh()
+            setSelectedSessioneId(sessione.id)
+          }}
         />
       )}
 

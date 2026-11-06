@@ -65,7 +65,7 @@ function EliminaRegistroModal({ registro, onClose, onDeleted }) {
   )
 }
 
-function RegistroViewerModal({ registro, onClose }) {
+export function RegistroViewerModal({ registro, onClose }) {
   const [url, setUrl] = useState(null)
   const [loading, setLoading] = useState(true)
   const documenti = registro.documenti || []
@@ -112,7 +112,7 @@ function RegistroViewerModal({ registro, onClose }) {
               border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 13,
               background: d.id === documentoId ? '#10B981' : '#fff', color: d.id === documentoId ? '#fff' : '#374151',
             }}>
-              📎 {d.nome_originale || `Documento ${d.id}`}
+              📎 {d.tipo === 'attestati' ? 'Attestati' : 'Presenze'} · {d.nome_originale || `Documento ${d.id}`}
             </button>
           ))}
         </div>
@@ -256,7 +256,7 @@ export default function EHSRegistriList() {
                   <th>Docente</th>
                   <th>Fornitore</th>
                   <th>Partecipanti</th>
-                  <th>Documenti</th>
+                  <th>Presenze</th>
                   <th>Attestati</th>
                   <th></th>
                 </tr>
@@ -270,16 +270,17 @@ export default function EHSRegistriList() {
                     <td>{r.docente_nome || '—'}</td>
                     <td>{r.fornitore_nome || '—'}</td>
                     <td><PartecipantiOverlay partecipanti={r.partecipanti || []} /></td>
-                    <td>{r.documenti?.length || 0}</td>
-                    <td>
-                      <span style={{
-                        fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '2px 8px', whiteSpace: 'nowrap',
-                        background: r.attestati_caricati_il ? '#D1FAE5' : '#FEF3C7',
-                        color: r.attestati_caricati_il ? '#065F46' : '#92400E',
-                      }}>
-                        {r.attestati_caricati_il ? '✓ Caricati' : 'Da caricare'}
-                      </span>
-                    </td>
+                    {[['presenze', r.presenze_caricate_il], ['attestati', r.attestati_caricati_il]].map(([tipo, completata]) => (
+                      <td key={tipo}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '2px 8px', whiteSpace: 'nowrap',
+                          background: completata ? '#D1FAE5' : '#FEF3C7',
+                          color: completata ? '#065F46' : '#92400E',
+                        }}>
+                          {completata ? '✓ Completi' : 'Da caricare'} ({(r.documenti || []).filter(d => d.tipo === tipo).length})
+                        </span>
+                      </td>
+                    ))}
                     <td style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => setViewing(r)}>👁️ Consulta</button>
                       {canElimina && (
