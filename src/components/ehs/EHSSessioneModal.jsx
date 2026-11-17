@@ -61,11 +61,16 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const [presenze, setPresenze] = useState({})
   const [motivi, setMotivi] = useState({})
   const [chiudendo, setChiudendo] = useState(false)
+  // true = correzione presenze di un'aula già completata (Admin / Admin EHS)
+  const [modificaPresenze, setModificaPresenze] = useState(false)
 
   const isFornitore = can(['fornitore'])
   const isFornitoreLato = can(['fornitore', 'admin', 'admin_ehs', 'ho'])
   const isAdmin = can(['admin', 'admin_ehs', 'ho'])
   const isApprovatore = can(['admin', 'admin_ehs'])
+  // Admin e Admin EHS intervengono sull'aula senza limiti di data: chiusura in
+  // qualunque giorno, presenze modificabili e partecipanti aggiunti anche dopo.
+  const senzaLimiti = can(['admin', 'admin_ehs'])
 
   const fetchSessione = useCallback(() => {
     setLoading(true)
@@ -257,32 +262,56 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const avviaWizard = () => {
     setPresenze({})
     setMotivi({})
+    setModificaPresenze(false)
     setWizardStep(1)
   }
 
-  // L'aula si può chiudere solo il giorno stesso della data confermata, non prima.
-  const isGiornoSessione = sessione?.data_confermata
-    ? new Date(sessione.data_confermata).toDateString() === new Date().toDateString()
-    : false
+  const avviaModificaPresenze = () => {
+    const p = {}
+    const m = {}
+    ;(sessione.partecipanti || []).forEach(x => {
+      p[x.id] = !!x.presente
+      if (x.assente_motivo) m[x.id] = x.assente_motivo
+    })
+    setPresenze(p)
+    setMotivi(m)
+    setModificaPresenze(true)
+    setWizardStep(1)
+  }
+
+  // Il fornitore chiude l'aula il giorno della formazione o il giorno dopo; Admin e
+  // Admin EHS sempre (regola calcolata dal backend per l'utente corrente).
+  const chiusuraConsentita = !!sessione?.chiusura_consentita
+  const giornoAula = sessione?.data_confermata ? new Date(sessione.data_confermata) : null
+  const aulaFutura = !!giornoAula && new Date().setHours(0, 0, 0, 0) < new Date(giornoAula).setHours(0, 0, 0, 0)
+  const giornoDopo = giornoAula
+    ? new Date(giornoAula.getFullYear(), giornoAula.getMonth(), giornoAula.getDate() + 1)
+    : null
 
   const handleChiudiAula = () => {
     const partecipanti = sessione.partecipanti || []
     const nonIndicati = partecipanti.filter(p => presenze[p.id] === undefined)
     if (nonIndicati.length > 0) { toast.error('Indica presente o assente per ogni partecipante.'); return }
     const presenti = partecipanti.filter(p => presenze[p.id]).length
-    if (!window.confirm(`Chiudere l'aula con ${presenti} presenti su ${partecipanti.length}? Le presenze non saranno più modificabili.`)) return
+    const domanda = modificaPresenze
+      ? `Salvare le presenze: ${presenti} presenti su ${partecipanti.length}?`
+      : `Chiudere l'aula con ${presenti} presenti su ${partecipanti.length}?`
+        + (senzaLimiti ? '' : ' Le presenze non saranno più modificabili.')
+    if (!window.confirm(domanda)) return
     const fd = new FormData()
     partecipanti.forEach(p => {
       fd.append(`presente_${p.id}`, presenze[p.id] ? 'true' : 'false')
       if (!presenze[p.id] && motivi[p.id]) fd.append(`motivo_${p.id}`, motivi[p.id])
     })
     setChiudendo(true)
-    api.post(`/ehs/sessioni/${sessioneId}/chiudi-aula/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    const endpoint = modificaPresenze ? 'modifica-presenze' : 'chiudi-aula'
+    api.post(`/ehs/sessioni/${sessioneId}/${endpoint}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       .then(() => {
-        toast.success('Aula completata. Carica Presenze e Attestati dal menù Richieste entro 45 giorni.')
-        setWizardStep(0); notify()
+        toast.success(modificaPresenze ? 'Presenze aggiornate.'
+          : 'Aula completata. Carica Presenze e Attestati dal menù Richieste entro 45 giorni.')
+        setWizardStep(0); setModificaPresenze(false); notify()
       })
-      .catch(err => toast.error(err.response?.data?.detail || 'Errore durante la chiusura.'))
+      .catch(err => toast.error(err.response?.data?.detail || 'Errore durante il salvataggio.'))
       .finally(() => setChiudendo(false))
   }
 
@@ -305,6 +334,47 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
         onChange={e => setPartMin(e.target.value)} />
       <input type="number" className="form-control" style={{ maxWidth: 110 }} min={partMin || PARTECIPANTI_MINIMI}
         placeholder="Massimo *" title="Massimo" value={partMax} onChange={e => setPartMax(e.target.value)} />
+    </div>
+  )
+
+  // Marcatura presenti/assenti: chiusura dell'aula oppure correzione (Admin / Admin EHS).
+  const wizardPresenze = wizardStep === 1 && sessione && (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>
+        {modificaPresenze ? 'Modifica presenze' : 'Marca le presenze'}
+      </div>
+      {(!sessione.partecipanti || sessione.partecipanti.length === 0) ? (
+        <div style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>Nessun iscritto a questa sessione.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {sessione.partecipanti.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: '1px solid #E5E7EB', borderRadius: 8, padding: 10 }}>
+              <span style={{ flex: 1, fontSize: 13 }}>{partecipanteLabel(p)}</span>
+              <button type="button"
+                className="btn btn-sm"
+                style={{ background: presenze[p.id] ? '#10B981' : '#F3F4F6', color: presenze[p.id] ? '#fff' : '#374151' }}
+                onClick={() => setPresenze(prev => ({ ...prev, [p.id]: true }))}
+              >✓</button>
+              <button type="button"
+                className="btn btn-sm"
+                style={{ background: presenze[p.id] === false ? '#EF4444' : '#F3F4F6', color: presenze[p.id] === false ? '#fff' : '#374151' }}
+                onClick={() => setPresenze(prev => ({ ...prev, [p.id]: false }))}
+              >✕</button>
+              {presenze[p.id] === false && (
+                <input className="form-control" placeholder="Motivo (opz.)" style={{ maxWidth: 160 }}
+                  value={motivi[p.id] || ''}
+                  onChange={e => setMotivi(prev => ({ ...prev, [p.id]: e.target.value }))} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="modal-actions">
+        <button className="btn btn-secondary btn-sm" onClick={() => { setWizardStep(0); setModificaPresenze(false) }}>Indietro</button>
+        <button className="btn btn-primary btn-sm" disabled={chiudendo} onClick={handleChiudiAula}>
+          {chiudendo ? 'Salvataggio...' : modificaPresenze ? 'Salva presenze' : 'Chiudi aula'}
+        </button>
+      </div>
     </div>
   )
 
@@ -536,18 +606,21 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
               )
             )}
 
+            {wizardStep === 0 && sessione.calendario_evento && (
+              (sessione.stato === 'CONFERMATA' && !can(['fornitore'])) || (sessione.stato === 'COMPLETATA' && senzaLimiti)
+            ) && (
+              <div className="modal-actions" style={{ justifyContent: 'flex-start', marginTop: 8 }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => navigate(`/iscrizioni?evento=${sessione.calendario_evento}`)}
+                >
+                  {sessione.stato === 'COMPLETATA' ? 'Aggiungi / togli partecipanti →' : 'Gestione Partecipanti →'}
+                </button>
+              </div>
+            )}
+
             {sessione.stato === 'CONFERMATA' && (
               <>
-                {!can(['fornitore']) && (
-                  <div className="modal-actions" style={{ justifyContent: 'flex-start', marginTop: 8 }}>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => navigate(`/iscrizioni?evento=${sessione.calendario_evento}`)}
-                    >
-                      Gestione Partecipanti →
-                    </button>
-                  </div>
-                )}
 
                 {sessione.partecipanti?.length > 0 && (
                   <div style={{ marginTop: 12 }}>
@@ -572,63 +645,38 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
 
                 {isFornitoreLato && wizardStep === 0 && (
                   <div style={{ marginTop: 16 }}>
-                    <button className="btn btn-primary btn-sm" disabled={!isGiornoSessione} onClick={avviaWizard}
-                      title={!isGiornoSessione ? 'Disponibile solo il giorno della sessione' : undefined}>
+                    <button className="btn btn-primary btn-sm" disabled={!chiusuraConsentita} onClick={avviaWizard}
+                      title={!chiusuraConsentita ? 'Disponibile il giorno della sessione e il giorno successivo' : undefined}>
                       Aula Completata
                     </button>
-                    {!isGiornoSessione && sessione.data_confermata && (
-                      <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 6 }}>
-                        Disponibile il {new Date(sessione.data_confermata).toLocaleDateString('it-IT')}
+                    {!chiusuraConsentita && giornoAula && (
+                      <div style={{ fontSize: 12, color: aulaFutura ? '#9CA3AF' : '#B45309', marginTop: 6 }}>
+                        {aulaFutura
+                          ? `Disponibile il ${giornoAula.toLocaleDateString('it-IT')} e il ${giornoDopo.toLocaleDateString('it-IT')}`
+                          : "Termine per comunicare presenti e assenti scaduto: contatta l'EHS Admin."}
+                      </div>
+                    )}
+                    {chiusuraConsentita && !senzaLimiti && giornoDopo && (
+                      <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>
+                        Presenti e assenti si possono comunicare fino al {giornoDopo.toLocaleDateString('it-IT')}.
                       </div>
                     )}
                   </div>
                 )}
 
-                {isFornitoreLato && wizardStep === 1 && (
-                  <div style={{ marginTop: 16 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Marca le presenze</div>
-                    {(!sessione.partecipanti || sessione.partecipanti.length === 0) ? (
-                      <div style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>Nessun iscritto a questa sessione.</div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {sessione.partecipanti.map(p => (
-                          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: '1px solid #E5E7EB', borderRadius: 8, padding: 10 }}>
-                            <span style={{ flex: 1, fontSize: 13 }}>{partecipanteLabel(p)}</span>
-                            <button type="button"
-                              className="btn btn-sm"
-                              style={{ background: presenze[p.id] ? '#10B981' : '#F3F4F6', color: presenze[p.id] ? '#fff' : '#374151' }}
-                              onClick={() => setPresenze(prev => ({ ...prev, [p.id]: true }))}
-                            >✓</button>
-                            <button type="button"
-                              className="btn btn-sm"
-                              style={{ background: presenze[p.id] === false ? '#EF4444' : '#F3F4F6', color: presenze[p.id] === false ? '#fff' : '#374151' }}
-                              onClick={() => setPresenze(prev => ({ ...prev, [p.id]: false }))}
-                            >✕</button>
-                            {presenze[p.id] === false && (
-                              <input className="form-control" placeholder="Motivo (opz.)" style={{ maxWidth: 160 }}
-                                value={motivi[p.id] || ''}
-                                onChange={e => setMotivi(prev => ({ ...prev, [p.id]: e.target.value }))} />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="modal-actions">
-                      <button className="btn btn-secondary btn-sm" onClick={() => setWizardStep(0)}>Indietro</button>
-                      <button className="btn btn-primary btn-sm" disabled={chiudendo} onClick={handleChiudiAula}>
-                        {chiudendo ? 'Chiusura...' : 'Chiudi aula'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
+                {isFornitoreLato && wizardPresenze}
               </>
             )}
 
-            {sessione.stato === 'COMPLETATA' && sessione.partecipanti?.length > 0 && (
+            {sessione.stato === 'COMPLETATA' && senzaLimiti && wizardPresenze}
+
+            {sessione.stato === 'COMPLETATA' && wizardStep === 0 && sessione.partecipanti?.length > 0 && (
               <div style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
                   Esito ({sessione.partecipanti.length})
+                  {senzaLimiti && (
+                    <button className="btn btn-ghost btn-sm" onClick={avviaModificaPresenze}>✏️ Modifica presenze</button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {sessione.partecipanti.map(p => (
@@ -645,6 +693,10 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                       )}
                       {!p.presente && p.assente_motivo && (
                         <span style={{ color: '#9CA3AF', fontSize: 12 }}>— {p.assente_motivo}</span>
+                      )}
+                      {senzaLimiti && (
+                        <button className="btn btn-ghost btn-sm btn-icon" title="Togli dall'aula (anche dal registro formazioni)"
+                          disabled={busy} onClick={() => handleRimuoviPartecipante(p)} style={{ color: '#EF4444' }}>✕</button>
                       )}
                     </div>
                   ))}

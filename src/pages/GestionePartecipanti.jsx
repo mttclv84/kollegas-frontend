@@ -133,10 +133,14 @@ export default function GestionePartecipanti() {
   // Da una formazione EHS si torna al calendario EHS, dagli altri eventi al calendario principale.
   const paginaRitorno = evento?.is_ehs ? '/ehs' : '/'
   // Iscrizioni aperte a tutti gli store fino a esaurimento posti (0 = senza limite).
-  const postiEsauriti = evento?.max_partecipanti > 0 && iscritti.length >= evento.max_partecipanti
-  // Aula chiusa (oltre 7 giorni dalla data): tranne l'Admin, i partecipanti sono solo consultabili.
+  const postiPieni = evento?.max_partecipanti > 0 && iscritti.length >= evento.max_partecipanti
+  // Aula chiusa (oltre 7 giorni dalla data): tranne l'Admin (e l'Admin EHS sulle aule EHS),
+  // i partecipanti sono solo consultabili.
   const isAdmin = can(['admin'])
-  const aulaChiusa = !isAdmin && isAulaChiusa(evento?.data)
+  const senzaLimiti = isAdmin || (!!evento?.is_ehs && can(['admin_ehs']))
+  const aulaChiusa = !senzaLimiti && isAulaChiusa(evento?.data)
+  // Admin e Admin EHS aggiungono partecipanti alle aule EHS anche oltre il massimo.
+  const postiEsauriti = postiPieni && !(evento?.is_ehs && senzaLimiti)
   const nascondiDaAssegnare = (can(['store']) && isPastEvent) || aulaChiusa
 
   const handleAssegna = async (userId) => {
@@ -404,7 +408,7 @@ export default function GestionePartecipanti() {
                         <td>
                           {editable && (() => {
                             // Eliminare un iscritto: solo Admin (gli altri ruoli di sede segnano solo le presenze).
-                            if (can(['admin'])) return <CestinoButton onClick={() => handleElimina(i.id)} />
+                            if (senzaLimiti) return <CestinoButton onClick={() => handleElimina(i.id)} />
                             if (can(['admin_ehs', 'ho', 'area'])) return null
                             if (i.richiesta_pendente_id) {
                               return (
