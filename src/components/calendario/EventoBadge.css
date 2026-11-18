@@ -33,6 +33,12 @@
   background: var(--badge-color);
   flex-shrink: 0;
 }
+/* Tutti gli iscritti segnati presenti o assenti */
+.badge-dot.badge-dot-completo {
+  width: 11px; height: 6px;
+  border-radius: 1px;
+  background: #111827;
+}
 .badge-text {
   flex: 1;
   overflow: hidden;

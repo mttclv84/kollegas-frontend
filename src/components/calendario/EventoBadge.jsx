@@ -44,11 +44,13 @@ export default function EventoBadge({ evento, onClick, dimmed = false, clickable
     occupato ? null : evento.location_display,
     `${evento.ora_inizio?.slice(0,5)} - ${evento.ora_fine?.slice(0,5)}`,
     occupato ? null : countsText,
+    !occupato && evento.presenze_complete ? 'Presenze complete' : null,
   ].filter(Boolean).join(' • ')
 
   const content = (
     <>
-      <span className="badge-dot" />
+      {/* Presenze complete (tutti presenti o assenti): rettangolino nero al posto del pallino. */}
+      <span className={`badge-dot${evento.presenze_complete ? ' badge-dot-completo' : ''}`} />
       <span className="badge-text">{labelTesto}</span>
       {!occupato && (
         <span className="badge-count">
