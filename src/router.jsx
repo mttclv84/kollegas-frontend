@@ -26,6 +26,7 @@ import GestioneFornitoriEHS from './pages/GestioneFornitoriEHS'
 import GestioneCorsiEHS from './pages/GestioneCorsiEHS'
 import FormazioneObbligatoriaEHS from './pages/FormazioneObbligatoriaEHS'
 import CorsiDisattivati from './pages/CorsiDisattivati'
+import ArchivioDocumentiEHS from './pages/ArchivioDocumentiEHS'
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth()
@@ -72,6 +73,7 @@ export const router = createBrowserRouter([
       { path: 'host', element: <ProtectedRoute roles={['admin','ho']}><GestioneHost /></ProtectedRoute> },
       { path: 'ruoli', element: <ProtectedRoute roles={['admin','ho']}><GestioneRuoli /></ProtectedRoute> },
       { path: 'disattivati', element: <ProtectedRoute roles={['admin','admin_ehs']}><GestioneAccount mostraDisattivati={true} /></ProtectedRoute> },
+      { path: 'ehs/archivio', element: <ProtectedRoute roles={['admin','admin_ehs']}><ArchivioDocumentiEHS /></ProtectedRoute> },
       { path: 'corsi-disattivati', element: <ProtectedRoute roles={['admin']}><CorsiDisattivati /></ProtectedRoute> },
       { path: 'completamento', element: <Completamento /> },
       { path: 'development', element: <ProtectedRoute roles={['admin','admin_ehs','ho','area']}><Development /></ProtectedRoute> },

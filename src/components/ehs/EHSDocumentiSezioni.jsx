@@ -213,7 +213,8 @@ function EHSDocumentiModal({ sessioneId, sezione, onClose, onChanged }) {
     }
   }
 
-  const persi = documenti.filter(d => d.disponibile === false).length
+  const persi = documenti.filter(d => d.disponibile === false && !d.archiviato_il).length
+  const archiviati = documenti.filter(d => d.archiviato_il).length
 
   const apriDocumento = (doc) => setViewing({
     id: sessione.id,
@@ -261,6 +262,13 @@ function EHSDocumentiModal({ sessioneId, sezione, onClose, onChanged }) {
             </div>
           )}
 
+          {archiviati > 0 && (
+            <div style={{ fontSize: 13, color: '#374151', background: '#F3F4F6', padding: '8px 12px', borderRadius: 6, marginBottom: 10 }}>
+              📦 {archiviati === 1 ? 'Un documento è stato archiviato' : `${archiviati} documenti sono stati archiviati`}:
+              si consultano nell'archivio aziendale.
+            </div>
+          )}
+
           {documenti.length === 0 ? (
             <div style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>Nessun documento caricato.</div>
           ) : (
@@ -268,7 +276,7 @@ function EHSDocumentiModal({ sessioneId, sezione, onClose, onChanged }) {
               {documenti.map(d => (
                 <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => apriDocumento(d)}>
-                    {d.disponibile === false ? '⚠️' : '📎'} {d.nome_originale || `Documento ${d.id}`}
+                    {d.archiviato_il ? '📦' : d.disponibile === false ? '⚠️' : '📎'} {d.nome_originale || `Documento ${d.id}`}
                   </button>
                   <span style={{ color: '#9CA3AF', fontSize: 12 }}>{fmtData(d.caricato_il)}</span>
                   {modificabile && (

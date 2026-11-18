@@ -18,6 +18,7 @@ const NAV_ITEMS = [
       { to: '/ehs/fornitori', label: 'Fornitori EHS', icon: <EhsIcon nome="fornitori" />, roles: ['admin', 'admin_ehs', 'ho'] },
       { to: '/ehs/corsi', label: 'Tabella Corsi EHS', icon: <EhsIcon nome="corsi" />, roles: ['admin', 'admin_ehs', 'ho'] },
       { to: '/ehs/obblighi', label: 'Panel Formazione EHS', icon: <EhsIcon nome="obblighi" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
+      { to: '/ehs/archivio', label: 'Archivio documenti EHS', icon: '🗄️', roles: ['admin', 'admin_ehs'], archivioBadge: true },
       { to: '/ehs/richieste-modifica', label: 'Richieste di modifica EHS', icon: <EhsIcon nome="richieste" />, roles: ['admin', 'admin_ehs'] },
     ],
   },
@@ -74,6 +75,15 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
   const [openGroups, setOpenGroups] = useState({ EHS: true, Report: true, Gestione: true })
   const [pendingCount, setPendingCount] = useState(0)
   const [accountBadge, setAccountBadge] = useState(0)
+  // Promemoria archivio mensile: documenti EHS dei mesi precedenti ancora in Kollegas.
+  const [archivioBadge, setArchivioBadge] = useState(0)
+
+  useEffect(() => {
+    if (!user || !can(['admin', 'admin_ehs'])) return
+    api.get('/ehs/archivio-documenti/')
+      .then(({ data }) => setArchivioBadge(data.esportazione_aperta ? 0 : (data.mesi_precedenti || 0)))
+      .catch(() => {})
+  }, [user, location.pathname === '/ehs/archivio'])
 
   useEffect(() => {
     if (!user || !can(['admin', 'ho'])) return
@@ -156,7 +166,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
                 {(open || collapsed) && (
                   <div className={`nav-group-children ${collapsed ? 'collapsed-children' : ''}`}>
                     {visibleChildren.map(child => {
-                      const hasAccBadge = child.accountBadge && accountBadge > 0 && can(['admin', 'ho'])
+                      const hasAccBadge = (child.accountBadge && accountBadge > 0 && can(['admin', 'ho']))
+                        || (child.archivioBadge && archivioBadge > 0)
                       if (child.lockedRoles && can(child.lockedRoles)) {
                         return (
                           <span

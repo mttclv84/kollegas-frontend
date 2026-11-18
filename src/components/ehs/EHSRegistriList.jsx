@@ -119,7 +119,7 @@ export function RegistroViewerModal({ registro, onClose }) {
               border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 13,
               background: d.id === documentoId ? '#10B981' : '#fff', color: d.id === documentoId ? '#fff' : '#374151',
             }}>
-              {d.disponibile === false ? '⚠️' : '📎'} {d.tipo === 'attestati' ? 'Attestati' : 'Presenze'} · {d.nome_originale || `Documento ${d.id}`}
+              {d.archiviato_il ? '📦' : d.disponibile === false ? '⚠️' : '📎'} {d.tipo === 'attestati' ? 'Attestati' : 'Presenze'} · {d.nome_originale || `Documento ${d.id}`}
             </button>
           ))}
         </div>
@@ -272,7 +272,8 @@ export default function EHSRegistriList() {
               </thead>
               <tbody>
                 {registri.map(r => {
-                  const persi = (r.documenti || []).filter(d => d.disponibile === false).length
+                  const persi = (r.documenti || []).filter(d => d.disponibile === false && !d.archiviato_il).length
+                  const archiviati = (r.documenti || []).filter(d => d.archiviato_il).length
                   return (
                     <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => setViewing(r)}>
                       <td>
@@ -296,6 +297,12 @@ export default function EHSRegistriList() {
                               {completata ? '✓' : '⏳'} {label} ({(r.documenti || []).filter(d => d.tipo === tipo).length})
                             </span>
                           ))}
+                          {archiviati > 0 && (
+                            <span style={{ fontSize: 11, color: '#6B7280', whiteSpace: 'nowrap' }}
+                              title="Documenti archiviati: si consultano nell'archivio aziendale">
+                              📦 {archiviati} archiviati
+                            </span>
+                          )}
                           {persi > 0 && (
                             <span style={{ fontSize: 11, color: '#991B1B', whiteSpace: 'nowrap' }}
                               title="File andati persi sul server prima dell'archivio nel database: vanno ricaricati">
