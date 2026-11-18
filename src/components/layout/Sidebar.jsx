@@ -15,9 +15,9 @@ const NAV_ITEMS = [
     children: [
       // lockedRoles: la voce resta visibile ma con lucchetto e non cliccabile.
       { to: '/ehs', label: 'EHS Calendar & Richieste', icon: <EhsIcon nome="calendario" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'], lockedRoles: ['area'] },
-      { to: '/ehs/fornitori', label: 'Gestione Fornitori EHS', icon: <EhsIcon nome="fornitori" />, roles: ['admin', 'admin_ehs', 'ho'] },
-      { to: '/ehs/corsi', label: 'Gestione Corsi EHS', icon: <EhsIcon nome="corsi" />, roles: ['admin', 'admin_ehs', 'ho'] },
-      { to: '/ehs/obblighi', label: 'Formazione obbligatoria', icon: <EhsIcon nome="obblighi" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
+      { to: '/ehs/fornitori', label: 'Fornitori EHS', icon: <EhsIcon nome="fornitori" />, roles: ['admin', 'admin_ehs', 'ho'] },
+      { to: '/ehs/corsi', label: 'Tabella Corsi EHS', icon: <EhsIcon nome="corsi" />, roles: ['admin', 'admin_ehs', 'ho'] },
+      { to: '/ehs/obblighi', label: 'Panel Formazione EHS', icon: <EhsIcon nome="obblighi" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
       { to: '/ehs/richieste-modifica', label: 'Richieste di modifica EHS', icon: <EhsIcon nome="richieste" />, roles: ['admin', 'admin_ehs'] },
     ],
   },

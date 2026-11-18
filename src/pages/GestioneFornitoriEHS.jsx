@@ -118,7 +118,7 @@ export default function GestioneFornitoriEHS() {
   return (
     <div className="ehs-section">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h1 className="page-title" style={{ marginBottom: 0 }}>Gestione Fornitori EHS</h1>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>Fornitori EHS</h1>
         <button className="btn btn-primary" onClick={openCreate}>+ Nuovo Fornitore</button>
       </div>
 

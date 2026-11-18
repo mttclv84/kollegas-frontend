@@ -395,7 +395,7 @@ export default function FormazioneObbligatoriaEHS() {
 
   return (
     <div className="ehs-section">
-      <h1 className="page-title">Formazione obbligatoria EHS</h1>
+      <h1 className="page-title">Panel Formazione EHS</h1>
       <div className="ehs-tabs" style={{ marginBottom: 16 }}>
         {tabs.map(t => (
           <button key={t.key} className={`ehs-tab ${tab === t.key ? 'active' : ''}`} onClick={() => setTab(t.key)}

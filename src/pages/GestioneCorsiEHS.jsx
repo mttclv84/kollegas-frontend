@@ -7,7 +7,7 @@ import Modal from '../components/ui/Modal'
 import './EHS.css'
 
 const EMPTY_FORM = {
-  nome: '', durata_ore: '', scadenza_giorni: '', ore_aggiornamento: '', descrizione: '', offerte: [],
+  nome: '', durata_ore: '', scadenza_giorni: '', ore_aggiornamento: '', rinnova: '', descrizione: '', offerte: [],
 }
 const NUOVA_OFFERTA = { fornitore: '', tutti_negozi: true, negozi: [] }
 
@@ -113,6 +113,7 @@ export default function GestioneCorsiEHS() {
     setForm({
       nome: c.nome, durata_ore: c.durata_ore,
       scadenza_giorni: c.scadenza_giorni ?? '', ore_aggiornamento: c.ore_aggiornamento ?? '',
+      rinnova: c.rinnova ?? '',
       descrizione: c.descrizione || '',
       offerte: c.offerte.length
         ? c.offerte.map(o => ({ fornitore: o.fornitore, tutti_negozi: o.tutti_negozi, negozi: o.negozi }))
@@ -138,6 +139,7 @@ export default function GestioneCorsiEHS() {
       const payload = {
         nome: form.nome, durata_ore: form.durata_ore,
         scadenza_giorni: form.scadenza_giorni || null, ore_aggiornamento: form.ore_aggiornamento || null,
+        rinnova: form.rinnova ? Number(form.rinnova) : null,
         descrizione: form.descrizione,
         offerte: offerte.map(o => ({
           fornitore: Number(o.fornitore), tutti_negozi: o.tutti_negozi, negozi: o.tutti_negozi ? [] : o.negozi,
@@ -154,7 +156,8 @@ export default function GestioneCorsiEHS() {
       fetchCorsi()
     } catch (err) {
       const data = err.response?.data
-      toast.error(data?.detail || (data?.offerte && [].concat(data.offerte).join(' ')) || 'Errore.')
+      toast.error(data?.detail || (data?.offerte && [].concat(data.offerte).join(' '))
+        || (data?.rinnova && [].concat(data.rinnova).join(' ')) || 'Errore.')
     } finally {
       setSaving(false)
     }
@@ -187,7 +190,12 @@ export default function GestioneCorsiEHS() {
 
   const columns = [
     { key: 'codice', label: 'Codice', sortable: true },
-    { key: 'nome', label: 'Nome corso', sortable: true },
+    {
+      key: 'nome', label: 'Nome corso', sortable: true,
+      render: c => c.rinnova_nome
+        ? <span>{c.nome} <span style={{ fontSize: 12, color: '#6B7280' }}>↻ rinnova {c.rinnova_nome}</span></span>
+        : c.nome,
+    },
     { key: 'fornitori', label: 'Fornitori', accessor: descriviOfferte },
     { key: 'durata_ore', label: 'Durata (ore)', accessor: c => c.durata_ore },
     { key: 'scadenza_giorni', label: 'Scadenza (giorni)', accessor: c => c.scadenza_giorni ?? '— nessuna —' },
@@ -202,7 +210,7 @@ export default function GestioneCorsiEHS() {
   return (
     <div className="ehs-section">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h1 className="page-title" style={{ marginBottom: 0 }}>Gestione Corsi EHS</h1>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>Tabella Corsi EHS</h1>
         <button className="btn btn-primary" onClick={openCreate}>+ Nuovo Corso</button>
       </div>
 
@@ -317,6 +325,19 @@ export default function GestioneCorsiEHS() {
                 <label className="form-label">Ore corso di aggiornamento</label>
                 <input type="number" min="0" step="0.25" className="form-control" placeholder="Vuoto = nessun aggiornamento"
                   value={form.ore_aggiornamento} onChange={e => setF('ore_aggiornamento', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Rinnova il corso</label>
+                <select className="form-control" value={form.rinnova} onChange={e => setF('rinnova', e.target.value)}>
+                  <option value="">— Nessuno (corso base) —</option>
+                  {corsi
+                    .filter(c => !c.rinnova && c.id !== modal.data?.id)
+                    .map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                </select>
+                <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
+                  Per un corso di aggiornamento (es. Aggiornamento Preposti): quando è completato rinnova il
+                  corso scelto, che torna verde con la scadenza di questo corso.
+                </div>
               </div>
             </div>
             <div className="form-group">
