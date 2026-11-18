@@ -17,6 +17,34 @@ const TIPOLOGIA_BADGE = { ld: 'primary', recruiting: 'violet', ehs: 'success', p
 
 const EMPTY = { nome: '', tipologia: 'ld', dettaglio: '', ruoli_destinatari: [] }
 
+// Icona "note" nella colonna Ruoli destinatari: i nomi compaiono solo passando sopra
+// con il mouse, così la tabella non si allarga. Il riquadro è position: fixed perché
+// le tabelle scorrono dentro il loro contenitore e lo taglierebbero.
+function RuoliIcona({ nomi }) {
+  const [pos, setPos] = useState(null)
+  if (!nomi?.length) return <span style={{ color: '#9CA3AF' }}>—</span>
+  const mostra = (e) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 280) })
+  }
+  return (
+    <span onMouseEnter={mostra} onMouseLeave={() => setPos(null)}
+      style={{ cursor: 'default', fontSize: 16, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      🗒️<span style={{ fontSize: 11, color: '#6B7280' }}>{nomi.length}</span>
+      {pos && (
+        <div style={{
+          position: 'fixed', top: pos.top, left: pos.left, zIndex: 3000, maxWidth: 270,
+          background: '#1F2937', color: '#fff', borderRadius: 8, padding: '8px 12px',
+          fontSize: 12, lineHeight: 1.5, whiteSpace: 'normal', boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+        }}>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>Ruoli destinatari</div>
+          {nomi.map(n => <div key={n}>• {n}</div>)}
+        </div>
+      )}
+    </span>
+  )
+}
+
 export default function CatalogoAttivita() {
   // Le attività non si eliminano: l'Admin le disattiva e finiscono in Disattivati >
   // Corsi disattivati. Eventi, iscrizioni e statistiche già registrati restano.
@@ -80,7 +108,12 @@ export default function CatalogoAttivita() {
       render: a => <span className={`badge badge-${TIPOLOGIA_BADGE[a.tipologia] || 'neutral'}`}>{TIPOLOGIA_LABEL[a.tipologia] || a.tipologia}</span>
     },
     { key: 'dettaglio', label: 'Dettaglio', accessor: a => a.dettaglio || '—' },
-    { key: 'ruoli', label: 'Ruoli destinatari', accessor: a => a.ruoli_destinatari_nomi?.join(', ') || '—' },
+    {
+      key: 'ruoli', label: 'Ruoli destinatari', sortable: false,
+      // accessor per la ricerca, render per la sola icona
+      accessor: a => a.ruoli_destinatari_nomi?.join(', ') || '',
+      render: a => <RuoliIcona nomi={a.ruoli_destinatari_nomi} />,
+    },
   ]
 
   return (
