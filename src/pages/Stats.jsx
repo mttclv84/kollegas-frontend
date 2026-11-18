@@ -64,7 +64,7 @@ export default function Stats() {
   const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
-    api.get('/attivita/').then(({ data }) => setAttivitaList(data.results || data)).catch(() => {})
+    api.get('/attivita/', { params: { tutte: 1 } }).then(({ data }) => setAttivitaList(data.results || data)).catch(() => {})
   }, [])
 
   const fetchStats = useCallback(async () => {

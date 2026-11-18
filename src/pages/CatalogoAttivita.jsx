@@ -3,6 +3,7 @@ import api from '../api/client'
 import toast from 'react-hot-toast'
 import DataTable from '../components/ui/DataTable'
 import Modal from '../components/ui/Modal'
+import { useAuth } from '../context/AuthContext'
 
 const TIPOLOGIE = [
   { value: 'ld',         label: 'L&D' },
@@ -17,6 +18,10 @@ const TIPOLOGIA_BADGE = { ld: 'primary', recruiting: 'violet', ehs: 'success', p
 const EMPTY = { nome: '', tipologia: 'ld', dettaglio: '', ruoli_destinatari: [] }
 
 export default function CatalogoAttivita() {
+  // Le attività non si eliminano: l'Admin le disattiva e finiscono in Disattivati >
+  // Corsi disattivati. Eventi, iscrizioni e statistiche già registrati restano.
+  const { can } = useAuth()
+  const isAdmin = can(['admin'])
   const [attivita, setAttivita] = useState([])
   const [ruoli, setRuoli] = useState([])
   const [loading, setLoading] = useState(true)
@@ -50,10 +55,11 @@ export default function CatalogoAttivita() {
     finally { setSaving(false) }
   }
 
-  const handleDelete = async (a) => {
-    if (!window.confirm(`Eliminare "${a.nome}"?`)) return
-    try { await api.delete(`/attivita/${a.id}/`); toast.success('Eliminata.'); fetch() }
-    catch { toast.error('Errore.') }
+  const handleDisattiva = async (a) => {
+    if (!window.confirm(`Disattivare "${a.nome}"? Non sarà più selezionabile per nuovi eventi e passerà in `
+      + 'Disattivati > Corsi disattivati. Eventi, iscrizioni e statistiche già registrati restano.')) return
+    try { await api.delete(`/attivita/${a.id}/`); toast.success('Attività disattivata.'); fetch() }
+    catch (err) { toast.error(err.response?.data?.detail || 'Errore.') }
   }
 
   const toggleRuolo = (id) => {
@@ -88,7 +94,9 @@ export default function CatalogoAttivita() {
           <DataTable columns={columns} data={attivita} actions={a => (
             <>
               <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(a)} title="Modifica">✏️</button>
-              <button className="btn btn-dark btn-sm btn-icon" onClick={() => handleDelete(a)} title="Elimina">🗑️</button>
+              {isAdmin && (
+                <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleDisattiva(a)} title="Disattiva">🚫</button>
+              )}
             </>
           )} />
         )}

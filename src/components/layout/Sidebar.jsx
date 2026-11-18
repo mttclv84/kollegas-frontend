@@ -56,7 +56,16 @@ const NAV_ITEMS = [
   { to: '/richieste',        label: 'Richieste di Modifica', icon: '🔔', roles: ['admin', 'ho'], alertBadge: true },
   { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin', 'admin_ehs', 'ho'] },
   { to: '/stats',            label: 'Stats',                  icon: '📊', roles: ['admin', 'admin_ehs', 'ho', 'area'] },
-  { to: '/disattivati',      label: 'Disattivati',            icon: '🚫', roles: ['admin', 'admin_ehs'] },
+  {
+    group: 'Disattivati',
+    icon: '🚫',
+    roles: ['admin', 'admin_ehs'],
+    children: [
+      { to: '/disattivati',       label: 'Account disattivati', icon: '👤', roles: ['admin', 'admin_ehs'] },
+      // Corsi EHS e attività del catalogo disattivati: solo Admin generale.
+      { to: '/corsi-disattivati', label: 'Corsi disattivati',   icon: '🎓', roles: ['admin'] },
+    ],
+  },
 ]
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen }) {

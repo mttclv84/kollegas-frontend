@@ -85,8 +85,13 @@ select.form-control { cursor: pointer; }
 
 /* ── Table ── */
 .table-wrapper { overflow-x: auto; }
+/* Prima riga (intestazione) sempre visibile in tutte le tabelle: il contenitore
+   diretto della tabella scorre anche in verticale entro l'altezza dello schermo,
+   così il thead sticky resta agganciato in alto mentre si scorrono le righe.
+   :where() lascia specificità zero, quindi gli stili specifici restano prioritari. */
+:where(div:has(> table)) { max-height: calc(100vh - 140px); overflow: auto; }
 table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
-thead { position: sticky; top: 0; z-index: 1; }
+thead { position: sticky; top: 0; z-index: 2; }
 thead th {
   background: #F1F5F9;
   padding: 10px 14px;

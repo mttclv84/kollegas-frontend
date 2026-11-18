@@ -25,7 +25,8 @@ export default function ElencoCorsi() {
 
   // preload catalogo e stores
   useEffect(() => {
-    api.get('/attivita/').then(({ data }) => {
+    // Anche le attività disattivate: lo storico degli eventi resta consultabile.
+    api.get('/attivita/', { params: { tutte: 1 } }).then(({ data }) => {
       const list = (data.results || data).slice().sort((a, b) => a.nome.localeCompare(b.nome))
       setAttivitaList(list)
     })

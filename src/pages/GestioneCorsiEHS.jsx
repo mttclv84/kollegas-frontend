@@ -83,6 +83,10 @@ function SharepointConfig() {
 }
 
 export default function GestioneCorsiEHS() {
+  const { can } = useAuth()
+  // Disattivare un corso è riservato all'Admin generale: il corso esce da questa
+  // tabella e finisce in Disattivati > Corsi disattivati (storico e stats restano).
+  const isAdmin = can(['admin'])
   const [corsi, setCorsi] = useState([])
   const [fornitori, setFornitori] = useState([])
   const [stores, setStores] = useState([])
@@ -166,21 +170,11 @@ export default function GestioneCorsiEHS() {
   const confirmDelete = async () => {
     try {
       await api.delete(`/ehs/corsi/${deleteTarget.id}/`)
-      toast.success('Corso disattivato.')
+      toast.success('Corso disattivato: lo trovi in Disattivati > Corsi disattivati.')
       setDeleteTarget(null)
       fetchCorsi()
-    } catch {
-      toast.error('Errore.')
-    }
-  }
-
-  const riattiva = async (c) => {
-    try {
-      await api.patch(`/ehs/corsi/${c.id}/`, { attivo: true })
-      toast.success('Corso riattivato.')
-      fetchCorsi()
-    } catch {
-      toast.error('Errore.')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore.')
     }
   }
 
@@ -199,10 +193,6 @@ export default function GestioneCorsiEHS() {
     { key: 'fornitori', label: 'Fornitori', accessor: descriviOfferte },
     { key: 'durata_ore', label: 'Durata (ore)', accessor: c => c.durata_ore },
     { key: 'scadenza_giorni', label: 'Scadenza (giorni)', accessor: c => c.scadenza_giorni ?? '— nessuna —' },
-    {
-      key: 'attivo', label: 'Stato',
-      render: c => <span className={`badge badge-${c.attivo ? 'success' : 'neutral'}`}>{c.attivo ? 'Attivo' : 'Disattivato'}</span>,
-    },
   ]
 
   const fornitoriUsati = form.offerte.map(o => String(o.fornitore)).filter(Boolean)
@@ -222,14 +212,12 @@ export default function GestioneCorsiEHS() {
         ) : (
           <DataTable
             columns={columns}
-            data={corsi}
+            data={corsi.filter(c => c.attivo)}
             actions={c => (
               <div style={{ display: 'flex', gap: 2 }}>
                 <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(c)} title="Modifica">✏️</button>
-                {c.attivo ? (
-                  <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setDeleteTarget(c)} title="Disattiva">🗑️</button>
-                ) : (
-                  <button className="btn btn-ghost btn-sm btn-icon" onClick={() => riattiva(c)} title="Riattiva">♻️</button>
+                {isAdmin && (
+                  <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setDeleteTarget(c)} title="Disattiva">🚫</button>
                 )}
               </div>
             )}
@@ -359,7 +347,8 @@ export default function GestioneCorsiEHS() {
         <Modal title="Conferma disattivazione" onClose={() => setDeleteTarget(null)} size="sm">
           <p style={{ marginBottom: 16 }}>
             Disattivare il corso <strong>{deleteTarget.nome}</strong>?
-            Non sarà più selezionabile per nuove richieste.
+            Non sarà più selezionabile per nuove richieste e passerà in Disattivati &gt; Corsi disattivati.
+            Le formazioni già svolte restano nel registro.
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button className="btn btn-secondary" onClick={() => setDeleteTarget(null)}>Annulla</button>
