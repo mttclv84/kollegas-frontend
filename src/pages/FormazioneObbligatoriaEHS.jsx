@@ -208,6 +208,9 @@ function PersoneRegistro({ matrice }) {
   const [loading, setLoading] = useState(false)
   const [nuova, setNuova] = useState(null)
   const [daEliminare, setDaEliminare] = useState(null) // { formazione, persona }
+  // Ricerca "aperta": anche solo il cognome, su tutti i negozi (lo store sul proprio).
+  const [cerca, setCerca] = useState('')
+  const inRicerca = cerca.trim().length >= 2
 
   useEffect(() => {
     if (isStore) return
@@ -219,17 +222,23 @@ function PersoneRegistro({ matrice }) {
   }, [isStore])
 
   const carica = useCallback(async () => {
-    if (!negozio) return
+    const testo = cerca.trim()
+    if (testo.length < 2 && !negozio) return
     setLoading(true)
     try {
-      const { data } = await api.get('/ehs/persone/', { params: { negozio } })
+      const params = testo.length >= 2 ? { q: testo } : { negozio }
+      const { data } = await api.get('/ehs/persone/', { params })
       setPersone(data)
     } finally {
       setLoading(false)
     }
-  }, [negozio])
+  }, [negozio, cerca])
 
-  useEffect(() => { carica() }, [carica])
+  // Piccolo ritardo mentre si scrive, per non interrogare il server a ogni lettera.
+  useEffect(() => {
+    const t = setTimeout(carica, cerca ? 300 : 0)
+    return () => clearTimeout(t)
+  }, [carica, cerca])
 
   const toggleMansione = async (persona, mansioneId) => {
     const mansioni = persona.mansioni.includes(mansioneId)
@@ -259,14 +268,24 @@ function PersoneRegistro({ matrice }) {
 
   return (
     <div>
-      {!isStore && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <label className="form-label" style={{ marginBottom: 0 }}>Negozio:</label>
-          <select className="form-control" style={{ maxWidth: 260 }} value={negozio} onChange={e => setNegozio(e.target.value)}>
-            {stores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
-          </select>
-        </div>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <input className="form-control" style={{ maxWidth: 320 }} value={cerca} onChange={e => setCerca(e.target.value)}
+          placeholder={isStore ? '🔍 Cerca persona (es. cognome)...' : '🔍 Cerca persona in tutti i negozi (es. cognome)...'} />
+        {cerca && <button className="btn btn-ghost btn-sm" onClick={() => setCerca('')}>✕ Annulla ricerca</button>}
+        {!isStore && !inRicerca && (
+          <>
+            <label className="form-label" style={{ marginBottom: 0, marginLeft: 8 }}>oppure Negozio:</label>
+            <select className="form-control" style={{ maxWidth: 260 }} value={negozio} onChange={e => setNegozio(e.target.value)}>
+              {stores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+            </select>
+          </>
+        )}
+        {inRicerca && !loading && (
+          <span style={{ fontSize: 12, color: '#6B7280' }}>
+            {persone.length} {persone.length === 1 ? 'persona trovata' : 'persone trovate'}{persone.length >= 50 ? ' (prime 50: affina la ricerca)' : ''}
+          </span>
+        )}
+      </div>
 
       {loading && <div className="loading-center"><div className="spinner" /></div>}
 
@@ -286,6 +305,9 @@ function PersoneRegistro({ matrice }) {
                 <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)', verticalAlign: 'top' }}>
                   <td style={{ padding: '8px 12px', fontWeight: 600 }}>
                     {p.nome_completo}
+                    {inRicerca && p.store_nome && (
+                      <div style={{ fontWeight: 400, fontSize: 12, color: '#6B7280' }}>{p.store_nome}</div>
+                    )}
                     {gestisceRegistro && (
                       <div>
                         <button className="btn btn-ghost btn-sm" style={{ padding: '2px 0', fontSize: 12 }}
@@ -333,7 +355,9 @@ function PersoneRegistro({ matrice }) {
                 </tr>
               ))}
               {persone.length === 0 && (
-                <tr><td colSpan={4} style={{ padding: 16, textAlign: 'center', color: '#9CA3AF' }}>Nessuna persona da monitorare.</td></tr>
+                <tr><td colSpan={4} style={{ padding: 16, textAlign: 'center', color: '#9CA3AF' }}>
+                  {inRicerca ? 'Nessuna persona trovata.' : 'Nessuna persona da monitorare.'}
+                </td></tr>
               )}
             </tbody>
           </table>

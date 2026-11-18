@@ -65,7 +65,12 @@ function EliminaRegistroModal({ registro, onClose, onDeleted }) {
   )
 }
 
-export function RegistroViewerModal({ registro, onClose }) {
+// `onDocumentoEliminato`: se passato, l'Admin generale vede "Cancella documento"
+// (il documento sparisce anche dall'aula e la sezione si riapre per il fornitore).
+export function RegistroViewerModal({ registro, onClose, onDocumentoEliminato }) {
+  const { can } = useAuth()
+  const puoCancellare = !!onDocumentoEliminato && can(['admin'])
+  const [cancellando, setCancellando] = useState(false)
   const [url, setUrl] = useState(null)
   const [errore, setErrore] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -108,11 +113,32 @@ export function RegistroViewerModal({ registro, onClose }) {
             Docente: {registro.docente_nome || '—'} · Fornitore: {registro.fornitore_nome || '—'} · Partecipanti: {registro.partecipanti_count}
           </div>
         </div>
-        <button onClick={onClose} style={{ background: '#F3F4F6', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
-          ✕ Chiudi
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {puoCancellare && documentoId && (
+            <button disabled={cancellando} onClick={async () => {
+              const doc = documenti.find(d => d.id === documentoId)
+              if (!window.confirm(`Cancellare definitivamente "${doc?.nome_originale || 'questo documento'}"? `
+                + "Sparisce anche dall'aula e la sezione si riapre, così il fornitore può caricarne un altro.")) return
+              setCancellando(true)
+              try {
+                await api.delete(`/ehs/registri/${registro.id}/file/${documentoId}/`)
+                toast.success('Documento cancellato: il fornitore può caricarne un altro.')
+                onDocumentoEliminato()
+              } catch (err) {
+                toast.error(err.response?.data?.detail || 'Errore durante la cancellazione.')
+              } finally {
+                setCancellando(false)
+              }
+            }} style={{ background: '#FEE2E2', color: '#991B1B', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+              🗑 Cancella documento
+            </button>
+          )}
+          <button onClick={onClose} style={{ background: '#F3F4F6', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+            ✕ Chiudi
+          </button>
+        </div>
       </div>
-      {documenti.length > 1 && (
+      {(documenti.length > 1 || puoCancellare) && documenti.length > 0 && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, width: '90vw', maxWidth: 900 }}>
           {documenti.map(d => (
             <button key={d.id} onClick={() => setDocumentoId(d.id)} style={{
@@ -328,7 +354,10 @@ export default function EHSRegistriList() {
         </div>
       )}
 
-      {viewing && <RegistroViewerModal registro={viewing} onClose={() => setViewing(null)} />}
+      {viewing && (
+        <RegistroViewerModal registro={viewing} onClose={() => setViewing(null)}
+          onDocumentoEliminato={() => { setViewing(null); fetchRegistri() }} />
+      )}
 
       {eliminando && (
         <EliminaRegistroModal
