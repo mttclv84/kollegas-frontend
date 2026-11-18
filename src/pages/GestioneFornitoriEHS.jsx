@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
+import EHSSessioneModal from '../components/ehs/EHSSessioneModal'
 import api from '../api/client'
 import DataTable from '../components/ui/DataTable'
 import Modal from '../components/ui/Modal'
@@ -92,14 +93,25 @@ export default function GestioneFornitoriEHS() {
 
   const apriEliminazione = (f) => { setEliminaTarget(f); setConfermaTesto('') }
 
+  // Formazioni ancora in corso che bloccano l'eliminazione: elencate nella finestra,
+  // ognuna apribile per annullarla.
+  const [bloccanti, setBloccanti] = useState(null)
+  const [sessioneAperta, setSessioneAperta] = useState(null)
+
   const confermaEliminazione = async () => {
+    setBloccanti(null)
     try {
       await api.delete(`/ehs/fornitori/${eliminaTarget.id}/`, { data: { definitivo: true, conferma: confermaTesto } })
       toast.success('Fornitore eliminato definitivamente.')
       setEliminaTarget(null)
       fetchFornitori()
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Errore.')
+      const elenco = err.response?.data?.formazioni_in_corso
+      if (elenco?.length) {
+        setBloccanti(elenco)
+      } else {
+        toast.error(err.response?.data?.detail || 'Errore.')
+      }
     }
   }
 
@@ -220,13 +232,32 @@ export default function GestioneFornitoriEHS() {
       )}
 
       {eliminaTarget && (
-        <Modal title="Elimina fornitore" onClose={() => setEliminaTarget(null)} size="sm">
+        <Modal title="Elimina fornitore" onClose={() => { setEliminaTarget(null); setBloccanti(null) }} size="sm">
           <p style={{ marginBottom: 8 }}>
             Eliminare definitivamente il fornitore <strong>{eliminaTarget.fornitore_ragione_sociale}</strong>?
           </p>
           <p style={{ marginBottom: 12, color: '#991B1B' }}>
             Verranno cancellati l'account e i corsi che eroga. L'operazione non è reversibile.
           </p>
+          {bloccanti && (
+            <div style={{ background: '#FEF3C7', color: '#92400E', borderRadius: 8, padding: '10px 12px', fontSize: 13, marginBottom: 12 }}>
+              <strong>Non si può ancora eliminare:</strong> ha {bloccanti.length} formazioni in corso.
+              Aprile e annullale, poi riprova.
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                {bloccanti.map(b => (
+                  <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 6, padding: '6px 8px' }}>
+                    <div style={{ flex: 1, color: '#374151' }}>
+                      <strong>{b.corso}</strong> — {b.negozio}
+                      <div style={{ fontSize: 12, color: '#6B7280' }}>
+                        {b.data ? new Date(b.data).toLocaleDateString('it-IT') : 'senza data'} · {b.stato_label} · aula n. {b.id}
+                      </div>
+                    </div>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setSessioneAperta(b.id)}>Apri</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <label className="form-label">Per confermare digita <strong>{TESTO_CONFERMA}</strong></label>
           <input className="form-control" value={confermaTesto} autoFocus
             onChange={e => setConfermaTesto(e.target.value)} />
@@ -237,6 +268,10 @@ export default function GestioneFornitoriEHS() {
             </button>
           </div>
         </Modal>
+      )}
+      {sessioneAperta && (
+        // Dopo averle annullate, "Elimina definitivamente" ricontrolla l'elenco.
+        <EHSSessioneModal sessioneId={sessioneAperta} onClose={() => setSessioneAperta(null)} />
       )}
     </div>
   )
