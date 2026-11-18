@@ -246,3 +246,17 @@
   .sidebar.mobile-open { transform: translateX(0); }
   .sidebar-toggle { display: none; }
 }
+
+/* Icona con barra obliqua (voci "disattivati") */
+.icona-barrata { position: relative; display: inline-block; line-height: 1; }
+.icona-barrata::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 135%; height: 2px;
+  background: #EF4444;
+  border-radius: 1px;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+}
