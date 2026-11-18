@@ -120,6 +120,8 @@ export default function EHSDocumentiSezioni({ sessione, onChanged, compatto = fa
 function EHSDocumentiModal({ sessioneId, sezione, onClose, onChanged }) {
   const { can } = useAuth()
   const isFornitore = can(['fornitore'])
+  // Admin e Admin EHS possono riaprire una sezione già completa (es. file da sostituire).
+  const puoRiaprire = can(['admin', 'admin_ehs'])
   const [sessione, setSessione] = useState(null)
   const [file, setFile] = useState([])
   const [busy, setBusy] = useState(false)
@@ -197,6 +199,22 @@ function EHSDocumentiModal({ sessioneId, sezione, onClose, onChanged }) {
     }
   }
 
+  const riapri = async () => {
+    if (!window.confirm(`Riaprire la sezione ${sezione.label}? La V torna grigia e si possono sostituire o aggiungere documenti.`)) return
+    setBusy(true)
+    try {
+      const { data } = await api.patch(`/ehs/sessioni/${sessioneId}/riapri-sezione/`, { tipo: sezione.tipo })
+      toast.success(`${sezione.label}: sezione riaperta.`)
+      aggiorna(data)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Errore durante l'operazione.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const persi = documenti.filter(d => d.disponibile === false).length
+
   const apriDocumento = (doc) => setViewing({
     id: sessione.id,
     corso_nome: sessione.corso_nome,
@@ -219,8 +237,13 @@ function EHSDocumentiModal({ sessioneId, sezione, onClose, onChanged }) {
           <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>
             {sessione.negozio_nome} · {fmtData(sessione.data_confermata)}
             {completa ? (
-              <div style={{ color: '#065F46', marginTop: 4 }}>
+              <div style={{ color: '#065F46', marginTop: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
                 ✓ Caricamento completato il {fmtData(sessione[sezione.campo])}
+                {puoRiaprire && (
+                  <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={riapri}>
+                    ↺ Riapri sezione
+                  </button>
+                )}
               </div>
             ) : sessione.scadenza_caricamento && (
               <div style={{ color: scaduto ? '#991B1B' : '#92400E', marginTop: 4 }}>
@@ -231,6 +254,13 @@ function EHSDocumentiModal({ sessioneId, sezione, onClose, onChanged }) {
             )}
           </div>
 
+          {persi > 0 && (
+            <div style={{ fontSize: 13, color: '#991B1B', background: '#FEE2E2', padding: '8px 12px', borderRadius: 6, marginBottom: 10 }}>
+              ⚠️ {persi === 1 ? 'Un file non è più disponibile' : `${persi} file non sono più disponibili`} sul server
+              (caricati prima dell'archivio nel database): {completa && puoRiaprire ? 'riapri la sezione, rimuovili e ricaricali.' : 'vanno ricaricati.'}
+            </div>
+          )}
+
           {documenti.length === 0 ? (
             <div style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>Nessun documento caricato.</div>
           ) : (
@@ -238,7 +268,7 @@ function EHSDocumentiModal({ sessioneId, sezione, onClose, onChanged }) {
               {documenti.map(d => (
                 <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => apriDocumento(d)}>
-                    📎 {d.nome_originale || `Documento ${d.id}`}
+                    {d.disponibile === false ? '⚠️' : '📎'} {d.nome_originale || `Documento ${d.id}`}
                   </button>
                   <span style={{ color: '#9CA3AF', fontSize: 12 }}>{fmtData(d.caricato_il)}</span>
                   {modificabile && (

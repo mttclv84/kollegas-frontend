@@ -52,3 +52,6 @@
 .ehs-section .cal-day.oggi { background: #FEE2E2; }
 .ehs-section .cal-day.oggi .cal-day-num { background: #DC2626; }
 .ehs-section .cal-day.clickable:hover { background: #FEF2F2; }
+
+/* Registri: testo a capo nelle celle, così la tabella resta nella larghezza della pagina */
+.registri-table tbody td { white-space: normal; vertical-align: top; }

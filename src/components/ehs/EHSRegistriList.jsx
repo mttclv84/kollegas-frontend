@@ -67,6 +67,7 @@ function EliminaRegistroModal({ registro, onClose, onDeleted }) {
 
 export function RegistroViewerModal({ registro, onClose }) {
   const [url, setUrl] = useState(null)
+  const [errore, setErrore] = useState(null)
   const [loading, setLoading] = useState(true)
   const documenti = registro.documenti || []
   const [documentoId, setDocumentoId] = useState(documenti[0]?.id ?? null)
@@ -75,13 +76,19 @@ export function RegistroViewerModal({ registro, onClose }) {
     let objectUrl
     setLoading(true)
     setUrl(null)
+    setErrore(null)
     const path = documentoId ? `/ehs/registri/${registro.id}/file/${documentoId}/` : `/ehs/registri/${registro.id}/file/`
     api.get(path, { responseType: 'blob' })
       .then((res) => {
         objectUrl = URL.createObjectURL(res.data)
         setUrl(objectUrl)
       })
-      .catch(() => {})
+      .catch(async (err) => {
+        // La risposta è un blob anche in errore: ne legge il messaggio.
+        let msg = 'Impossibile aprire il documento.'
+        try { msg = JSON.parse(await err.response.data.text()).detail || msg } catch { /* niente */ }
+        setErrore(msg)
+      })
       .finally(() => setLoading(false))
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [registro.id, documentoId])
@@ -112,7 +119,7 @@ export function RegistroViewerModal({ registro, onClose }) {
               border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 13,
               background: d.id === documentoId ? '#10B981' : '#fff', color: d.id === documentoId ? '#fff' : '#374151',
             }}>
-              📎 {d.tipo === 'attestati' ? 'Attestati' : 'Presenze'} · {d.nome_originale || `Documento ${d.id}`}
+              {d.disponibile === false ? '⚠️' : '📎'} {d.tipo === 'attestati' ? 'Attestati' : 'Presenze'} · {d.nome_originale || `Documento ${d.id}`}
             </button>
           ))}
         </div>
@@ -122,25 +129,31 @@ export function RegistroViewerModal({ registro, onClose }) {
       ) : url ? (
         <iframe src={url} style={{ width: '90vw', height: '75vh', border: 'none', borderRadius: 8, background: '#fff' }} title="Registro compilato" />
       ) : (
-        <div style={{ color: '#fff' }}>Impossibile aprire il documento.</div>
+        <div style={{ color: '#fff', background: 'rgba(239,68,68,0.25)', padding: '12px 18px', borderRadius: 8, fontSize: 14 }}>
+          ⚠️ {errore || 'Impossibile aprire il documento.'}
+        </div>
       )}
     </div>
   )
 }
 
 function PartecipantiOverlay({ partecipanti }) {
-  const [hover, setHover] = useState(false)
+  const [pos, setPos] = useState(null)
+  const presenti = partecipanti.filter(p => p.presente).length
   return (
     <span
-      style={{ position: 'relative', cursor: 'default', textDecoration: 'underline dotted' }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      style={{ cursor: 'default', textDecoration: 'underline dotted', whiteSpace: 'nowrap' }}
+      onMouseEnter={e => {
+        const r = e.currentTarget.getBoundingClientRect()
+        setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 260) })
+      }}
+      onMouseLeave={() => setPos(null)}
       onClick={e => e.stopPropagation()}
     >
-      {partecipanti.length}
-      {hover && partecipanti.length > 0 && (
+      👥 {presenti}/{partecipanti.length}
+      {pos && partecipanti.length > 0 && (
         <div style={{
-          position: 'absolute', left: 0, top: '120%', zIndex: 50,
+          position: 'fixed', top: pos.top, left: pos.left, zIndex: 3000,
           background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8,
           boxShadow: '0 8px 24px rgba(0,0,0,0.15)', padding: '10px 14px',
           minWidth: 200, fontSize: 12, color: '#374151',
@@ -245,53 +258,63 @@ export default function EHSRegistriList() {
           </div>
         </div>
       ) : (
-        <div className="card" style={{ overflow: 'visible' }}>
-          <div className="table-wrapper" style={{ overflow: 'visible' }}>
-            <table>
+        <div className="card">
+          <div className="table-wrapper">
+            <table className="registri-table">
               <thead>
                 <tr>
                   <th>Corso</th>
-                  <th>Negozio</th>
-                  <th>Data</th>
-                  <th>Docente</th>
                   <th>Fornitore</th>
-                  <th>Partecipanti</th>
-                  <th>Presenze</th>
-                  <th>Attestati</th>
-                  <th></th>
+                  <th style={{ textAlign: 'center' }}>Presenti</th>
+                  <th>Documenti</th>
+                  <th style={{ width: 1 }}></th>
                 </tr>
               </thead>
               <tbody>
-                {registri.map(r => (
-                  <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => setViewing(r)}>
-                    <td><strong>{r.corso_nome}</strong></td>
-                    <td>{r.negozio_nome}</td>
-                    <td>{r.data_confermata ? new Date(r.data_confermata).toLocaleDateString('it-IT') : '—'}</td>
-                    <td>{r.docente_nome || '—'}</td>
-                    <td>{r.fornitore_nome || '—'}</td>
-                    <td><PartecipantiOverlay partecipanti={r.partecipanti || []} /></td>
-                    {[['presenze', r.presenze_caricate_il], ['attestati', r.attestati_caricati_il]].map(([tipo, completata]) => (
-                      <td key={tipo}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '2px 8px', whiteSpace: 'nowrap',
-                          background: completata ? '#D1FAE5' : '#FEF3C7',
-                          color: completata ? '#065F46' : '#92400E',
-                        }}>
-                          {completata ? '✓ Completi' : 'Da caricare'} ({(r.documenti || []).filter(d => d.tipo === tipo).length})
-                        </span>
+                {registri.map(r => {
+                  const persi = (r.documenti || []).filter(d => d.disponibile === false).length
+                  return (
+                    <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => setViewing(r)}>
+                      <td>
+                        <div style={{ fontWeight: 700 }}>{r.corso_nome}</div>
+                        <div style={{ fontSize: 12, color: '#6B7280' }}>
+                          {r.negozio_nome} · {r.data_confermata ? new Date(r.data_confermata).toLocaleDateString('it-IT') : '—'}
+                        </div>
                       </td>
-                    ))}
-                    <td style={{ display: 'flex', gap: 4 }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setViewing(r)}>👁️ Consulta</button>
-                      {canElimina && (
-                        <button className="btn btn-ghost btn-sm btn-icon" title="Elimina definitivamente"
-                          onClick={e => { e.stopPropagation(); setEliminando(r) }}>
-                          🗑️
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      <td>
+                        <div>{r.fornitore_nome || '—'}</div>
+                        {r.docente_nome && <div style={{ fontSize: 12, color: '#6B7280' }}>Docente: {r.docente_nome}</div>}
+                      </td>
+                      <td style={{ textAlign: 'center' }}><PartecipantiOverlay partecipanti={r.partecipanti || []} /></td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-start' }}>
+                          {[['presenze', 'Presenze', r.presenze_caricate_il], ['attestati', 'Attestati', r.attestati_caricati_il]].map(([tipo, label, completata]) => (
+                            <span key={tipo} style={{
+                              fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '1px 7px', whiteSpace: 'nowrap',
+                              background: completata ? '#D1FAE5' : '#FEF3C7', color: completata ? '#065F46' : '#92400E',
+                            }}>
+                              {completata ? '✓' : '⏳'} {label} ({(r.documenti || []).filter(d => d.tipo === tipo).length})
+                            </span>
+                          ))}
+                          {persi > 0 && (
+                            <span style={{ fontSize: 11, color: '#991B1B', whiteSpace: 'nowrap' }}
+                              title="File andati persi sul server prima dell'archivio nel database: vanno ricaricati">
+                              ⚠️ {persi} da ricaricare
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-ghost btn-sm btn-icon" title="Consulta i documenti"
+                          onClick={e => { e.stopPropagation(); setViewing(r) }}>👁️</button>
+                        {canElimina && (
+                          <button className="btn btn-ghost btn-sm btn-icon" title="Elimina definitivamente"
+                            onClick={e => { e.stopPropagation(); setEliminando(r) }}>🗑️</button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
