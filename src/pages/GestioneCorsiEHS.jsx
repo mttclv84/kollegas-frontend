@@ -84,9 +84,9 @@ function SharepointConfig() {
 
 export default function GestioneCorsiEHS() {
   const { can } = useAuth()
-  // Disattivare un corso è riservato all'Admin generale: il corso esce da questa
-  // tabella e finisce in Disattivati > Corsi disattivati (storico e stats restano).
-  const isAdmin = can(['admin'])
+  // Disattivano Admin e Admin EHS: il corso esce da questa tabella e finisce in
+  // Disattivati > Corsi disattivati (sezione del solo Admin generale, che può riattivarlo).
+  const puoDisattivare = can(['admin', 'admin_ehs'])
   const [corsi, setCorsi] = useState([])
   const [fornitori, setFornitori] = useState([])
   const [stores, setStores] = useState([])
@@ -216,7 +216,7 @@ export default function GestioneCorsiEHS() {
             actions={c => (
               <div style={{ display: 'flex', gap: 2 }}>
                 <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(c)} title="Modifica">✏️</button>
-                {isAdmin && (
+                {puoDisattivare && (
                   <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setDeleteTarget(c)} title="Disattiva">🚫</button>
                 )}
               </div>
