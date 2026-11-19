@@ -45,10 +45,16 @@ export default function EHSAulaFornitoreModal({ dataIniziale, onClose, onCreated
     if (!corso || !negozio) { toast.error('Seleziona corso e negozio.'); return }
     if (!data || !data.includes('T') || data.endsWith('T')) { toast.error('Seleziona data e ora.'); return }
     if (!docenteNome.trim() || !docenteTelefono.trim()) { toast.error('Nome e telefono del docente sono obbligatori.'); return }
+    const online = modalita === 'ONLINE'
     const minimo = Number(partMin), massimo = Number(partMax)
-    if (!partMin || !partMax) { toast.error('Indica il numero minimo e massimo di partecipanti.'); return }
-    if (minimo < PARTECIPANTI_MINIMI) { toast.error(`Il minimo non può essere inferiore a ${PARTECIPANTI_MINIMI}.`); return }
-    if (massimo < minimo) { toast.error('Il massimo non può essere inferiore al minimo.'); return }
+    // Online nessun minimo: la formazione si svolge a prescindere, serve solo il massimo.
+    if (online) {
+      if (!partMax || massimo < 1) { toast.error('Indica il numero massimo di partecipanti.'); return }
+    } else {
+      if (!partMin || !partMax) { toast.error('Indica il numero minimo e massimo di partecipanti.'); return }
+      if (minimo < PARTECIPANTI_MINIMI) { toast.error(`Il minimo non può essere inferiore a ${PARTECIPANTI_MINIMI}.`); return }
+      if (massimo < minimo) { toast.error('Il massimo non può essere inferiore al minimo.'); return }
+    }
     if (modalita === 'ONLINE' && !link.trim()) { toast.error('Inserisci il link alla call.'); return }
     setBusy(true)
     try {
@@ -127,11 +133,16 @@ export default function EHSAulaFornitoreModal({ dataIniziale, onClose, onCreated
             <div className="form-group">
               <label className="form-label">Partecipanti *</label>
               <div style={{ display: 'flex', gap: 8 }}>
-                <input type="number" className="form-control" style={{ maxWidth: 130 }} min={PARTECIPANTI_MINIMI}
-                  placeholder="Minimo *" title={`Minimo (almeno ${PARTECIPANTI_MINIMI})`} value={partMin}
-                  onChange={e => setPartMin(e.target.value)} />
+                {modalita !== 'ONLINE' && (
+                  <input type="number" className="form-control" style={{ maxWidth: 130 }} min={PARTECIPANTI_MINIMI}
+                    placeholder="Minimo *" title={`Minimo (almeno ${PARTECIPANTI_MINIMI})`} value={partMin}
+                    onChange={e => setPartMin(e.target.value)} />
+                )}
                 <input type="number" className="form-control" style={{ maxWidth: 130 }} min={partMin || PARTECIPANTI_MINIMI}
                   placeholder="Massimo *" value={partMax} onChange={e => setPartMax(e.target.value)} />
+                {modalita === 'ONLINE' && (
+                  <span style={{ fontSize: 12, color: '#6B7280', alignSelf: 'center' }}>Online: nessun minimo, si svolge a prescindere</span>
+                )}
               </div>
             </div>
 

@@ -101,7 +101,7 @@ export default function EHSCercaFormazioni({ onApri }) {
                 </thead>
                 <tbody>
                   {risultati.map(r => {
-                    const sottoMinimo = r.iscritti < r.minimo
+                    const sottoMinimo = r.minimo > 0 && r.iscritti < r.minimo
                     return (
                       <tr key={r.id}>
                         <td style={{ whiteSpace: 'nowrap' }}>
@@ -113,7 +113,7 @@ export default function EHSCercaFormazioni({ onApri }) {
                         <td style={{ color: sottoMinimo ? '#DC2626' : '#065F46', fontWeight: 600 }}
                           title={sottoMinimo ? `Sotto il minimo di ${r.minimo}: senza iscritti la formazione viene cancellata` : undefined}>
                           {r.iscritti} <span style={{ fontWeight: 400, color: '#6B7280' }}>
-                            (min {r.minimo}{r.massimo ? ` · max ${r.massimo}` : ''})
+                            ({r.minimo > 0 ? `min ${r.minimo}` : 'nessun minimo'}{r.massimo ? ` · max ${r.massimo}` : ''})
                           </span>
                           {sottoMinimo && ' ⚠️'}
                         </td>

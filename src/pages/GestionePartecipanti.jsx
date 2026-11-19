@@ -336,14 +336,19 @@ export default function GestionePartecipanti() {
             <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               Iscritti
               <span className="badge badge-neutral">{iscritti.length}</span>
-              {evento?.is_ehs && (
-                <span title="Sotto il minimo la formazione viene cancellata in automatico 3 giorni prima"
-                  style={{ fontSize: 12, fontWeight: 600, color: iscritti.length < Math.max(3, evento.ehs_partecipanti_min || 0) ? '#DC2626' : '#065F46' }}>
-                  min {Math.max(3, evento.ehs_partecipanti_min || 0)}
-                  {evento.max_partecipanti > 0 ? ` · max ${evento.max_partecipanti}` : ''}
-                  {iscritti.length < Math.max(3, evento.ehs_partecipanti_min || 0) && ' ⚠️ sotto il minimo'}
-                </span>
-              )}
+              {evento?.is_ehs && (() => {
+                // Minimo effettivo dal backend: 0 = formazione online, si svolge a prescindere.
+                const minimo = evento.ehs_partecipanti_min ?? 3
+                const sotto = minimo > 0 && iscritti.length < minimo
+                return (
+                  <span title={minimo > 0 ? 'Sotto il minimo la formazione viene cancellata in automatico' : 'Formazione online: nessun minimo'}
+                    style={{ fontSize: 12, fontWeight: 600, color: sotto ? '#DC2626' : '#065F46' }}>
+                    {minimo > 0 ? `min ${minimo}` : 'nessun minimo (online)'}
+                    {evento.max_partecipanti > 0 ? ` · max ${evento.max_partecipanti}` : ''}
+                    {sotto && ' ⚠️ sotto il minimo'}
+                  </span>
+                )
+              })()}
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                 {evento && iscritti.length > 0 && (
                   <button

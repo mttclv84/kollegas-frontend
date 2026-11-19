@@ -196,9 +196,14 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
     const link = linkOnline.trim() || sessione.link_online
     if (online && !link) { toast.error('Inserisci il link alla call.'); return }
     const minimo = Number(partMin), massimo = Number(partMax)
-    if (!partMin || !partMax) { toast.error('Indica il numero minimo e massimo di partecipanti.'); return }
-    if (minimo < PARTECIPANTI_MINIMI) { toast.error(`Il minimo non può essere inferiore a ${PARTECIPANTI_MINIMI}.`); return }
-    if (massimo < minimo) { toast.error('Il massimo non può essere inferiore al minimo.'); return }
+    // Online nessun minimo: la formazione si svolge a prescindere, serve solo il massimo.
+    if (online) {
+      if (!partMax || massimo < 1) { toast.error('Indica il numero massimo di partecipanti.'); return }
+    } else {
+      if (!partMin || !partMax) { toast.error('Indica il numero minimo e massimo di partecipanti.'); return }
+      if (minimo < PARTECIPANTI_MINIMI) { toast.error(`Il minimo non può essere inferiore a ${PARTECIPANTI_MINIMI}.`); return }
+      if (massimo < minimo) { toast.error('Il massimo non può essere inferiore al minimo.'); return }
+    }
     const conferma = confermaDataStore
     run(async () => {
       await api.patch(`/ehs/sessioni/${sessioneId}/proponi-data/`, {
@@ -329,11 +334,16 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const campiPartecipanti = (
     <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', fontSize: 13 }}>
       <span>Partecipanti</span>
-      <input type="number" className="form-control" style={{ maxWidth: 110 }} min={PARTECIPANTI_MINIMI}
-        placeholder="Minimo *" title={`Minimo (almeno ${PARTECIPANTI_MINIMI})`} value={partMin}
-        onChange={e => setPartMin(e.target.value)} />
-      <input type="number" className="form-control" style={{ maxWidth: 110 }} min={partMin || PARTECIPANTI_MINIMI}
+      {modalitaScelta !== 'ONLINE' && (
+        <input type="number" className="form-control" style={{ maxWidth: 110 }} min={PARTECIPANTI_MINIMI}
+          placeholder="Minimo *" title={`Minimo (almeno ${PARTECIPANTI_MINIMI})`} value={partMin}
+          onChange={e => setPartMin(e.target.value)} />
+      )}
+      <input type="number" className="form-control" style={{ maxWidth: 110 }} min={modalitaScelta === 'ONLINE' ? 1 : (partMin || PARTECIPANTI_MINIMI)}
         placeholder="Massimo *" title="Massimo" value={partMax} onChange={e => setPartMax(e.target.value)} />
+      {modalitaScelta === 'ONLINE' && (
+        <span style={{ fontSize: 12, color: '#6B7280' }}>Online: nessun minimo</span>
+      )}
     </div>
   )
 
@@ -436,7 +446,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                 <strong style={{ color: sessione.sotto_minimo ? '#DC2626' : undefined }}>
                   {sessione.partecipanti_count}
                   <span style={{ fontWeight: 400, color: '#6B7280' }}>
-                    {' '}(min {sessione.minimo_effettivo}{sessione.partecipanti_max ? ` · max ${sessione.partecipanti_max}` : ''})
+                    {' '}({sessione.minimo_effettivo > 0 ? `min ${sessione.minimo_effettivo}` : 'nessun minimo'}{sessione.partecipanti_max ? ` · max ${sessione.partecipanti_max}` : ''})
                   </span>
                 </strong>
               </div>
