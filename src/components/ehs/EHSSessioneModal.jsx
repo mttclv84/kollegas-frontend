@@ -21,7 +21,8 @@ const STATO_LABELS = {
   RIFIUTATA: 'Richiesta eccezionale rifiutata',
 }
 
-const GIORNI_LIMITE_CANCELLAZIONE = 7
+// Allineato a ehs.services.GIORNI_LIMITE_CANCELLAZIONE (backend).
+const GIORNI_LIMITE_CANCELLAZIONE = 3
 const PARTECIPANTI_MINIMI = 3
 
 const partecipanteLabel = (p) => `${p.utente_nome}${p.utente_store_nome ? ` (${p.utente_store_nome})` : ''}`

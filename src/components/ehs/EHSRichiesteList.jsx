@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react'
 import api from '../../api/client'
 import EHSDocumentiSezioni from './EHSDocumentiSezioni'
+import { useAuth } from '../../context/AuthContext'
 
 const STATO_LABELS = {
   IN_APPROVAZIONE: 'In approvazione EHS',
@@ -78,6 +79,8 @@ function StoricoIcon({ sessioneId }) {
 }
 
 const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref) {
+  // Per il fornitore la richiesta dello store è "ricevuta" (come nella scheda dell'aula).
+  const isFornitore = useAuth().can(['fornitore'])
   const [sessioni, setSessioni] = useState([])
   const [loading, setLoading] = useState(true)
   const primaVolta = useRef(true)
@@ -150,7 +153,7 @@ const EHSRichiesteList = forwardRef(function EHSRichiesteList({ onSelect }, ref)
                       background: stato.bg, color: stato.text,
                       borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600,
                     }}>
-                      {STATO_LABELS[s.stato] || s.stato}
+                      {isFornitore && s.stato === 'RICHIESTA_INVIATA' ? 'Richiesta ricevuta' : (STATO_LABELS[s.stato] || s.stato)}
                     </span>
                     {s.stato === 'COMPLETATA' && (
                       <div style={{ marginTop: 8 }}>
