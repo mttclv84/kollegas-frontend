@@ -24,6 +24,14 @@ export function AuthProvider({ children }) {
     return data.user
   }
 
+  // Dopo il cambio password il backend chiude le vecchie sessioni e ne apre una nuova.
+  const aggiornaSessione = (data) => {
+    localStorage.setItem('access_token', data.access)
+    localStorage.setItem('refresh_token', data.refresh)
+    localStorage.setItem('user', JSON.stringify(data.user))
+    setUser(data.user)
+  }
+
   const logout = async () => {
     try {
       const refresh = localStorage.getItem('refresh_token')
@@ -36,7 +44,7 @@ export function AuthProvider({ children }) {
   const can = (livelli) => user && livelli.includes(user.livello_accesso)
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, can }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, can, aggiornaSessione }}>
       {children}
     </AuthContext.Provider>
   )

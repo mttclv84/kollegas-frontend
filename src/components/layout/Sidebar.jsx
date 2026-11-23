@@ -55,6 +55,7 @@ const NAV_ITEMS = [
   { divider: true },
   { to: '/eccezioni',        label: 'Eccezioni Calendario',  icon: '📌', roles: ['admin', 'admin_ehs', 'ho'] },
   { to: '/richieste',        label: 'Richieste di Modifica', icon: '🔔', roles: ['admin', 'ho'], alertBadge: true },
+  { to: '/richieste-password', label: 'Richieste reset password', icon: '🔑', roles: ['admin'], resetBadge: true },
   { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin', 'admin_ehs', 'ho'] },
   { to: '/stats',            label: 'Stats',                  icon: '📊', roles: ['admin', 'admin_ehs', 'ho', 'area'] },
   {
@@ -77,6 +78,12 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
   const [accountBadge, setAccountBadge] = useState(0)
   // Promemoria archivio mensile: documenti EHS dei mesi precedenti ancora in Kollegas.
   const [archivioBadge, setArchivioBadge] = useState(0)
+  const [resetBadge, setResetBadge] = useState(0)
+
+  useEffect(() => {
+    if (!user || !can(['admin'])) return
+    api.get('/richieste-reset-password/').then(({ data }) => setResetBadge(data.length)).catch(() => {})
+  }, [user, location.pathname])
 
   useEffect(() => {
     if (!user || !can(['admin', 'admin_ehs'])) return
@@ -216,7 +223,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
 
           // ── Flat item ──
           if (!can(item.roles)) return null
-          const hasBadge = item.alertBadge && pendingCount > 0
+          const hasBadge = (item.alertBadge && pendingCount > 0) || (item.resetBadge && resetBadge > 0)
           return (
             <NavLink
               key={item.to}
@@ -258,6 +265,9 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
               <span className="user-role">{user.sola_lettura ? 'GUEST' : user.livello_accesso.toUpperCase()}</span>
             </div>
           </div>
+        )}
+        {!user?.sola_lettura && (
+          <NavLink to="/cambia-password" className="logout-btn" title="Cambia password" style={{ textDecoration: 'none' }}>🔑</NavLink>
         )}
         <button
           className="logout-btn"

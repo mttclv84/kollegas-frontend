@@ -27,7 +27,17 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config
-    if (err.response?.status === 401 && !original._retry) {
+    // Sessione già aperta quando è scattato l'obbligo di cambio password.
+    if (err.response?.status === 403 && err.response.data?.codice === 'cambio_password_richiesto') {
+      try {
+        const utente = JSON.parse(localStorage.getItem('user'))
+        localStorage.setItem('user', JSON.stringify({ ...utente, deve_cambiare_password: true }))
+      } catch { /* la pagina di login gestisce il caso */ }
+      if (window.location.pathname !== '/cambia-password') window.location.href = '/cambia-password'
+      return Promise.reject(err)
+    }
+    // Credenziali errate al login: nessun token da rinnovare, l'errore lo mostra la pagina.
+    if (err.response?.status === 401 && !original._retry && !original.url?.includes('/auth/login')) {
       original._retry = true
       const refresh = localStorage.getItem('refresh_token')
       if (refresh) {

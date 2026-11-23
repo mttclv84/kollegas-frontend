@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import DataTable from '../components/ui/DataTable'
 import Modal from '../components/ui/Modal'
+import { PasswordTemporaneaModal } from './RichiesteResetPassword'
 
 const STATIC_CACHE_TTL = 24 * 60 * 60 * 1000
 function lsGet(key) {
@@ -269,7 +270,7 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
           toast.success('Richiesta inviata. In attesa di approvazione da Admin/HO.', { duration: 5000 })
         } else {
           await api.post('/users/', payload)
-          toast.success('Utente creato. Password di accesso: Primark01!', { duration: 6000 })
+          toast.success('Utente creato con la password comune temporanea (5 giorni).', { duration: 6000 })
         }
       } else {
         await api.patch(`/users/${modal.data.id}/`, payload)
@@ -310,29 +311,15 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
     }
   }
 
-  const handleShowPassword = async (u) => {
+  const handleResetPassword = async (u) => {
+    const nome = `${u.cognome} ${u.nome}`
+    if (!window.confirm(`Generare una password temporanea per ${nome}? Quella attuale smetterà di funzionare.`)) return
     try {
-      const { data } = await api.get(`/users/${u.id}/`)
-      setShownPassword({ nome: `${u.cognome} ${u.nome}`, password: data.raw_password || '—' })
-    } catch { toast.error('Impossibile recuperare la password.') }
-  }
-
-  const handleChangePassword = (u) => {
-    setForm({ ...EMPTY_FORM, password: '' })
-    setModal({ mode: 'password', data: u })
-  }
-
-  const handleSavePassword = async (e) => {
-    e.preventDefault()
-    if (!form.password) { toast.error('Inserisci la nuova password.'); return }
-    setSaving(true)
-    try {
-      await api.patch(`/users/${modal.data.id}/`, { password: form.password })
-      toast.success('Password aggiornata.')
-      setModal(null)
+      const { data } = await api.post(`/users/${u.id}/reset-password/`)
+      setShownPassword({ nome, password: data.password_temporanea })
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Errore.')
-    } finally { setSaving(false) }
+      toast.error(err.response?.data?.detail || 'Errore durante il reset.')
+    }
   }
 
   const vistoCreazione = async (id) => {
@@ -573,11 +560,8 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
                   <>
                     <div style={{ width: 10 }} />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#F1F5F9', borderRadius: 6, padding: '2px 4px' }}>
-                      {can(['admin', 'ho']) && (
-                        <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleShowPassword(u)} title="Visualizza password">👁️</button>
-                      )}
                       {can(['admin']) && (
-                        <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleChangePassword(u)} title="Cambia password">🔑</button>
+                        <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleResetPassword(u)} title="Reset password">🔑</button>
                       )}
                       {canAdmin && !mostraDisattivati && (
                         <button className="btn btn-dark btn-sm btn-icon" onClick={() => handleDisattiva(u)} title="Disattiva">🗑️</button>
@@ -690,33 +674,7 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
         </Modal>
       )}
 
-      {shownPassword && (
-        <Modal title="Password attuale" onClose={() => setShownPassword(null)} size="sm">
-          <p style={{ marginBottom: 8 }}><strong>{shownPassword.nome}</strong></p>
-          <p style={{ fontFamily: 'monospace', background: '#F1F5F9', padding: 12, borderRadius: 6, fontSize: 16, letterSpacing: 1 }}>
-            {shownPassword.password}
-          </p>
-          <button className="btn btn-secondary" style={{ marginTop: 12 }} onClick={() => setShownPassword(null)}>Chiudi</button>
-        </Modal>
-      )}
-
-      {modal?.mode === 'password' && (
-        <Modal title={`Cambia password — ${modal.data?.cognome} ${modal.data?.nome}`} onClose={() => setModal(null)} size="sm">
-          <form onSubmit={handleSavePassword}>
-            <div className="form-group">
-              <label className="form-label">Nuova password *</label>
-              <input type="password" className="form-control" value={form.password}
-                onChange={e => setF('password', e.target.value)} autoFocus required />
-            </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setModal(null)}>Annulla</button>
-              <button type="submit" className="btn btn-primary" disabled={saving}>
-                {saving ? 'Salvataggio...' : 'Salva'}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      {shownPassword && <PasswordTemporaneaModal dati={shownPassword} onClose={() => setShownPassword(null)} />}
 
       {/* Conferma disattivazione (admin/HO) */}
       {deleteTarget && (

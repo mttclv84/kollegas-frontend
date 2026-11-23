@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../api/client'
 import kollegalogo from '../assets/kollegas-logo.jpeg'
 import './Login.css'
 
@@ -10,20 +11,38 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [errore, setErrore] = useState(false)
+  const [modoReset, setModoReset] = useState(false)
+  const [esitoReset, setEsitoReset] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setErrore(false)
     try {
-      await login(form.email, form.password)
-      navigate('/')
+      const utente = await login(form.email, form.password)
+      navigate(utente.deve_cambiare_password ? '/cambia-password' : '/')
     } catch (err) {
-      setErrore(err.response?.status === 403 ? (err.response.data?.detail || 'Accesso non consentito.') : true)
+      const stato = err.response?.status
+      setErrore(stato === 403 || stato === 429 ? (err.response.data?.detail || 'Accesso non consentito.') : true)
     } finally {
       setLoading(false)
     }
   }
+
+  const handleRichiediReset = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const { data } = await api.post('/auth/richiedi-reset/', { email: form.email })
+      setEsitoReset(data.detail)
+    } catch {
+      setEsitoReset('Invio non riuscito. Riprova tra qualche minuto.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const apriLogin = () => { setModoReset(false); setEsitoReset('') }
 
   return (
     <div className="login-page">
@@ -68,6 +87,33 @@ export default function Login() {
           <p className="login-subtitle">Primark Italy — Learning & Development</p>
         </div>
 
+        {modoReset ? (
+          <form className="login-form" onSubmit={handleRichiediReset}>
+            <h2 style={{ fontSize: 16, margin: '0 0 6px' }}>Richiedi reset password</h2>
+            {esitoReset ? (
+              <p role="status" style={{ fontSize: 13, color: '#065F46', background: '#D1FAE5', borderRadius: 6, padding: '10px 12px' }}>
+                {esitoReset}
+              </p>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 12px' }}>
+                  La richiesta arriva all'Admin, che ti comunicherà una password temporanea.
+                </p>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input type="email" className="form-control" placeholder="nome@primark.it" required autoFocus
+                    value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                </div>
+                <button type="submit" className="btn btn-primary login-submit" disabled={loading}>
+                  {loading ? 'Invio...' : 'Invia richiesta'}
+                </button>
+              </>
+            )}
+            <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 10, alignSelf: 'center' }} onClick={apriLogin}>
+              ← Torna al login
+            </button>
+          </form>
+        ) : (
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Email</label>
@@ -99,7 +145,12 @@ export default function Login() {
           >
             {loading ? 'Accesso in corso...' : 'Accedi'}
           </button>
+          <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 10, alignSelf: 'center' }}
+            onClick={() => setModoReset(true)}>
+            Richiedi reset password
+          </button>
         </form>
+        )}
 
         <p className="login-footer">© 2026 Primark Italy internal tool</p>
       </div>

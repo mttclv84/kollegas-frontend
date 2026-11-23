@@ -27,11 +27,14 @@ import GestioneCorsiEHS from './pages/GestioneCorsiEHS'
 import FormazioneObbligatoriaEHS from './pages/FormazioneObbligatoriaEHS'
 import CorsiDisattivati from './pages/CorsiDisattivati'
 import ArchivioDocumentiEHS from './pages/ArchivioDocumentiEHS'
+import CambiaPassword from './pages/CambiaPassword'
+import RichiesteResetPassword from './pages/RichiesteResetPassword'
 
-function ProtectedRoute({ children, roles }) {
+function ProtectedRoute({ children, roles, paginaCambioPassword = false }) {
   const { user, loading } = useAuth()
   if (loading) return <div className="loading-center"><div className="spinner" /></div>
   if (!user) return <Navigate to="/login" replace />
+  if (user.deve_cambiare_password && !paginaCambioPassword) return <Navigate to="/cambia-password" replace />
   if (roles && !roles.includes(user.livello_accesso)) return <Navigate to="/" replace />
   return children
 }
@@ -49,6 +52,7 @@ function FornitoreGuard({ children }) {
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
+  { path: '/cambia-password', element: <ProtectedRoute paginaCambioPassword><CambiaPassword /></ProtectedRoute> },
   {
     path: '/',
     element: <ProtectedRoute><FornitoreGuard><AppLayout /></FornitoreGuard></ProtectedRoute>,
@@ -80,6 +84,7 @@ export const router = createBrowserRouter([
       { path: 'audit', element: <ProtectedRoute roles={['admin','admin_ehs','ho']}><AuditLog /></ProtectedRoute> },
       { path: 'stats', element: <ProtectedRoute roles={['admin','admin_ehs','ho','area']}><Stats /></ProtectedRoute> },
       { path: 'richieste', element: <ProtectedRoute roles={['admin','ho']}><RichiesteModifica ambito="altro" /></ProtectedRoute> },
+      { path: 'richieste-password', element: <ProtectedRoute roles={['admin']}><RichiesteResetPassword /></ProtectedRoute> },
       { path: 'iscrizioni-store', element: <ProtectedRoute roles={['store']}><IscrizioniStore /></ProtectedRoute> },
     ],
   },
