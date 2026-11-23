@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
+import PasswordInput from '../components/ui/PasswordInput'
 import kollegalogo from '../assets/kollegas-logo.jpeg'
 import './Login.css'
 
@@ -54,12 +55,12 @@ export default function CambiaPassword() {
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Password attuale</label>
-            <input type="password" className="form-control" autoComplete="current-password" autoFocus required
+            <PasswordInput autoComplete="current-password" autoFocus required
               value={form.attuale} onChange={setF('attuale')} />
           </div>
           <div className="form-group">
             <label className="form-label">Nuova password</label>
-            <input type="password" className="form-control" autoComplete="new-password" minLength={8} required
+            <PasswordInput autoComplete="new-password" minLength={8} required
               value={form.nuova} onChange={setF('nuova')} />
             <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
               Almeno 8 caratteri, non solo numeri, non troppo comune e senza la parola Primark all'inizio.
@@ -67,7 +68,7 @@ export default function CambiaPassword() {
           </div>
           <div className="form-group">
             <label className="form-label">Conferma nuova password</label>
-            <input type="password" className="form-control" autoComplete="new-password" minLength={8} required
+            <PasswordInput autoComplete="new-password" minLength={8} required
               value={form.conferma} onChange={setF('conferma')} />
           </div>
           {errore && (

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/client'
+import PasswordInput from '../components/ui/PasswordInput'
 import kollegalogo from '../assets/kollegas-logo.jpeg'
 import './Login.css'
 
@@ -129,9 +130,8 @@ export default function Login() {
           </div>
           <div className="form-group">
             <label className="form-label">Password</label>
-            <input
-              type="password"
-              className="form-control"
+            <PasswordInput
+              autoComplete="current-password"
               placeholder="••••••••"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
