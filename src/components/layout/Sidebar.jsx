@@ -16,10 +16,10 @@ const NAV_ITEMS = [
       // lockedRoles: la voce resta visibile ma con lucchetto e non cliccabile.
       { to: '/ehs', label: 'EHS Calendar & Richieste', icon: <EhsIcon nome="calendario" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'], lockedRoles: ['area'] },
       { to: '/ehs/fornitori', label: 'Fornitori EHS', icon: <EhsIcon nome="fornitori" />, roles: ['admin', 'admin_ehs', 'ho'] },
-      { to: '/ehs/corsi', label: 'Tabella Corsi EHS', icon: <EhsIcon nome="corsi" />, roles: ['admin', 'admin_ehs', 'ho'] },
+      { to: '/ehs/corsi', label: 'Tabella Corsi EHS', icon: <EhsIcon nome="corsi" />, roles: ['admin', 'admin_ehs'] },
       { to: '/ehs/obblighi', label: 'Panel Formazione EHS', icon: <EhsIcon nome="obblighi" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
-      { to: '/ehs/archivio', label: 'Archivio documenti EHS', icon: '🗄️', roles: ['admin', 'admin_ehs', 'ho'], archivioBadge: true },
-      { to: '/ehs/richieste-modifica', label: 'Richieste di modifica EHS', icon: <EhsIcon nome="richieste" />, roles: ['admin', 'admin_ehs', 'ho'] },
+      { to: '/ehs/archivio', label: 'Archivio documenti EHS', icon: '🗄️', roles: ['admin', 'admin_ehs'], archivioBadge: true },
+      { to: '/ehs/richieste-modifica', label: 'Richieste di modifica EHS', icon: <EhsIcon nome="richieste" />, roles: ['admin', 'admin_ehs'] },
     ],
   },
   { divider: true },
@@ -56,7 +56,7 @@ const NAV_ITEMS = [
   { to: '/eccezioni',        label: 'Eccezioni Calendario',  icon: '📌', roles: ['admin', 'admin_ehs', 'ho'] },
   { to: '/richieste',        label: 'Richieste di Modifica', icon: '🔔', roles: ['admin', 'ho'], alertBadge: true },
   { to: '/richieste-password', label: 'Richieste reset password', icon: '🔑', roles: ['admin'], resetBadge: true },
-  { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin', 'admin_ehs', 'ho'] },
+  { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin'] },
   { to: '/stats',            label: 'Stats',                  icon: '📊', roles: ['admin', 'admin_ehs', 'ho', 'area'] },
   {
     group: 'Disattivati',

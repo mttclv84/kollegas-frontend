@@ -22,8 +22,6 @@ function StatoBadge({ stato }) {
 
 // Fornitori secondari ed eccezionali in attesa di validazione: si decidono dal dettaglio della richiesta.
 function FornitoriDaValidare() {
-  const { can } = useAuth()
-  const puoValutare = can(['admin', 'admin_ehs'])
   const [sessioni, setSessioni] = useState([])
   const [aperta, setAperta] = useState(null)
   const carica = () => {
@@ -54,11 +52,7 @@ function FornitoriDaValidare() {
                   <td style={{ whiteSpace: 'nowrap', color: '#6B7280', fontSize: 12 }}>
                     {new Date(s.creata_il).toLocaleDateString('it-IT')}
                   </td>
-                  <td>
-                    <button className={`btn btn-sm ${puoValutare ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setAperta(s.id)}>
-                      {puoValutare ? 'Valuta' : 'Dettagli'}
-                    </button>
-                  </td>
+                  <td><button className="btn btn-primary btn-sm" onClick={() => setAperta(s.id)}>Valuta</button></td>
                 </tr>
               ))}
             </tbody>
@@ -77,12 +71,10 @@ export default function RichiesteModifica({ ambito = 'altro' }) {
   const isEHS = ambito === 'ehs'
   // Le richieste EHS le valida l'EHS Admin, le altre Admin/HO; l'Admin vede e decide entrambe.
   const isAdminHO = can(isEHS ? ['admin', 'admin_ehs'] : ['admin', 'ho'])
-  // HO sulle richieste EHS: stessa vista di chi decide, ma senza le azioni.
-  const vedeTutto = isAdminHO || (isEHS && can(['ho']))
 
   const [richieste, setRichieste] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filtroStato, setFiltroStato] = useState(vedeTutto ? 'pending' : '')
+  const [filtroStato, setFiltroStato] = useState(isAdminHO ? 'pending' : '')
   const [processing, setProcessing] = useState(null)
 
   const fetchRichieste = async () => {
@@ -130,7 +122,7 @@ export default function RichiesteModifica({ ambito = 'altro' }) {
               value={filtroStato}
               onChange={e => setFiltroStato(e.target.value)}
             >
-              {vedeTutto && <option value="pending">In attesa</option>}
+              {isAdminHO && <option value="pending">In attesa</option>}
               <option value="">Tutte</option>
               <option value="approvata">Approvate</option>
               <option value="rifiutata">Rifiutate</option>
@@ -152,7 +144,7 @@ export default function RichiesteModifica({ ambito = 'altro' }) {
               <thead>
                 <tr>
                   <th>#</th>
-                  {vedeTutto && <th>Store</th>}
+                  {isAdminHO && <th>Store</th>}
                   <th>Partecipante</th>
                   <th>Attività</th>
                   <th>Data evento</th>
@@ -166,7 +158,7 @@ export default function RichiesteModifica({ ambito = 'altro' }) {
                 {richieste.map(r => (
                   <tr key={r.id}>
                     <td style={{ color: '#9CA3AF', fontSize: 12 }}>#{r.id}</td>
-                    {vedeTutto && (
+                    {isAdminHO && (
                       <td>
                         <span className="badge badge-neutral">{r.richiedente_store || '—'}</span>
                       </td>

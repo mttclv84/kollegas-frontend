@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
-import { useAuth } from '../context/AuthContext'
 import './EHS.css'
 
 const CONFERMA = 'SVUOTA'
@@ -15,12 +14,10 @@ const fmtPeso = (b) => {
 
 const box = (bg, color) => ({ background: bg, color, borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 })
 
-// Archivio mensile dei documenti EHS (Admin / Admin EHS; HO vede solo il riepilogo): si
-// scaricano in un unico ZIP i documenti delle sezioni completate e poi si svuota Kollegas.
-// In app resta la riga di ogni documento con la data di archiviazione.
+// Archivio mensile dei documenti EHS (solo Admin / Admin EHS): si scaricano in un
+// unico ZIP i documenti delle sezioni completate e poi si svuota Kollegas. In app
+// resta la riga di ogni documento con la data di archiviazione.
 export default function ArchivioDocumentiEHS() {
-  const { can } = useAuth()
-  const puoGestire = can(['admin', 'admin_ehs'])
   const [stato, setStato] = useState(null)
   const [busy, setBusy] = useState(false)
   const [conferma, setConferma] = useState('')
@@ -83,10 +80,6 @@ export default function ArchivioDocumentiEHS() {
         documenti con la data di archiviazione.
       </p>
 
-      {!puoGestire && (
-        <div style={box('#F3F4F6', '#374151')}>👁 Il tuo profilo può solo visualizzare il riepilogo dell'archivio.</div>
-      )}
-
       {stato.mesi_precedenti > 0 && !aperta && (
         <div style={box('#FEF3C7', '#92400E')}>
           ⏰ Ci sono {stato.mesi_precedenti} documenti dei mesi precedenti ancora da archiviare.
@@ -107,11 +100,9 @@ export default function ArchivioDocumentiEHS() {
                   <div style={{ fontSize: 12, color: '#6B7280' }}>in sezioni non ancora completate (al prossimo giro)</div>
                 </div>
               </div>
-              {puoGestire && (
-                <button className="btn btn-primary" disabled={busy || stato.da_archiviare === 0} onClick={scarica}>
-                  {busy ? 'Preparazione ZIP...' : '⬇ 1. Scarica ZIP'}
-                </button>
-              )}
+              <button className="btn btn-primary" disabled={busy || stato.da_archiviare === 0} onClick={scarica}>
+                {busy ? 'Preparazione ZIP...' : '⬇ 1. Scarica ZIP'}
+              </button>
             </>
           ) : (
             <>
@@ -123,15 +114,13 @@ export default function ArchivioDocumentiEHS() {
                     : 'Non ancora scaricata'}
                 </div>
               </div>
-              {puoGestire && (
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-                  <button className="btn btn-secondary" disabled={busy} onClick={scarica}>
-                    {busy ? 'Preparazione ZIP...' : aperta.scaricata_il ? '⬇ Scarica di nuovo lo ZIP' : '⬇ 1. Scarica ZIP'}
-                  </button>
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                <button className="btn btn-secondary" disabled={busy} onClick={scarica}>
+                  {busy ? 'Preparazione ZIP...' : aperta.scaricata_il ? '⬇ Scarica di nuovo lo ZIP' : '⬇ 1. Scarica ZIP'}
+                </button>
+              </div>
 
-              {puoGestire && aperta.scaricata_il && (
+              {aperta.scaricata_il && (
                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
                   <div style={box('#FEE2E2', '#991B1B')}>
                     ⚠️ Prima di svuotare, verifica di aver aperto lo ZIP e di averlo salvato nell'archivio aziendale
