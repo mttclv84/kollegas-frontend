@@ -18,8 +18,8 @@ export default function Login() {
     try {
       await login(form.email, form.password)
       navigate('/')
-    } catch {
-      setErrore(true)
+    } catch (err) {
+      setErrore(err.response?.status === 403 ? (err.response.data?.detail || 'Accesso non consentito.') : true)
     } finally {
       setLoading(false)
     }
@@ -46,10 +46,10 @@ export default function Login() {
           >
             <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
             <p style={{ fontSize: 17, fontWeight: 600, color: '#111827', margin: '0 0 6px' }}>
-              Errore utente o password
+              {errore === true ? 'Errore utente o password' : 'Accesso non disponibile'}
             </p>
             <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 24px' }}>
-              Verifica le credenziali inserite e riprova.
+              {errore === true ? 'Verifica le credenziali inserite e riprova.' : errore}
             </p>
             <button
               className="btn btn-primary"
