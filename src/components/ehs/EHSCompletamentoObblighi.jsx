@@ -111,7 +111,7 @@ const daMettereInAula = (dati, corsoId) => dati.persone.filter(p => {
 
 export function DettaglioNegozio({ negozioId, conAnelli = false }) {
   const { can } = useAuth()
-  const puoRichiedere = can(['store', 'admin', 'admin_ehs', 'ho'])
+  const puoRichiedere = can(['store', 'admin', 'admin_ehs'])
   const [dati, setDati] = useState(null)
   const [richiesta, setRichiesta] = useState(null) // valori iniziali di 'Nuova richiesta'
 

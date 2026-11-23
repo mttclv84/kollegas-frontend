@@ -14,7 +14,7 @@ const fmtDataOra = (d) => new Date(d).toLocaleString('it-IT', {
 export default function EHSCercaFormazioni({ onApri }) {
   const { can } = useAuth()
   const navigate = useNavigate()
-  const puoIscrivere = can(['store', 'admin', 'admin_ehs', 'ho'])
+  const puoIscrivere = can(['store', 'admin', 'admin_ehs'])
   const vedeTutteLeSessioni = can(['admin', 'admin_ehs', 'ho'])
   const [aperta, setAperta] = useState(false)
   const [filtri, setFiltri] = useState(FILTRI_VUOTI)

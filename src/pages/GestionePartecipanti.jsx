@@ -141,7 +141,9 @@ export default function GestionePartecipanti() {
   const aulaChiusa = !senzaLimiti && isAulaChiusa(evento?.data)
   // Admin e Admin EHS aggiungono partecipanti alle aule EHS anche oltre il massimo.
   const postiEsauriti = postiPieni && !(evento?.is_ehs && senzaLimiti)
-  const nascondiDaAssegnare = (can(['store']) && isPastEvent) || aulaChiusa
+  // HO sulle formazioni EHS: elenco visibile, nessuna modifica.
+  const soloVisioneEHS = !!evento?.is_ehs && can(['ho'])
+  const nascondiDaAssegnare = (can(['store']) && isPastEvent) || aulaChiusa || soloVisioneEHS
 
   const handleAssegna = async (userId) => {
     try {
@@ -231,7 +233,7 @@ export default function GestionePartecipanti() {
   }
 
   const canModify = (iscrizione) => {
-    if (aulaChiusa) return false
+    if (aulaChiusa || soloVisioneEHS) return false
     if (can(['admin', 'admin_ehs', 'ho', 'area'])) return true
     if (can(['store']) && iscrizione.store_id === user.store_id) return true
     return false
@@ -313,6 +315,15 @@ export default function GestionePartecipanti() {
         </div>
       )}
 
+      {soloVisioneEHS && !aulaChiusa && (
+        <div style={{
+          background: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: 8,
+          padding: '10px 16px', marginBottom: 16, fontSize: 13, color: '#374151',
+        }}>
+          👁 Formazione EHS: il tuo profilo può solo visualizzare i partecipanti.
+        </div>
+      )}
+
       {can(['store']) && isWithin20Days && !isPastEvent && (
         <div style={{
           background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8,
@@ -359,7 +370,7 @@ export default function GestionePartecipanti() {
                     ⬇ PDF
                   </button>
                 )}
-                {!aulaChiusa && (
+                {!aulaChiusa && !soloVisioneEHS && (
                   <button className="btn btn-primary btn-sm" disabled={salvataggio} onClick={handleSalva}>
                     {salvataggio ? 'Salvataggio...' : 'Salva'}
                   </button>

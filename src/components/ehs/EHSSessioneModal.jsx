@@ -66,8 +66,9 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const [modificaPresenze, setModificaPresenze] = useState(false)
 
   const isFornitore = can(['fornitore'])
-  const isFornitoreLato = can(['fornitore', 'admin', 'admin_ehs', 'ho'])
-  const isAdmin = can(['admin', 'admin_ehs', 'ho'])
+  // HO è escluso: nella sezione EHS vede tutto ma non ha azioni.
+  const isFornitoreLato = can(['fornitore', 'admin', 'admin_ehs'])
+  const isAdmin = can(['admin', 'admin_ehs'])
   const isApprovatore = can(['admin', 'admin_ehs'])
   // Admin e Admin EHS intervengono sull'aula senza limiti di data: chiusura in
   // qualunque giorno, presenze modificabili e partecipanti aggiunti anche dopo.
@@ -625,7 +626,8 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                   className="btn btn-secondary btn-sm"
                   onClick={() => navigate(`/iscrizioni?evento=${sessione.calendario_evento}`)}
                 >
-                  {sessione.stato === 'COMPLETATA' ? 'Aggiungi / togli partecipanti →' : 'Gestione Partecipanti →'}
+                  {can(['ho']) ? 'Visualizza partecipanti →'
+                    : sessione.stato === 'COMPLETATA' ? 'Aggiungi / togli partecipanti →' : 'Gestione Partecipanti →'}
                 </button>
               </div>
             )}

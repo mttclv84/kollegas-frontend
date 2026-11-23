@@ -23,6 +23,8 @@ export default function GestioneFornitoriEHS() {
   // Cancellazione definitiva: solo Admin / Admin EHS, digitando la frase di conferma.
   const { can } = useAuth()
   const canEliminare = can(['admin', 'admin_ehs'])
+  // HO vede l'elenco ma non crea, modifica o disattiva i fornitori.
+  const puoModificare = can(['admin', 'admin_ehs'])
   const [eliminaTarget, setEliminaTarget] = useState(null)
   const [confermaTesto, setConfermaTesto] = useState('')
   const [emailSbloccata, setEmailSbloccata] = useState(false)
@@ -131,7 +133,7 @@ export default function GestioneFornitoriEHS() {
     <div className="ehs-section">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 className="page-title" style={{ marginBottom: 0 }}>Fornitori EHS</h1>
-        <button className="btn btn-primary" onClick={openCreate}>+ Nuovo Fornitore</button>
+        {puoModificare && <button className="btn btn-primary" onClick={openCreate}>+ Nuovo Fornitore</button>}
       </div>
 
       <div className="card">
@@ -141,7 +143,7 @@ export default function GestioneFornitoriEHS() {
           <DataTable
             columns={columns}
             data={fornitori}
-            actions={f => (
+            actions={!puoModificare ? undefined : f => (
               <div style={{ display: 'flex', gap: 2 }}>
                 <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(f)} title="Modifica">✏️</button>
                 {f.is_active && (

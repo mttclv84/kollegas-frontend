@@ -13,11 +13,11 @@ export const SEZIONI = [
 const oggiISO = () => new Date().toISOString().slice(0, 10)
 const fmtData = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—')
 
-// Chi può caricare: il fornitore dell'aula oppure Admin/Admin EHS/HO.
+// Chi può caricare: il fornitore dell'aula oppure Admin/Admin EHS (HO solo visione).
 function usePuoCaricare(sessione) {
   const { user, can } = useAuth()
   if (!sessione) return false
-  if (can(['admin', 'admin_ehs', 'ho'])) return true
+  if (can(['admin', 'admin_ehs'])) return true
   return can(['fornitore']) && sessione.fornitore === user?.id
 }
 
