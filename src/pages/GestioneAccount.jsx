@@ -29,6 +29,7 @@ const LIVELLI_PER_RUOLO = {
     { value: 'base', label: 'Base' },
   ],
 }
+const PROFILI_PROTETTI_DA_HO = ['admin', 'admin_ehs']
 const SESSI = [
   { value: 'M', label: 'Maschio' },
   { value: 'F', label: 'Femmina' },
@@ -549,9 +550,12 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
           <DataTable
             columns={columns}
             data={utentiFiltrati}
-            actions={u => (
+            actions={u => {
+              // HO non modifica né disattiva i profili Admin e Admin EHS.
+              const protetto = can(['ho']) && PROFILI_PROTETTI_DA_HO.includes(u.livello_accesso)
+              return (
               <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                {!(isStore && u.livello_accesso === 'store') && (
+                {!(isStore && u.livello_accesso === 'store') && !protetto && (
                   <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(u)} title="Modifica">✏️</button>
                 )}
                 <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setDocsUser(u)} title="Docs" style={{ color: '#D97706' }}>📁</button>
@@ -563,7 +567,7 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
                       {can(['admin']) && (
                         <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleResetPassword(u)} title="Reset password">🔑</button>
                       )}
-                      {canAdmin && !mostraDisattivati && (
+                      {canAdmin && !mostraDisattivati && !protetto && (
                         <button className="btn btn-dark btn-sm btn-icon" onClick={() => handleDisattiva(u)} title="Disattiva">🗑️</button>
                       )}
                       {isStore && !mostraDisattivati && u.livello_accesso !== 'store' && (
@@ -573,7 +577,8 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
                   </>
                 )}
               </div>
-            )}
+              )
+            }}
           />
         )}
       </div>

@@ -23,6 +23,24 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Il backend ruota il refresh token e invalida quello vecchio: se più richieste scadono
+// insieme, il rinnovo deve avvenire una volta sola e le altre lo aspettano.
+let rinnovoInCorso = null
+
+function rinnovaSessione(refresh) {
+  if (!rinnovoInCorso) {
+    rinnovoInCorso = axios.post(
+      `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/auth/refresh/`,
+      { refresh }
+    ).then(({ data }) => {
+      localStorage.setItem('access_token', data.access)
+      if (data.refresh) localStorage.setItem('refresh_token', data.refresh)
+      return data.access
+    }).finally(() => { rinnovoInCorso = null })
+  }
+  return rinnovoInCorso
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
@@ -42,12 +60,8 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem('refresh_token')
       if (refresh) {
         try {
-          const { data } = await axios.post(
-            `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/auth/refresh/`,
-            { refresh }
-          )
-          localStorage.setItem('access_token', data.access)
-          original.headers.Authorization = `Bearer ${data.access}`
+          const access = await rinnovaSessione(refresh)
+          original.headers.Authorization = `Bearer ${access}`
           return api(original)
         } catch {
           localStorage.clear()
