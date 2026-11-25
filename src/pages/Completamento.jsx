@@ -263,7 +263,76 @@ function AreaTabella({ stores }) {
   )
 }
 
+// Elenco nominativo degli aventi diritto dell'area: ✓ fatta, – non fatta. Solo visualizzazione.
+function PersoneArea({ area, programma }) {
+  const [dati, setDati] = useState(null)
+  const [cerca, setCerca] = useState('')
+  const [soloDaFare, setSoloDaFare] = useState(false)
+
+  useEffect(() => {
+    setDati(null)
+    api.get(`/completamento/area/${area.numero}/persone/`, { params: { programma } })
+      .then(({ data }) => setDati(data)).catch(() => setDati({ corsi: [], persone: [] }))
+  }, [area.numero, programma])
+
+  if (!dati) return <div className="loading-center"><div className="spinner" /></div>
+  if (dati.persone.length === 0) return <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>Nessun avente diritto in questa area.</p>
+
+  const testo = cerca.trim().toLowerCase()
+  const persone = dati.persone.filter(p =>
+    (!testo || `${p.cognome} ${p.nome} ${p.negozio} ${p.codice_negozio}`.toLowerCase().includes(testo))
+    && (!soloDaFare || dati.corsi.some(c => !p.fatti.includes(c.id))))
+  const cella = { padding: '6px 10px', borderBottom: '1px solid #F3F4F6', fontSize: 13 }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+        <input className="form-control" style={{ maxWidth: 260 }} placeholder="Cerca nome o negozio..."
+          aria-label="Cerca nome o negozio" value={cerca} onChange={e => setCerca(e.target.value)} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+          <input type="checkbox" checked={soloDaFare} onChange={e => setSoloDaFare(e.target.checked)} />
+          Solo chi deve ancora fare qualcosa
+        </label>
+        <span style={{ fontSize: 12, color: '#6B7280' }}>{persone.length} su {dati.persone.length}</span>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ background: '#F9FAFB' }}>
+              <th style={{ ...cella, textAlign: 'left' }}>Collaboratore</th>
+              <th style={{ ...cella, textAlign: 'left' }}>Negozio</th>
+              <th style={{ ...cella, textAlign: 'left' }}>Ruolo</th>
+              {dati.corsi.map(c => (
+                <th key={c.id} style={{ ...cella, textAlign: 'center', color: c.percorso ? '#6D28D9' : undefined }}>{c.nome_breve}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {persone.map(p => (
+              <tr key={p.id}>
+                <td style={{ ...cella, fontWeight: 600, color: '#1F2937' }}>{p.cognome} {p.nome}</td>
+                <td style={{ ...cella, color: '#374151' }}>{p.codice_negozio ? `${p.codice_negozio} — ` : ''}{p.negozio}</td>
+                <td style={{ ...cella, color: '#6B7280' }}>{p.ruolo}</td>
+                {dati.corsi.map(c => (
+                  <td key={c.id} style={{ ...cella, textAlign: 'center' }}>
+                    {p.fatti.includes(c.id)
+                      ? <span title="Fatta" aria-label="Fatta" style={{ color: c.percorso ? '#6D28D9' : '#16A34A', fontSize: 17, fontWeight: 700 }}>✓</span>
+                      : <span title="Non fatta" aria-label="Non fatta" style={{ color: '#9CA3AF', fontSize: 17, fontWeight: 700 }}>–</span>}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 function AreaDetailModal({ area, programma, onClose, compatta = false }) {
+  const { can } = useAuth()
+  const vedePersone = can(['admin', 'ho', 'area'])
+  const [vista, setVista] = useState('negozi')
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -291,11 +360,24 @@ function AreaDetailModal({ area, programma, onClose, compatta = false }) {
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#6B7280', lineHeight: 1 }}>✕</button>
         </div>
 
-        {loading && <div className="loading-center"><div className="spinner" /></div>}
+        {vedePersone && (
+          <div role="tablist" aria-label="Vista" style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            {[['negozi', 'Negozi'], ['persone', 'Persone']].map(([chiave, etichetta]) => (
+              <button key={chiave} type="button" role="tab" aria-selected={vista === chiave}
+                className={`btn btn-sm ${vista === chiave ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setVista(chiave)}>
+                {etichetta}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {detail && !loading && compatta && detail.stores.length > 0 && <AreaTabella stores={detail.stores} />}
+        {vista === 'persone' && <PersoneArea area={area} programma={programma} />}
 
-        {detail && !loading && !compatta && (
+        {vista === 'negozi' && loading && <div className="loading-center"><div className="spinner" /></div>}
+
+        {vista === 'negozi' && detail && !loading && compatta && detail.stores.length > 0 && <AreaTabella stores={detail.stores} />}
+
+        {vista === 'negozi' && detail && !loading && !compatta && (
           <>
             {detail.stores.length === 0 && (
               <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>Nessun negozio configurato per questa area.</p>
