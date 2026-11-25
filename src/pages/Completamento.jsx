@@ -3,6 +3,18 @@ import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import './Completamento.css'
 
+// Programmi con una pagina di completamento. Per quelli su più aule c'è anche la card
+// "Percorso completo": conta chi ha svolto tutte le aule, come se fossero un unico corso.
+const PROGRAMMI = [
+  { chiave: 'gwu-ratm', titolo: 'GWU RA-TM' },
+  { chiave: 'dm-leadership', titolo: 'DM Leadership' },
+  { chiave: 'gwu-tm-dm', titolo: 'GWU TM-DM Leadership' },
+]
+const ETICHETTE_RUOLO = { 'Team Manager': 'TM', 'Department Manager': 'DM' }
+const elencoRuoli = (ruoli = []) => ruoli.map((r, i) => (
+  <span key={r}>{i > 0 && (i === ruoli.length - 1 ? ' e ' : ', ')}<strong>{r}</strong></span>
+))
+
 const C = 213.63 // circumference of r=34 circle
 
 function makeDashedArcArray(arcLen, d = 5, g = 4) {
@@ -21,6 +33,11 @@ function makeDashedArcArray(arcLen, d = 5, g = 4) {
   else parts[parts.length - 1] += (C - consumed)
   return parts.join(' ')
 }
+
+const percentuale = (c, t) => (t > 0 ? Math.round(100 * c / t) : 0)
+
+// Bordo e intestazione evidenziati per la card del percorso completo.
+const stilePercorso = (corso) => (corso.percorso ? { borderColor: '#A78BFA', boxShadow: '0 0 0 1px #A78BFA' } : undefined)
 
 function PercBar({ value, max, inProcinto = 0 }) {
   const pct = max > 0 ? (value / max) * 100 : 0
@@ -54,8 +71,11 @@ function CorsoCard({ corso }) {
   const dashedDashoffset = C - partLen
 
   return (
-    <div className="completamento-card card">
-      <div className="completamento-card-header">{corso.nome_breve}</div>
+    <div className="completamento-card card" style={stilePercorso(corso)}>
+      <div className="completamento-card-header">
+        {corso.nome_breve}
+        {corso.percorso && <div style={{ fontSize: 11, fontWeight: 500, color: '#6B7280' }}>tutte le aule svolte</div>}
+      </div>
       <div className="completamento-card-body">
         <div className="completamento-pct-ring">
           <svg viewBox="0 0 80 80" className="ring-svg">
@@ -88,22 +108,12 @@ function CorsoCard({ corso }) {
         </div>
 
         <div className="completamento-split">
-          <div className="split-row">
-            <span className="split-label">GWU RA-TM</span>
-            <PercBar
-              value={corso.gwu_ratm.completato}
-              max={corso.gwu_ratm.totale}
-              inProcinto={corso.gwu_ratm.in_procinto}
-            />
-          </div>
-          <div className="split-row">
-            <span className="split-label">Team Manager</span>
-            <PercBar
-              value={corso.team_manager.completato}
-              max={corso.team_manager.totale}
-              inProcinto={corso.team_manager.in_procinto}
-            />
-          </div>
+          {corso.ruoli.map(r => (
+            <div key={r.nome} className="split-row">
+              <span className="split-label">{r.nome}</span>
+              <PercBar value={r.completato} max={r.totale} inProcinto={r.in_procinto} />
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -113,16 +123,12 @@ function CorsoCard({ corso }) {
 const C_IT = 263.89 // 2π × r=42
 
 function ItaliaCorsoRing({ corso }) {
-  const totComp = corso.gwu_ratm.completato + corso.team_manager.completato
-  const totTot  = corso.gwu_ratm.totale    + corso.team_manager.totale
-  const pct   = totTot > 0 ? Math.round(100 * totComp / totTot) : 0
+  const pct = percentuale(corso.completato, corso.totale)
   const color = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444'
-  const ratmPct = corso.gwu_ratm.totale   > 0 ? Math.round(100 * corso.gwu_ratm.completato   / corso.gwu_ratm.totale)   : 0
-  const tmPct   = corso.team_manager.totale > 0 ? Math.round(100 * corso.team_manager.completato / corso.team_manager.totale) : 0
 
   return (
     // Interno azzurro chiaro per distinguere i totali Italia dalle card delle aree.
-    <div className="completamento-card card" style={{ background: '#F5F9FF', borderColor: '#BFDBFE' }}>
+    <div className="completamento-card card" style={{ background: '#F5F9FF', borderColor: '#BFDBFE', ...stilePercorso(corso) }}>
       <div className="completamento-card-header" style={{ borderBottomColor: '#DBEAFE' }}>{corso.nome_breve}</div>
       <div className="completamento-card-body">
         {/* Ring più piccolo e con stile distinto: r=42, stroke 5, linecap butt */}
@@ -142,18 +148,16 @@ function ItaliaCorsoRing({ corso }) {
           </svg>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1 }}>{pct}%</span>
-            <span style={{ fontSize: 10, color: '#9CA3AF', marginTop: 3 }}>{totComp}/{totTot}</span>
+            <span style={{ fontSize: 10, color: '#9CA3AF', marginTop: 3 }}>{corso.completato}/{corso.totale}</span>
           </div>
         </div>
         <div className="completamento-split">
-          <div className="split-row">
-            <span className="split-label">GWU RA-TM</span>
-            <MiniBar percentuale={ratmPct} completato={corso.gwu_ratm.completato} totale={corso.gwu_ratm.totale} />
-          </div>
-          <div className="split-row">
-            <span className="split-label">Team Manager</span>
-            <MiniBar percentuale={tmPct} completato={corso.team_manager.completato} totale={corso.team_manager.totale} />
-          </div>
+          {corso.ruoli.map(r => (
+            <div key={r.nome} className="split-row">
+              <span className="split-label">{r.nome}</span>
+              <MiniBar percentuale={percentuale(r.completato, r.totale)} completato={r.completato} totale={r.totale} />
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -177,8 +181,18 @@ function MiniBar({ percentuale, completato, totale }) {
   )
 }
 
-// Vista compatta per l'utente Area: un negozio per riga, per ogni corso la % dei due
-// ruoli in una cella colorata (verde ≥80, arancio ≥50, rosso sotto), 0/0 = n.s.
+// Righe "ruolo → barra" usate nelle card delle aree e nel dettaglio negozi.
+function RigheRuoli({ corso }) {
+  return corso.ruoli.map((r, i) => (
+    <div key={r.nome} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center', gap: 8, marginBottom: i < corso.ruoli.length - 1 ? 3 : 0 }}>
+      <span style={{ fontSize: 10, color: '#9CA3AF' }}>{r.nome}</span>
+      <MiniBar percentuale={percentuale(r.completato, r.totale)} completato={r.completato} totale={r.totale} />
+    </div>
+  ))
+}
+
+// Vista compatta per l'utente Area: un negozio per riga, per ogni corso la % di ciascun
+// ruolo in una cella colorata (verde ≥80, arancio ≥50, rosso sotto), 0/0 = n.s.
 function PercCella({ completato, totale }) {
   if (!totale) {
     return <td title="Non significativo: nessuna persona nel ruolo"
@@ -195,28 +209,28 @@ function PercCella({ completato, totale }) {
 }
 
 function AreaTabella({ stores }) {
-  const corsi = stores[0]?.corsi.map(c => c.nome_breve) || []
+  const corsi = stores[0]?.corsi || []
+  const ruoli = corsi[0]?.ruoli || []
   const bordo = '2px solid #fff'
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
         <colgroup>
           <col style={{ width: 190 }} />
-          {corsi.flatMap(n => [<col key={`${n}-g`} />, <col key={`${n}-t`} />])}
+          {corsi.flatMap(c => ruoli.map(r => <col key={`${c.nome_breve}-${r.nome}`} />))}
         </colgroup>
         <thead>
           <tr>
             <th />
-            {corsi.map(n => (
-              <th key={n} colSpan={2} style={{ padding: '4px', fontSize: 12, fontWeight: 700, color: '#374151', textAlign: 'center', borderLeft: bordo }}>{n}</th>
+            {corsi.map(c => (
+              <th key={c.nome_breve} colSpan={ruoli.length} style={{ padding: '4px', fontSize: 12, fontWeight: 700, color: '#374151', textAlign: 'center', borderLeft: bordo }}>{c.nome_breve}</th>
             ))}
           </tr>
           <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
             <th style={{ textAlign: 'left', padding: '4px 8px', fontSize: 11, color: '#6B7280', fontWeight: 600 }}>Negozio</th>
-            {corsi.flatMap(n => [
-              <th key={`${n}-g`} style={{ padding: '4px', fontSize: 10.5, color: '#6B7280', fontWeight: 600, borderLeft: bordo }}>GWU RA-TM</th>,
-              <th key={`${n}-t`} style={{ padding: '4px', fontSize: 10.5, color: '#6B7280', fontWeight: 600 }}>TM</th>,
-            ])}
+            {corsi.flatMap(c => ruoli.map((r, i) => (
+              <th key={`${c.nome_breve}-${r.nome}`} style={{ padding: '4px', fontSize: 10.5, color: '#6B7280', fontWeight: 600, borderLeft: i === 0 ? bordo : undefined }}>{r.etichetta}</th>
+            )))}
           </tr>
         </thead>
         <tbody>
@@ -227,10 +241,7 @@ function AreaTabella({ stores }) {
                 {s.alert && <span style={{ color: '#DC2626', marginRight: 4 }}>●</span>}
                 {s.codice_store ? `${s.codice_store} — ` : ''}{s.nome}
               </td>
-              {s.corsi.flatMap(c => [
-                <PercCella key={`${c.nome_breve}-g`} {...c.gwu_ratm} />,
-                <PercCella key={`${c.nome_breve}-t`} {...c.team_manager} />,
-              ])}
+              {s.corsi.flatMap(c => c.ruoli.map(r => <PercCella key={`${c.nome_breve}-${r.nome}`} {...r} />))}
             </tr>
           ))}
         </tbody>
@@ -246,17 +257,15 @@ function AreaTabella({ stores }) {
   )
 }
 
-function AreaDetailModal({ area, onClose, compatta = false }) {
+function AreaDetailModal({ area, programma, onClose, compatta = false }) {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.get(`/completamento/area/${area.numero}/`)
+    api.get(`/completamento/area/${area.numero}/`, { params: { programma } })
       .then(({ data }) => setDetail(data))
       .finally(() => setLoading(false))
-  }, [area.numero])
-
-  const pct = (c, t) => t > 0 ? Math.round(100 * c / t) : 0
+  }, [area.numero, programma])
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -302,15 +311,8 @@ function AreaDetailModal({ area, onClose, compatta = false }) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {store.corsi.map(c => (
                       <div key={c.nome_breve}>
-                        <div style={{ fontSize: 10.5, color: '#374151', fontWeight: 600, marginBottom: 3 }}>{c.nome_breve}</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                          <span style={{ fontSize: 10, color: '#9CA3AF' }}>GWU RA-TM</span>
-                          <MiniBar percentuale={pct(c.gwu_ratm.completato, c.gwu_ratm.totale)} completato={c.gwu_ratm.completato} totale={c.gwu_ratm.totale} />
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 10, color: '#9CA3AF' }}>Team Manager</span>
-                          <MiniBar percentuale={pct(c.team_manager.completato, c.team_manager.totale)} completato={c.team_manager.completato} totale={c.team_manager.totale} />
-                        </div>
+                        <div style={{ fontSize: 10.5, color: c.percorso ? '#6D28D9' : '#374151', fontWeight: 600, marginBottom: 3 }}>{c.nome_breve}</div>
+                        <RigheRuoli corso={c} />
                       </div>
                     ))}
                   </div>
@@ -324,13 +326,14 @@ function AreaDetailModal({ area, onClose, compatta = false }) {
   )
 }
 
-// ZOOM (store): chi ha fatto cosa tra i corsi obbligatori, persona per persona.
-function ZoomModal({ storeId, onClose }) {
+// ZOOM (store): chi ha fatto cosa tra le aule del programma, persona per persona.
+function ZoomModal({ storeId, programma, onClose }) {
   const [zoom, setZoom] = useState(null)
 
   useEffect(() => {
-    api.get(`/stores/${storeId}/completamento/zoom/`).then(({ data }) => setZoom(data)).catch(() => setZoom({ utenti: [], corsi: [] }))
-  }, [storeId])
+    api.get(`/stores/${storeId}/completamento/zoom/`, { params: { programma } })
+      .then(({ data }) => setZoom(data)).catch(() => setZoom({ utenti: [], corsi: [] }))
+  }, [storeId, programma])
 
   const cella = { padding: '8px 10px', borderBottom: '1px solid #F3F4F6', fontSize: 13 }
 
@@ -341,7 +344,9 @@ function ZoomModal({ storeId, onClose }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>ZOOM — chi ha fatto cosa</h3>
-            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>GWU RA-TM e Team Manager del negozio</div>
+            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+              {zoom?.programma ? <>{zoom.programma.titolo} · {elencoRuoli(zoom.programma.ruoli)} del negozio</> : ' '}
+            </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#6B7280', lineHeight: 1 }}>✕</button>
         </div>
@@ -349,7 +354,7 @@ function ZoomModal({ storeId, onClose }) {
         {!zoom && <div className="loading-center"><div className="spinner" /></div>}
 
         {zoom && zoom.utenti.length === 0 && (
-          <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>Nessun GWU RA-TM o Team Manager in questo negozio.</p>
+          <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>Nessuna persona del target in questo negozio.</p>
         )}
 
         {zoom && zoom.utenti.length > 0 && (
@@ -359,18 +364,20 @@ function ZoomModal({ storeId, onClose }) {
                 <tr style={{ background: '#F9FAFB' }}>
                   <th style={{ ...cella, textAlign: 'left' }}>Collaboratore</th>
                   <th style={{ ...cella, textAlign: 'left' }}>Ruolo</th>
-                  {zoom.corsi.map(c => <th key={c.id} style={{ ...cella, textAlign: 'center' }}>{c.nome_breve}</th>)}
+                  {zoom.corsi.map(c => (
+                    <th key={c.id} style={{ ...cella, textAlign: 'center', color: c.percorso ? '#6D28D9' : undefined }}>{c.nome_breve}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {zoom.utenti.map(u => (
                   <tr key={u.id}>
                     <td style={{ ...cella, fontWeight: 600, color: '#1F2937' }}>{u.cognome} {u.nome}</td>
-                    <td style={{ ...cella, color: '#6B7280' }}>{u.ruolo === 'Team Manager' ? 'TM' : u.ruolo}</td>
+                    <td style={{ ...cella, color: '#6B7280' }}>{ETICHETTE_RUOLO[u.ruolo] || u.ruolo}</td>
                     {zoom.corsi.map(c => (
                       <td key={c.id} style={{ ...cella, textAlign: 'center' }}>
                         {u.fatti.includes(c.id)
-                          ? <span title="Fatto" style={{ color: '#16A34A', fontSize: 18, fontWeight: 700 }}>✓</span>
+                          ? <span title="Fatto" style={{ color: c.percorso ? '#6D28D9' : '#16A34A', fontSize: 18, fontWeight: 700 }}>✓</span>
                           : u.iscritti?.[c.id]
                           ? (
                             <span title="Iscritto a un'aula non ancora svolta"
@@ -398,6 +405,7 @@ export default function Completamento() {
   // Il riquadro del singolo negozio lo vedono solo admin (tutti i negozi) e store (il proprio):
   // area, HO e admin EHS vedono solo il completamento Italia/aree.
   const soloItalia = !isStore && user?.livello_accesso !== 'admin'
+  const [programma, setProgramma] = useState(PROGRAMMI[0].chiave)
   const [stores, setStores] = useState([])
   const [storeId, setStoreId] = useState('')
   const [data, setData] = useState(null)
@@ -406,6 +414,7 @@ export default function Completamento() {
   const [italiaLoading, setItaliaLoading] = useState(false)
   const [areaModal, setAreaModal] = useState(null) // area object
   const [showZoom, setShowZoom] = useState(false)
+  const titolo = PROGRAMMI.find(p => p.chiave === programma)?.titolo
 
   useEffect(() => {
     if (soloItalia) return
@@ -424,22 +433,33 @@ export default function Completamento() {
     if (!storeId) return
     setLoading(true)
     setData(null)
-    api.get(`/stores/${storeId}/completamento/`)
+    api.get(`/stores/${storeId}/completamento/`, { params: { programma } })
       .then(({ data }) => setData(data))
       .finally(() => setLoading(false))
-  }, [storeId])
+  }, [storeId, programma])
 
   useEffect(() => {
     setItaliaLoading(true)
-    api.get('/completamento/italia/')
+    setItaliaData(null)
+    api.get('/completamento/italia/', { params: { programma } })
       .then(({ data }) => setItaliaData(data))
       .finally(() => setItaliaLoading(false))
-  }, [])
+  }, [programma])
 
   return (
     <div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }} role="tablist" aria-label="Programma">
+        {PROGRAMMI.map(p => (
+          <button key={p.chiave} type="button" role="tab" aria-selected={programma === p.chiave}
+            className={`btn btn-sm ${programma === p.chiave ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setProgramma(p.chiave)}>
+            {p.titolo}
+          </button>
+        ))}
+      </div>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
-        <h1 className="page-title" style={{ marginBottom: 0 }}>Completamento GWU RA-TM</h1>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>Completamento {titolo}</h1>
         {!isStore && !soloItalia && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <label className="form-label" style={{ marginBottom: 0 }}>Store:</label>
@@ -458,14 +478,14 @@ export default function Completamento() {
         )}
       </div>
 
-      {showZoom && <ZoomModal storeId={storeId} onClose={() => setShowZoom(false)} />}
+      {showZoom && <ZoomModal storeId={storeId} programma={programma} onClose={() => setShowZoom(false)} />}
 
       {loading && <div className="loading-center"><div className="spinner" /></div>}
 
       {data && !loading && (
         <>
           <p className="completamento-subtitle">
-            Corsi obbligatori GWU RA-TM — target: ruoli <strong>GWU RA-TM</strong> e <strong>Team Manager</strong> dello store
+            {titolo} — target: {elencoRuoli(data.programma?.ruoli)} dello store
             &nbsp;·&nbsp;
             <span className="legend-item">
               <span className="legend-solid" /> partecipato
@@ -481,7 +501,7 @@ export default function Completamento() {
           </div>
           {data.corsi.length === 0 && (
             <div className="card"><div className="card-body" style={{ color: '#9CA3AF', textAlign: 'center' }}>
-              Nessun corso GWU trovato nel catalogo.
+              Nessuna attività del programma trovata nel catalogo.
             </div></div>
           )}
         </>
@@ -497,7 +517,6 @@ export default function Completamento() {
 
         {italiaData && !italiaLoading && (
           <>
-            {/* Italia totals — visibile a tutti */}
             {/* Fascia azzurra leggera dietro i totali Italia */}
             <div style={{ background: '#EFF6FF', border: '1px solid #DBEAFE', borderRadius: 12, padding: 16, marginBottom: 20 }}>
               <div className="completamento-grid" style={{ marginBottom: 0 }}>
@@ -537,23 +556,8 @@ export default function Completamento() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {area.corsi.map(c => (
                           <div key={c.nome_breve}>
-                            <div style={{ fontSize: 10.5, color: '#374151', fontWeight: 600, marginBottom: 4 }}>{c.nome_breve}</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                              <span style={{ fontSize: 10, color: '#9CA3AF' }}>GWU RA-TM</span>
-                              <MiniBar
-                                percentuale={c.gwu_ratm.totale > 0 ? Math.round(100 * c.gwu_ratm.completato / c.gwu_ratm.totale) : 0}
-                                completato={c.gwu_ratm.completato}
-                                totale={c.gwu_ratm.totale}
-                              />
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 10, color: '#9CA3AF' }}>Team Manager</span>
-                              <MiniBar
-                                percentuale={c.team_manager.totale > 0 ? Math.round(100 * c.team_manager.completato / c.team_manager.totale) : 0}
-                                completato={c.team_manager.completato}
-                                totale={c.team_manager.totale}
-                              />
-                            </div>
+                            <div style={{ fontSize: 10.5, color: c.percorso ? '#6D28D9' : '#374151', fontWeight: 600, marginBottom: 4 }}>{c.nome_breve}</div>
+                            <RigheRuoli corso={c} />
                           </div>
                         ))}
                       </div>
@@ -568,7 +572,7 @@ export default function Completamento() {
       </div>
 
       {areaModal && (
-        <AreaDetailModal area={areaModal} onClose={() => setAreaModal(null)}
+        <AreaDetailModal area={areaModal} programma={programma} onClose={() => setAreaModal(null)}
           compatta={user?.livello_accesso === 'area'} />
       )}
     </div>

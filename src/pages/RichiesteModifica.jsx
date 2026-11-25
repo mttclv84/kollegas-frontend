@@ -66,6 +66,75 @@ function FornitoriDaValidare() {
   )
 }
 
+// Disattivazioni di attività del catalogo chieste dagli HO: le approva o rifiuta l'Admin.
+function DisattivazioniDaApprovare() {
+  const [richieste, setRichieste] = useState([])
+  const [busy, setBusy] = useState(null)
+  const carica = () => {
+    api.get('/richieste-disattivazione-attivita/').then(({ data }) => setRichieste(data)).catch(() => {})
+  }
+  useEffect(carica, [])
+
+  const decidi = async (r, azione) => {
+    const domanda = azione === 'approva'
+      ? `Disattivare "${r.attivita_nome}"? Non sarà più selezionabile per nuovi eventi e passerà in Disattivati > Corsi disattivati. Eventi, iscrizioni e statistiche restano.`
+      : `Rifiutare la richiesta di disattivare "${r.attivita_nome}"? L'attività resta attiva.`
+    if (!window.confirm(domanda)) return
+    setBusy(r.id)
+    try {
+      await api.post(`/richieste-disattivazione-attivita/${r.id}/`, { azione })
+      toast.success(azione === 'approva' ? 'Attività disattivata.' : 'Richiesta rifiutata.')
+      carica()
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card-header">
+        Disattivazioni attività da approvare <span className="badge badge-neutral">{richieste.length}</span>
+      </div>
+      {richieste.length === 0 ? (
+        <div className="card-body" style={{ color: '#9CA3AF' }}>Nessuna disattivazione da approvare.</div>
+      ) : (
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Attività</th><th>Richiesta da</th><th>Data richiesta</th><th>Azioni</th></tr>
+            </thead>
+            <tbody>
+              {richieste.map(r => (
+                <tr key={r.id}>
+                  <td style={{ fontWeight: 600 }}>{r.attivita_nome}</td>
+                  <td>{r.richiedente_nome || '—'}</td>
+                  <td style={{ whiteSpace: 'nowrap', color: '#6B7280', fontSize: 12 }}>
+                    {new Date(r.created_at).toLocaleDateString('it-IT')}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                      <button className="btn btn-sm" disabled={busy === r.id} onClick={() => decidi(r, 'approva')}
+                        style={{ background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', whiteSpace: 'nowrap' }}>
+                        ✓ Approva disattivazione
+                      </button>
+                      <button className="btn btn-sm" disabled={busy === r.id} onClick={() => decidi(r, 'rifiuta')}
+                        style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', whiteSpace: 'nowrap' }}>
+                        ✕ Rifiuta
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function RichiesteModifica({ ambito = 'altro' }) {
   const { can } = useAuth()
   const isEHS = ambito === 'ehs'
@@ -110,6 +179,8 @@ export default function RichiesteModifica({ ambito = 'altro' }) {
       <h1 className="page-title">🔔 Richieste di Modifica{isEHS ? ' EHS' : ''}</h1>
 
       {isEHS && <FornitoriDaValidare />}
+      {!isEHS && can(['admin']) && <DisattivazioniDaApprovare />}
+      {!isEHS && can(['admin']) && <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>Cancellazioni di iscritti</h3>}
       {isEHS && <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>Cancellazioni di iscritti a formazioni EHS</h3>}
 
       <div className="card" style={{ marginBottom: 20 }}>

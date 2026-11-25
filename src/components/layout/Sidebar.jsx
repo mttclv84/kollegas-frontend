@@ -80,9 +80,13 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
   const [archivioBadge, setArchivioBadge] = useState(0)
   const [resetBadge, setResetBadge] = useState(0)
 
+  // Disattivazioni di attività chieste dagli HO, da approvare: pallino su Richieste di Modifica.
+  const [disattivazioniBadge, setDisattivazioniBadge] = useState(0)
+
   useEffect(() => {
     if (!user || !can(['admin'])) return
     api.get('/richieste-reset-password/').then(({ data }) => setResetBadge(data.length)).catch(() => {})
+    api.get('/richieste-disattivazione-attivita/').then(({ data }) => setDisattivazioniBadge(data.length)).catch(() => {})
   }, [user, location.pathname])
 
   useEffect(() => {
@@ -223,7 +227,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
 
           // ── Flat item ──
           if (!can(item.roles)) return null
-          const hasBadge = (item.alertBadge && pendingCount > 0) || (item.resetBadge && resetBadge > 0)
+          const hasBadge = (item.alertBadge && (pendingCount > 0 || disattivazioniBadge > 0)) || (item.resetBadge && resetBadge > 0)
           return (
             <NavLink
               key={item.to}

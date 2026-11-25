@@ -46,10 +46,11 @@ function RuoliIcona({ nomi }) {
 }
 
 export default function CatalogoAttivita() {
-  // Le attività non si eliminano: l'Admin le disattiva e finiscono in Disattivati >
-  // Corsi disattivati. Eventi, iscrizioni e statistiche già registrati restano.
+  // Le attività non si eliminano: si disattivano (l'HO su approvazione dell'Admin) e finiscono
+  // in Disattivati > Corsi disattivati. Eventi, iscrizioni e statistiche già registrati restano.
   const { can } = useAuth()
   const isAdmin = can(['admin'])
+  const puoDisattivare = can(['admin', 'ho'])
   const [attivita, setAttivita] = useState([])
   const [ruoli, setRuoli] = useState([])
   const [loading, setLoading] = useState(true)
@@ -83,11 +84,24 @@ export default function CatalogoAttivita() {
     finally { setSaving(false) }
   }
 
+  // L'Admin disattiva subito; l'HO invia la richiesta, che l'Admin approva da Richieste di Modifica.
   const handleDisattiva = async (a) => {
-    if (!window.confirm(`Disattivare "${a.nome}"? Non sarà più selezionabile per nuovi eventi e passerà in `
-      + 'Disattivati > Corsi disattivati. Eventi, iscrizioni e statistiche già registrati restano.')) return
-    try { await api.delete(`/attivita/${a.id}/`); toast.success('Attività disattivata.'); fetch() }
-    catch (err) { toast.error(err.response?.data?.detail || 'Errore.') }
+    const effetto = 'Non sarà più selezionabile per nuovi eventi e passerà in Disattivati > Corsi disattivati. '
+      + 'Eventi, iscrizioni e statistiche già registrati restano.'
+    const domanda = isAdmin
+      ? `Disattivare "${a.nome}"? ${effetto}`
+      : `Chiedere all'Admin di disattivare "${a.nome}"? Fino alla sua approvazione l'attività resta attiva. ${effetto}`
+    if (!window.confirm(domanda)) return
+    try {
+      if (isAdmin) {
+        await api.delete(`/attivita/${a.id}/`)
+        toast.success('Attività disattivata.')
+      } else {
+        await api.post(`/attivita/${a.id}/richiedi-disattivazione/`)
+        toast.success('Richiesta inviata all\'Admin.')
+      }
+      fetch()
+    } catch (err) { toast.error(err.response?.data?.detail || 'Errore.') }
   }
 
   const toggleRuolo = (id) => {
@@ -127,8 +141,14 @@ export default function CatalogoAttivita() {
           <DataTable columns={columns} data={attivita} actions={a => (
             <>
               <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(a)} title="Modifica">✏️</button>
-              {isAdmin && (
-                <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleDisattiva(a)} title="Disattiva">🚫</button>
+              {a.disattivazione_in_attesa ? (
+                <span title="Disattivazione richiesta, in attesa di approvazione dell'Admin"
+                  style={{ fontSize: 11, fontWeight: 700, color: '#92400E', background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                  ⏳ In approvazione
+                </span>
+              ) : puoDisattivare && (
+                <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleDisattiva(a)}
+                  title={isAdmin ? 'Disattiva' : 'Richiedi disattivazione'}>🚫</button>
               )}
             </>
           )} />
