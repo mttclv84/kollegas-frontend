@@ -37,6 +37,8 @@ export default function EventoBadge({ evento, onClick, dimmed = false, clickable
     ? [evento.location_display, 'Occupato'].filter(Boolean).join(' · ')
     : evento.is_ehs && evento.ehs_corso_nome
     ? `${evento.ehs_corso_nome.split(' ').slice(0, 2).join(' ')} · Store ${evento.ehs_negozio_codice || ''}`
+    : evento.giornate_totali > 1
+    ? `${evento.attivita_nome} · g${evento.giornata}/${evento.giornate_totali}`
     : evento.attivita_nome
 
   const tooltip = [

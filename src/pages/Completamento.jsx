@@ -106,6 +106,12 @@ function CorsoCard({ corso }) {
             )}
           </div>
         </div>
+        {corso.parziali > 0 && (
+          <div title="Presenti solo ad alcune giornate: non contano come completato"
+            style={{ fontSize: 12, color: '#92400E', background: '#FEF3C7', borderRadius: 4, padding: '2px 8px', marginTop: -12 }}>
+            {corso.parziali} parzial{corso.parziali === 1 ? 'e' : 'i'}
+          </div>
+        )}
 
         <div className="completamento-split">
           {corso.ruoli.map(r => (
@@ -378,6 +384,13 @@ function ZoomModal({ storeId, programma, onClose }) {
                       <td key={c.id} style={{ ...cella, textAlign: 'center' }}>
                         {u.fatti.includes(c.id)
                           ? <span title="Fatto" style={{ color: c.percorso ? '#6D28D9' : '#16A34A', fontSize: 18, fontWeight: 700 }}>✓</span>
+                          : u.parziali?.includes(c.id)
+                          ? (
+                            <span title="Presente solo ad alcune giornate: non conta come fatto"
+                              style={{ fontSize: 11, fontWeight: 700, color: '#92400E', background: '#FEF3C7', borderRadius: 4, padding: '2px 7px' }}>
+                              Parziale
+                            </span>
+                          )
                           : u.iscritti?.[c.id]
                           ? (
                             <span title="Iscritto a un'aula non ancora svolta"

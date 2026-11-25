@@ -315,6 +315,27 @@ export default function GestionePartecipanti() {
         </div>
       )}
 
+      {evento?.giornate?.length > 1 && (
+        <div style={{
+          background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8,
+          padding: '10px 16px', marginBottom: 16, fontSize: 13, color: '#1E3A8A',
+        }}>
+          <div style={{ marginBottom: 6 }}>
+            Formazione su {evento.giornate.length} giornate: l'iscrizione vale per tutte. Le presenze si segnano giornata
+            per giornata; chi non è presente a tutte risulta <strong>Parziale</strong> e non conta come partecipato.
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {evento.giornate.map((g, i) => (
+              <button key={g.id} type="button" disabled={String(g.id) === String(eventoId)}
+                className={`btn btn-sm ${String(g.id) === String(eventoId) ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => navigate(`/iscrizioni?evento=${g.id}`)}>
+                Giornata {i + 1} · {new Date(`${g.data}T12:00:00`).toLocaleDateString('it-IT')}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {soloVisioneEHS && !aulaChiusa && (
         <div style={{
           background: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: 8,
@@ -403,7 +424,14 @@ export default function GestionePartecipanti() {
                         <td>
                           <span className="badge badge-neutral">{i.store_nome || '—'}</span>
                         </td>
-                        <td>{i.user_cognome} {i.user_nome}</td>
+                        <td>
+                          {i.user_cognome} {i.user_nome}
+                          {i.esito_edizione === 'parziale' && (
+                            <span title="Non presente a tutte le giornate: non conta come partecipato"
+                              style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#92400E', background: '#FEF3C7',
+                                border: '1px solid #F59E0B', borderRadius: 4, padding: '1px 6px' }}>Parziale</span>
+                          )}
+                        </td>
                         <td>
                           {editable && canMarcarePresenze ? (
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>

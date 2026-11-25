@@ -43,6 +43,13 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
   const [motivazione, setMotivazione] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [partecipanti, setPartecipanti] = useState(null)
+  // Giornate dell'edizione: l'elenco del calendario non le contiene, si leggono dal dettaglio.
+  const [giornate, setGiornate] = useState(evento?.giornate || [])
+  useEffect(() => {
+    if (mode !== 'detail' || !evento?.edizione) { setGiornate([]); return }
+    if (evento.giornate) { setGiornate(evento.giornate); return }
+    api.get(`/eventi/${evento.id}/`).then(({ data }) => setGiornate(data.giornate || [])).catch(() => setGiornate([]))
+  }, [mode, evento])
 
   useEffect(() => {
     if (!solaLettura || !evento) return
@@ -99,12 +106,23 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
     }
   }, [mode, selectedDay, evento])
 
+  // Altre giornate della stessa formazione (stessa attività, location, host e posti).
+  const [altreGiornate, setAltreGiornate] = useState([])
+  const aggiungiGiornata = () => setAltreGiornate(g => {
+    const ultima = g.length ? g[g.length - 1] : form
+    const dopo = ultima.data ? new Date(`${ultima.data}T12:00:00`) : new Date()
+    dopo.setDate(dopo.getDate() + 1)
+    return [...g, { data: format(dopo, 'yyyy-MM-dd'), ora_inizio: ultima.ora_inizio, ora_fine: ultima.ora_fine }]
+  })
+  const setGiornata = (i, campo, valore) => setAltreGiornate(g => g.map((x, j) => (j === i ? { ...x, [campo]: valore } : x)))
+  const togliGiornata = (i) => setAltreGiornate(g => g.filter((_, j) => j !== i))
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     try {
-      await api.post('/eventi/', form)
-      toast.success('Evento creato!')
+      await api.post('/eventi/', { ...form, giornate: altreGiornate })
+      toast.success(altreGiornate.length ? `Formazione su ${altreGiornate.length + 1} giornate creata!` : 'Evento creato!')
       onSaved()
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Errore nel salvataggio.')
@@ -169,6 +187,42 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
                   {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
+            </div>
+
+            {/* Formazione su più giornate: un solo salvataggio, conta come una sola edizione. */}
+            {altreGiornate.map((g, i) => (
+              <div key={i} className="form-row" style={{ alignItems: 'flex-end' }}>
+                <div className="form-group">
+                  <label className="form-label">Giornata {i + 2} — data *</label>
+                  <input type="date" className="form-control" value={g.data} required
+                    onChange={e => setGiornata(i, 'data', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Inizio *</label>
+                  <select className="form-control" value={g.ora_inizio} required onChange={e => setGiornata(i, 'ora_inizio', e.target.value)}>
+                    <option value="">—</option>
+                    {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Fine *</label>
+                  <select className="form-control" value={g.ora_fine} required onChange={e => setGiornata(i, 'ora_fine', e.target.value)}>
+                    <option value="">—</option>
+                    {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <button type="button" className="btn btn-ghost btn-sm" title="Togli giornata" aria-label={`Togli giornata ${i + 2}`}
+                  onClick={() => togliGiornata(i)} style={{ marginBottom: 16, color: '#EF4444' }}>✕</button>
+              </div>
+            ))}
+            <div style={{ marginBottom: 16 }}>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={aggiungiGiornata}>+ Aggiungi giornata</button>
+              {altreGiornate.length > 0 && (
+                <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>
+                  Formazione su {altreGiornate.length + 1} giornate: stessa attività, location e posti. Conta come una sola
+                  edizione e chi è iscritto lo è a tutte le giornate. Partecipato solo se presente a tutte, altrimenti Parziale.
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -271,6 +325,19 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
               <div className="detail-row"><span>Modalità</span><strong>{evento.modalita_partecipazione}</strong></div>
               <div className="detail-row"><span>Iscritti</span><strong>{evento.iscritti_count}{evento.max_partecipanti > 0 ? ` su ${evento.max_partecipanti} posti` : ''}</strong></div>
               {evento.nota && <div className="detail-row"><span>Nota</span><strong>{evento.nota}</strong></div>}
+              {giornate.length > 1 && (
+                <div className="detail-row">
+                  <span>Giornate</span>
+                  <strong>
+                    {giornate.map((g, i) => (
+                      <div key={g.id} style={{ fontWeight: g.id === evento.id ? 700 : 400 }}>
+                        {i + 1}. {new Date(`${g.data}T12:00:00`).toLocaleDateString('it-IT')} {g.ora_inizio?.slice(0, 5)}–{g.ora_fine?.slice(0, 5)}
+                        {g.id === evento.id && ' (questa)'}
+                      </div>
+                    ))}
+                  </strong>
+                </div>
+              )}
             </div>
             {solaLettura ? (
               <>
@@ -317,7 +384,9 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
             Annulla attività
           </div>
           <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 16 }}>
-            Stai annullando <strong>{evento?.attivita_nome}</strong> del {evento?.data}. Tutti gli utenti riceveranno una notifica.
+            Stai annullando <strong>{evento?.attivita_nome}</strong> del {evento?.data}.
+            {giornate.length > 1 && <> Verranno annullate <strong>tutte le {giornate.length} giornate</strong> della formazione.</>}
+            {' '}Tutti gli utenti riceveranno una notifica.
           </div>
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>
