@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import BadgeLA from '../components/ui/BadgeLA'
 
 const STATO_BADGE = { iscritto: 'primary', partecipato: 'success', assente: 'danger' }
+const STATO_LABEL = { iscritto: 'Iscritto', partecipato: 'Partecipato', assente: 'Assente' }
 const TIPOLOGIA_LABEL = { ld: 'L&D', recruiting: 'RECRUITING', ehs: 'EHS', payroll: 'PAYROLL', altro: 'ALTRO' }
 
 export default function Report() {
@@ -46,6 +47,23 @@ export default function Report() {
   const setF = (k, v) => setFilters(f => ({ ...f, [k]: v }))
 
   const assentiCount = dati.filter(d => d.stato === 'assente').length
+
+  const isAdmin = can(['admin']) && !user?.sola_lettura
+  const cambiaStato = async (riga, stato) => {
+    if (stato === riga.stato) return
+    const dettaglio = `${riga.user_cognome} ${riga.user_nome} — ${riga.attivita_nome} del ${riga.evento_data}: `
+      + `da "${STATO_LABEL[riga.stato] || riga.stato}" a "${STATO_LABEL[stato]}".`
+    if (!window.confirm(`Sei sicuro di voler modificare lo stato?
+
+${dettaglio}`)) return
+    try {
+      await api.patch(`/iscrizioni/${riga.id}/`, { stato })
+      setDati(righe => righe.map(r => (r.id === riga.id ? { ...r, stato } : r)))
+      toast.success('Stato aggiornato.')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore durante la modifica.')
+    }
+  }
 
   const handleDeleteAssenti = async () => {
     if (!window.confirm(
@@ -94,7 +112,14 @@ export default function Report() {
     { key: 'location_display', label: 'Location', accessor: d => d.location_display || '—' },
     {
       key: 'stato', label: 'Stato',
-      render: d => <span className={`badge badge-${STATO_BADGE[d.stato] || 'neutral'}`}>{d.stato}</span>
+      // L'Admin corregge lo stato da qui, senza cercare la formazione nei calendari.
+      render: d => isAdmin ? (
+        <select className="form-control" aria-label={`Stato di ${d.user_cognome} ${d.user_nome}`}
+          value={d.stato} onChange={e => cambiaStato(d, e.target.value)}
+          style={{ padding: '2px 6px', fontSize: 12, minWidth: 110, height: 'auto' }}>
+          {Object.entries(STATO_LABEL).map(([valore, etichetta]) => <option key={valore} value={valore}>{etichetta}</option>)}
+        </select>
+      ) : <span className={`badge badge-${STATO_BADGE[d.stato] || 'neutral'}`}>{d.stato}</span>
     },
   ]
 
