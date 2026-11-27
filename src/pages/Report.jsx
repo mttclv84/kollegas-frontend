@@ -128,7 +128,7 @@ ${dettaglio}`)) return
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 className="page-title" style={{ marginBottom: 0 }}>Dettaglio</h1>
         <div style={{ display: 'flex', gap: 8 }}>
-          {assentiCount > 0 && can(['admin', 'admin_ehs', 'ho', 'area']) && (
+          {assentiCount > 0 && can(['admin', 'admin_ehs', 'ho']) && (
             <button className="btn btn-danger" onClick={handleDeleteAssenti}>
               🗑 Elimina assenti ({assentiCount})
             </button>

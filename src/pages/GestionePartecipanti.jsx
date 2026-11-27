@@ -107,7 +107,8 @@ export default function GestionePartecipanti() {
       const [evRes, iscRes, usersRes] = await Promise.all([
         api.get(`/eventi/${eventoId}/`),
         api.get('/iscrizioni/', { params: { evento: eventoId } }),
-        api.get('/users/'),
+        // L'Area Manager vede solo gli iscritti: l'elenco delle persone da assegnare non gli serve.
+        can(['area']) ? Promise.resolve({ data: [] }) : api.get('/users/'),
       ])
       setEvento(evRes.data)
       const iscrittiData = iscRes.data.results || iscRes.data
@@ -144,7 +145,10 @@ export default function GestionePartecipanti() {
   const postiEsauriti = postiPieni && !(evento?.is_ehs && senzaLimiti)
   // HO sulle formazioni EHS: elenco visibile, nessuna modifica.
   const soloVisioneEHS = !!evento?.is_ehs && can(['ho'])
-  const nascondiDaAssegnare = (can(['store']) && isPastEvent) || aulaChiusa || soloVisioneEHS
+  // Area Manager: vede gli iscritti di tutte le aule, senza nessuna azione.
+  const soloVisioneArea = can(['area'])
+  const soloVisione = soloVisioneEHS || soloVisioneArea
+  const nascondiDaAssegnare = (can(['store']) && isPastEvent) || aulaChiusa || soloVisione
 
   const handleAssegna = async (userId) => {
     try {
@@ -234,7 +238,7 @@ export default function GestionePartecipanti() {
   }
 
   const canModify = (iscrizione) => {
-    if (aulaChiusa || soloVisioneEHS) return false
+    if (aulaChiusa || soloVisione) return false
     if (can(['admin', 'admin_ehs', 'ho', 'area'])) return true
     if (can(['store']) && iscrizione.store_id === user.store_id) return true
     return false
@@ -337,6 +341,15 @@ export default function GestionePartecipanti() {
         </div>
       )}
 
+      {soloVisioneArea && (
+        <div style={{
+          background: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: 8,
+          padding: '10px 16px', marginBottom: 16, fontSize: 13, color: '#374151',
+        }}>
+          👁 Il tuo profilo può solo visualizzare i partecipanti.
+        </div>
+      )}
+
       {soloVisioneEHS && !aulaChiusa && (
         <div style={{
           background: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: 8,
@@ -392,7 +405,7 @@ export default function GestionePartecipanti() {
                     ⬇ PDF
                   </button>
                 )}
-                {!aulaChiusa && !soloVisioneEHS && (
+                {!aulaChiusa && !soloVisione && (
                   <button className="btn btn-primary btn-sm" disabled={salvataggio} onClick={handleSalva}>
                     {salvataggio ? 'Salvataggio...' : 'Salva'}
                   </button>
