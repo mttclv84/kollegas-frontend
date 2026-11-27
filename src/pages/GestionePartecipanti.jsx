@@ -399,7 +399,14 @@ export default function GestionePartecipanti() {
                 {evento && iscritti.length > 0 && (
                   <button
                     className="btn btn-secondary btn-sm"
-                    onClick={() => downloadPdf(evento, iscritti)}
+                    onClick={() => {
+                      downloadPdf(evento, iscritti)
+                      // Resta traccia nell'Audit Log (il PDF si genera nel browser).
+                      api.post('/users/audit/download/', {
+                        tipo: 'pdf_iscritti', oggetto_id: evento.id,
+                        oggetto: `${evento.attivita_nome || 'Formazione'} — ${evento.data || ''} (${iscritti.length} iscritti)`,
+                      }).catch(() => {})
+                    }}
                     title="Scarica lista iscritti in PDF"
                   >
                     ⬇ PDF

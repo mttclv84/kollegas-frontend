@@ -9,6 +9,7 @@ const AZIONE_CFG = {
   riattiva:   { label: 'Riattivazione',   bg: '#FEF3C7', color: '#92400E' },
   accesso:    { label: 'Accesso',         bg: '#F3F4F6', color: '#374151' },
   accesso_fallito: { label: 'Accesso non riuscito', bg: '#FFE4E6', color: '#9F1239' },
+  download:   { label: 'Download',        bg: '#E0F2FE', color: '#075985' },
 }
 
 const TIPO_LABEL = {
@@ -40,11 +41,97 @@ function AzioneBadge({ azione }) {
   )
 }
 
+const PER_PAGINA = 30
+// Tabelle compatte: tutto visibile senza scorrere a destra e sinistra.
+const STILE_COMPATTO = `
+  .audit-compatto table { width: 100%; table-layout: fixed; font-size: 12.5px; }
+  .audit-compatto th { padding: 7px 8px !important; font-size: 11px; white-space: normal !important; }
+  .audit-compatto td { padding: 6px 8px !important; vertical-align: top !important; white-space: normal !important;
+    overflow-wrap: anywhere; }
+`
+
+const dataBreve = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
+
+function ElencoPersone({ titolo, persone, extra }) {
+  if (!persone.length) return null
+  return (
+    <details style={{ marginTop: 12 }}>
+      <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{titolo} ({persone.length})</summary>
+      <div className="table-wrapper" style={{ marginTop: 8, maxHeight: 320, overflow: 'auto' }}>
+        <table>
+          <thead><tr><th>Nome</th><th>Livello</th><th>Negozio</th>{extra && <th>{extra.titolo}</th>}</tr></thead>
+          <tbody>
+            {persone.map(p => (
+              <tr key={p.id}>
+                <td style={{ fontWeight: 600 }}>{p.nome}</td>
+                <td>{p.livello}</td>
+                <td>{p.negozio || '—'}</td>
+                {extra && <td>{extra.valore(p)}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  )
+}
+
+// Riepilogo per seguire il lancio: chi è entrato, chi mai, chi ha ancora la password temporanea.
+function Adozione() {
+  const [dati, setDati] = useState(null)
+  useEffect(() => { api.get('/users/audit/adozione/').then(({ data }) => setDati(data)).catch(() => setDati(false)) }, [])
+  if (dati === null) return <div className="card" style={{ marginBottom: 20 }}><div className="card-body"><div className="spinner" /></div></div>
+  if (!dati) return null
+  const t = dati.totale
+  const perc = (n, d) => d ? `${Math.round((n / d) * 100)}%` : '—'
+  const COLONNE = [
+    ['totale', 'Profili con accesso'], ['entrati', 'Entrati almeno una volta'], ['mai_entrati', 'Mai entrati'],
+    ['attivi_7', 'Attivi ultimi 7 gg'], ['attivi_30', 'Attivi ultimi 30 gg'], ['password_temporanea', 'Password temporanea'],
+  ]
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        Adozione di Kollegas
+        <span className="badge badge-neutral">{t.entrati} su {t.totale} entrati ({perc(t.entrati, t.totale)})</span>
+      </div>
+      <div className="card-body">
+        <div className="table-wrapper">
+          <table>
+            <thead><tr><th>Livello</th>{COLONNE.map(([k, l]) => <th key={k} style={{ textAlign: 'right' }}>{l}</th>)}</tr></thead>
+            <tbody>
+              {dati.livelli.map(r => (
+                <tr key={r.livello}>
+                  <td style={{ fontWeight: 600 }}>{r.etichetta}</td>
+                  {COLONNE.map(([k]) => (
+                    <td key={k} style={{ textAlign: 'right', color: k === 'mai_entrati' && r[k] ? '#B91C1C' : undefined }}>
+                      {r[k]}{k === 'entrati' && <span style={{ color: '#9CA3AF', fontSize: 12 }}> ({perc(r.entrati, r.totale)})</span>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              <tr style={{ fontWeight: 700, background: '#F9FAFB' }}>
+                <td>Totale</td>
+                {COLONNE.map(([k]) => <td key={k} style={{ textAlign: 'right' }}>{t[k]}</td>)}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ElencoPersone titolo="Mai entrati" persone={dati.mai_entrati} />
+        <ElencoPersone titolo="Password temporanea ancora da cambiare" persone={dati.password_temporanea}
+          extra={{ titolo: 'Scadenza', valore: p => p.scaduta
+            ? <span style={{ color: '#B91C1C', fontWeight: 600 }}>Scaduta il {dataBreve(p.scadenza)}</span>
+            : dataBreve(p.scadenza) }} />
+      </div>
+    </div>
+  )
+}
+
 export default function AuditLog() {
   const [filters, setFilters] = useState({ search: '', azione: '', tipo: '', data_da: '', data_a: '' })
   const [applied, setApplied] = useState({ search: '', azione: '', tipo: '', data_da: '', data_a: '' })
   const [logs, setLogs]       = useState([])
   const [loading, setLoading] = useState(false)
+  const [pagina, setPagina]   = useState(1)
 
   const load = useCallback((f) => {
     setLoading(true)
@@ -55,7 +142,7 @@ export default function AuditLog() {
     if (f.data_da) params.data_da = f.data_da
     if (f.data_a)  params.data_a  = f.data_a
     api.get('/users/audit/', { params })
-      .then(({ data }) => setLogs(data))
+      .then(({ data }) => { setLogs(data); setPagina(1) })
       .finally(() => setLoading(false))
   }, [])
 
@@ -71,15 +158,20 @@ export default function AuditLog() {
   const hasFilter = Object.values(filters).some(Boolean)
 
   const tipi = [...new Set(logs.map(l => l.target_tipo).filter(Boolean))].sort()
+  const pagine = Math.max(1, Math.ceil(logs.length / PER_PAGINA))
+  const visibili = logs.slice((pagina - 1) * PER_PAGINA, pagina * PER_PAGINA)
 
   return (
-    <div>
+    <div className="audit-compatto">
+      <style>{STILE_COMPATTO}</style>
       <h1 className="page-title">Audit Log</h1>
+
+      <Adozione />
 
       {/* Filters */}
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-body">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 180px 150px 150px auto', gap: 12, alignItems: 'flex-end' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, alignItems: 'flex-end' }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Cerca</label>
               <input
@@ -141,24 +233,25 @@ export default function AuditLog() {
               <span>Operazioni</span>
               <span style={{ fontWeight: 400, fontSize: 13, color: '#6B7280' }}>
                 {logs.length} risultati{logs.length === 2000 ? ' (ultime 2000: usa i filtri per restringere)' : ''}
+                {pagine > 1 && ` · pagina ${pagina} di ${pagine}`}
               </span>
             </div>
             <div className="table-wrapper">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ whiteSpace: 'nowrap' }}>Data / Ora</th>
-                    <th>Eseguita da</th>
-                    <th>Azione</th>
-                    <th>Tipo</th>
-                    <th>Oggetto</th>
-                    <th>Dettaglio</th>
+                    <th style={{ width: '11%' }}>Data / Ora</th>
+                    <th style={{ width: '15%' }}>Eseguita da</th>
+                    <th style={{ width: '12%' }}>Azione</th>
+                    <th style={{ width: '12%' }}>Tipo</th>
+                    <th style={{ width: '18%' }}>Oggetto</th>
+                    <th style={{ width: '32%' }}>Dettaglio</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map(log => (
+                  {visibili.map(log => (
                     <tr key={log.id}>
-                      <td style={{ whiteSpace: 'nowrap', color: '#6B7280', fontSize: 12.5 }}>
+                      <td style={{ color: '#6B7280', fontSize: 12 }}>
                         {formatDate(log.created_at)}
                       </td>
                       <td style={{ fontWeight: 600 }}>
@@ -168,14 +261,13 @@ export default function AuditLog() {
                         )}
                       </td>
                       <td><AzioneBadge azione={log.azione} /></td>
-                      <td style={{ color: '#6B7280', fontSize: 13 }}>
+                      <td style={{ color: '#6B7280' }}>
                         {TIPO_LABEL[log.target_tipo] || log.target_tipo}
                       </td>
-                      <td style={{ maxWidth: 200, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
-                          title={log.target_repr || ''}>
+                      <td title={log.target_repr || ''}>
                         {log.target_repr || <span style={{ color: '#9CA3AF' }}>—</span>}
                       </td>
-                      <td style={{ color: '#6B7280', fontSize: 12.5, maxWidth: 300 }}>
+                      <td style={{ color: '#6B7280', fontSize: 12 }}>
                         {log.dettaglio || '—'}
                       </td>
                     </tr>
@@ -183,6 +275,15 @@ export default function AuditLog() {
                 </tbody>
               </table>
             </div>
+            {pagine > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, padding: 12 }}>
+                <button className="btn btn-secondary btn-sm" disabled={pagina === 1} onClick={() => setPagina(1)} aria-label="Prima pagina">«</button>
+                <button className="btn btn-secondary btn-sm" disabled={pagina === 1} onClick={() => setPagina(n => n - 1)}>‹ Precedente</button>
+                <span style={{ fontSize: 13, color: '#374151' }}>Pagina {pagina} di {pagine}</span>
+                <button className="btn btn-secondary btn-sm" disabled={pagina === pagine} onClick={() => setPagina(n => n + 1)}>Successiva ›</button>
+                <button className="btn btn-secondary btn-sm" disabled={pagina === pagine} onClick={() => setPagina(pagine)} aria-label="Ultima pagina">»</button>
+              </div>
+            )}
           </>
         )}
       </div>
