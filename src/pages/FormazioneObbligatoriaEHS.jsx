@@ -48,7 +48,7 @@ function Matrice({ matrice, modificabile, onCambia }) {
       <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
         <thead>
           <tr>
-            <th style={{ textAlign: 'left', padding: '10px 12px', borderBottom: '2px solid #FCA5A5', minWidth: 200 }}>
+            <th style={{ textAlign: 'left', padding: '7px 8px', borderBottom: '2px solid #FCA5A5', minWidth: 200 }}>
               Ruolo / mansione
             </th>
             {corsi.map(c => (
@@ -64,7 +64,7 @@ function Matrice({ matrice, modificabile, onCambia }) {
         <tbody>
           {righe.map(riga => (
             <tr key={`${riga.tipo}-${riga.id}`} style={{ borderBottom: '1px solid var(--color-border)' }}>
-              <td style={{ padding: '8px 12px', fontWeight: 600 }}>
+              <td style={{ padding: '6px 8px', fontWeight: 600 }}>
                 {riga.nome}
                 {riga.tipo === 'mansione' && (
                   <span style={{ marginLeft: 6, fontSize: 10, color: '#6B7280', fontWeight: 400 }}>mansione</span>
@@ -90,7 +90,7 @@ function Matrice({ matrice, modificabile, onCambia }) {
           ))}
         </tbody>
       </table>
-      <div style={{ padding: '10px 12px', fontSize: 12, color: '#6B7280', borderTop: '1px solid var(--color-border)' }}>
+      <div style={{ padding: '7px 8px', fontSize: 12, color: '#6B7280', borderTop: '1px solid var(--color-border)' }}>
         <strong style={{ color: '#DC2626' }}>✔</strong> obbligatorio per il ruolo/mansione ·{' '}
         <strong style={{ color: '#92400E' }}>facolt.</strong> si può fare in anticipo (es. in vista di una promozione)
         {modificabile && ' · clicca su una cella per cambiarla'}
@@ -295,16 +295,16 @@ function PersoneRegistro({ matrice }) {
           <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
             <thead>
               <tr style={{ textAlign: 'left', borderBottom: '2px solid #FCA5A5' }}>
-                <th style={{ padding: '10px 12px' }}>Persona</th>
-                <th style={{ padding: '10px 12px' }}>Ruolo</th>
-                <th style={{ padding: '10px 12px' }}>Mansioni</th>
-                <th style={{ padding: '10px 12px' }}>Formazioni svolte</th>
+                <th style={{ padding: '7px 8px' }}>Persona</th>
+                <th style={{ padding: '7px 8px' }}>Ruolo</th>
+                <th style={{ padding: '7px 8px' }}>Mansioni</th>
+                <th style={{ padding: '7px 8px' }}>Formazioni svolte</th>
               </tr>
             </thead>
             <tbody>
               {persone.map(p => (
                 <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)', verticalAlign: 'top' }}>
-                  <td style={{ padding: '8px 12px', fontWeight: 600 }}>
+                  <td style={{ padding: '6px 8px', fontWeight: 600 }}>
                     {p.nome_completo}<BadgeLA attivo={p.long_absence} />
                     {inRicerca && p.store_nome && (
                       <div style={{ fontWeight: 400, fontSize: 12, color: '#6B7280' }}>{p.store_nome}</div>
@@ -316,8 +316,8 @@ function PersoneRegistro({ matrice }) {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '8px 12px' }}>{p.ruolo_nome || '—'}</td>
-                  <td style={{ padding: '8px 12px' }}>
+                  <td style={{ padding: '6px 8px' }}>{p.ruolo_nome || '—'}</td>
+                  <td style={{ padding: '6px 8px' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {matrice.mansioni.map(m => {
                         const attiva = p.mansioni.includes(m.id)
@@ -336,7 +336,7 @@ function PersoneRegistro({ matrice }) {
                       })}
                     </div>
                   </td>
-                  <td style={{ padding: '8px 12px' }}>
+                  <td style={{ padding: '6px 8px' }}>
                     {p.formazioni.length === 0 && <span style={{ color: '#9CA3AF' }}>Nessuna formazione registrata</span>}
                     {p.formazioni.map(f => (
                       <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 2 }}>

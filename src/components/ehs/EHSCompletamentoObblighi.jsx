@@ -160,7 +160,7 @@ export function DettaglioNegozio({ negozioId, conAnelli = false }) {
           const inAula = daMettereInAula(dati, c.id)
           return (
             <div key={c.id} style={{
-              borderRadius: 8, padding: '8px 12px', fontSize: 13, background: sfondoDi(r),
+              borderRadius: 8, padding: '6px 8px', fontSize: 13, background: sfondoDi(r),
               border: `1px solid ${coloreDi(r)}`, display: 'flex', alignItems: 'center', gap: 8,
             }}>
               <span>
@@ -189,16 +189,16 @@ export function DettaglioNegozio({ negozioId, conAnelli = false }) {
         <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #FCA5A5' }}>
-              <th style={{ textAlign: 'left', padding: '10px 12px', minWidth: 180 }}>Persona</th>
-              <th style={{ textAlign: 'left', padding: '10px 12px' }}>Ruolo</th>
+              <th style={{ textAlign: 'left', padding: '7px 8px', minWidth: 180 }}>Persona</th>
+              <th style={{ textAlign: 'left', padding: '7px 8px' }}>Ruolo</th>
               {dati.corsi.map(c => <th key={c.id} style={{ padding: '10px 6px', textAlign: 'center' }}>{c.nome}</th>)}
             </tr>
           </thead>
           <tbody>
             {dati.persone.map(p => (
               <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '7px 12px', fontWeight: 600 }}>{p.nome_completo}<BadgeLA attivo={p.long_absence} /></td>
-                <td style={{ padding: '7px 12px', color: '#6B7280' }}>
+                <td style={{ padding: '6px 8px', fontWeight: 600 }}>{p.nome_completo}<BadgeLA attivo={p.long_absence} /></td>
+                <td style={{ padding: '6px 8px', color: '#6B7280' }}>
                   {p.ruolo_nome || '—'}
                   {p.mansioni.length > 0 && <div style={{ fontSize: 11 }}>{p.mansioni.join(', ')}</div>}
                 </td>
@@ -248,14 +248,14 @@ function Mappa({ dati, area, onApri }) {
       <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
         <thead>
           <tr style={{ borderBottom: '2px solid #FCA5A5' }}>
-            <th style={{ textAlign: 'left', padding: '10px 12px', minWidth: 190 }}>Negozio</th>
+            <th style={{ textAlign: 'left', padding: '7px 8px', minWidth: 190 }}>Negozio</th>
             {dati.corsi.map(c => <th key={c.id} style={{ padding: '10px 4px', minWidth: 78 }}>{c.nome}</th>)}
           </tr>
         </thead>
         <tbody>
           {gruppi.map(g => [
             <tr key={`g-${g.titolo}`} style={{ background: '#FEF2F2', borderTop: '2px solid #FCA5A5' }}>
-              <td style={{ padding: '8px 12px', fontWeight: 800 }}>
+              <td style={{ padding: '6px 8px', fontWeight: 800 }}>
                 {g.titolo}
                 {g.sotto && <div style={{ fontWeight: 400, fontSize: 11, color: '#6B7280' }}>{g.sotto}</div>}
               </td>
@@ -264,7 +264,7 @@ function Mappa({ dati, area, onApri }) {
             ...g.negozi.map(n => (
               <tr key={n.id} onClick={() => onApri(n)} style={{ cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}
                 title="Apri il dettaglio persone">
-                <td style={{ padding: '6px 12px 6px 22px', fontWeight: 600, color: '#1F2937' }}>
+                <td style={{ padding: '6px 8px 6px 18px', fontWeight: 600, color: '#1F2937' }}>
                   🔍 {n.nome}
                   <span style={{ fontWeight: 400, fontSize: 11, color: '#9CA3AF' }}> · {n.persone} persone</span>
                 </td>

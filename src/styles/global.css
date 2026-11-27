@@ -90,7 +90,9 @@ select.form-control { cursor: pointer; }
    così il thead sticky resta agganciato in alto mentre si scorrono le righe.
    :where() lascia specificità zero, quindi gli stili specifici restano prioritari. */
 :where(div:has(> table)) { max-height: calc(100vh - 140px); overflow: auto; }
-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
+/* Tabelle compatte (come l'Audit Log): testo più piccolo, celle strette e testo che va
+   a capo invece di allargare la colonna, così si vede tutto senza scorrere a destra. */
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 thead { position: sticky; top: 0; z-index: 2; }
 /* Prima colonna sempre visibile scorrendo in orizzontale. Lo sfondo pieno evita che
    le celle che scorrono sotto si vedano in trasparenza; le righe con uno sfondo
@@ -104,18 +106,18 @@ tbody tr:nth-child(even):hover > td:first-child { background-color: #F1F5F9; }
 tbody tr[style*="background"] > td:first-child { background: inherit; }
 thead th {
   background: #F1F5F9;
-  padding: 10px 14px;
+  padding: 7px 8px;
   text-align: left;
   font-weight: 600;
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   color: #64748B;
-  white-space: nowrap;
+  white-space: normal;
 }
 tbody tr { border-bottom: 1px solid var(--color-border); transition: background 0.1s; }
 tbody tr:hover { background: #F8FAFC; }
-tbody td { padding: 10px 14px; vertical-align: middle; white-space: nowrap; }
+tbody td { padding: 6px 8px; vertical-align: middle; white-space: normal; overflow-wrap: break-word; }
 tbody tr:nth-child(even) { background: #FAFBFC; }
 tbody tr:nth-child(even):hover { background: #F1F5F9; }
 
