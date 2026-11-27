@@ -44,6 +44,12 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
   const [motivazione, setMotivazione] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [partecipanti, setPartecipanti] = useState(null)
+  // Modifica di orario e location: libera entro 7 giorni dalla creazione, poi con motivazione.
+  const [modifica, setModifica] = useState(null)
+  const [salvandoModifica, setSalvandoModifica] = useState(false)
+  const GIORNI_MODIFICA_LIBERA = 7
+  const limiteModifica = evento?.created_at ? new Date(new Date(evento.created_at).getTime() + GIORNI_MODIFICA_LIBERA * 86400000) : null
+  const serveMotivazione = !!limiteModifica && new Date() > limiteModifica
   // Giornate dell'edizione: l'elenco del calendario non le contiene, si leggono dal dettaglio.
   const [giornate, setGiornate] = useState(evento?.giornate || [])
   useEffect(() => {
@@ -129,6 +135,35 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
       toast.error(err.response?.data?.detail || 'Errore nel salvataggio.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const apriModifica = () => {
+    setModifica({
+      ora_inizio: evento.ora_inizio?.slice(0, 5) || '', ora_fine: evento.ora_fine?.slice(0, 5) || '',
+      location_store: evento.location_store || '', location_esterna: evento.location_esterna || '', motivazione: '',
+    })
+    if (!stores.length) api.get('/stores/').then(({ data }) => setStores(data.results || data)).catch(() => {})
+  }
+
+  const salvaModifica = async () => {
+    if (modifica.ora_fine <= modifica.ora_inizio) { toast.error("L'ora di fine deve essere dopo l'ora di inizio."); return }
+    if (serveMotivazione && !modifica.motivazione.trim()) { toast.error('Inserisci la motivazione della modifica.'); return }
+    setSalvandoModifica(true)
+    try {
+      await api.patch(`/eventi/${evento.id}/`, {
+        ora_inizio: modifica.ora_inizio, ora_fine: modifica.ora_fine,
+        location_store: modifica.location_store || null, location_esterna: modifica.location_esterna,
+        ...(modifica.motivazione.trim() ? { motivazione: modifica.motivazione.trim() } : {}),
+      })
+      toast.success('Formazione modificata.')
+      setModifica(null)
+      onSaved()
+    } catch (err) {
+      const e = err.response?.data
+      toast.error(e?.detail || (e && Object.values(e).flat().join(' ')) || 'Errore nella modifica.')
+    } finally {
+      setSalvandoModifica(false)
     }
   }
 
@@ -358,19 +393,78 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
                 </div>
               </>
             ) : (
+              <>
+              {modifica && (
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: 10, padding: 14, margin: '12px 0', background: '#F9FAFB' }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>Modifica orario e location</div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="m-inizio">Ora inizio</label>
+                      <select id="m-inizio" className="form-control" value={modifica.ora_inizio} onChange={e => setModifica(m => ({ ...m, ora_inizio: e.target.value }))}>
+                        {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="m-fine">Ora fine</label>
+                      <select id="m-fine" className="form-control" value={modifica.ora_fine} onChange={e => setModifica(m => ({ ...m, ora_fine: e.target.value }))}>
+                        {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="m-store">Location (store)</label>
+                    <select id="m-store" className="form-control" value={modifica.location_store} onChange={e => setModifica(m => ({ ...m, location_store: e.target.value }))}>
+                      <option value="">Nessuno store</option>
+                      {stores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="m-esterna">Location esterna</label>
+                    <input id="m-esterna" className="form-control" placeholder="Es. Hotel Milano, online..." value={modifica.location_esterna}
+                      onChange={e => setModifica(m => ({ ...m, location_esterna: e.target.value }))} />
+                  </div>
+                  {giornate.length > 1 && (
+                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 10 }}>
+                      La location cambia per tutte le giornate; l'orario solo per questa giornata.
+                    </div>
+                  )}
+                  {serveMotivazione ? (
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="m-motivo">Motivazione *</label>
+                      <textarea id="m-motivo" className="form-control" rows={2} value={modifica.motivazione}
+                        onChange={e => setModifica(m => ({ ...m, motivazione: e.target.value }))}
+                        placeholder={`Sono passati più di ${GIORNI_MODIFICA_LIBERA} giorni dalla creazione: spiega il motivo della modifica.`} />
+                    </div>
+                  ) : limiteModifica && (
+                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 10 }}>
+                      Modificabile senza motivazione fino al {limiteModifica.toLocaleDateString('it-IT')}.
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setModifica(null)}>Annulla</button>
+                    <button className="btn btn-primary btn-sm" disabled={salvandoModifica} onClick={salvaModifica}>
+                      {salvandoModifica ? 'Salvataggio...' : 'Salva modifiche'}
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="modal-actions">
                 {canEdit && evento.puo_modificare !== false && (
                   <button className="btn btn-danger btn-sm" onClick={handleDelete}>Elimina</button>
                 )}
+                {canEdit && evento.puo_modificare !== false && !evento.is_ehs && !modifica && (
+                  <button className="btn btn-secondary btn-sm" onClick={apriModifica}>✏️ Modifica</button>
+                )}
                 {canEdit && evento.puo_modificare === false && (
                   <span style={{ fontSize: 12, color: '#6B7280', marginRight: 'auto' }}>
-                    {evento.created_by_nome ? `Creata da ${evento.created_by_nome}: ` : ''}può annullarla solo chi l'ha creata o l'Admin.
+                    {evento.created_by_nome ? `Creata da ${evento.created_by_nome}: ` : ''}possono modificarla o annullarla solo chi l'ha creata e l'Admin.
                   </span>
                 )}
                 <button className="btn btn-primary" onClick={() => navigate(`/iscrizioni?evento=${evento.id}`)}>
                   Gestione Partecipanti
                 </button>
               </div>
+              </>
             )}
           </div>
         )}
