@@ -57,6 +57,7 @@ const NAV_ITEMS = [
   { to: '/richieste',        label: 'Richieste di Modifica', icon: '🔔', roles: ['admin', 'ho'], alertBadge: true },
   { to: '/richieste-password', label: 'Richieste reset password', icon: '🔑', roles: ['admin'], resetBadge: true },
   { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin'] },
+  { to: '/guida',            label: 'Guida',                  icon: '📘', roles: ['admin', 'area'] },
   { to: '/stats',            label: 'Stats',                  icon: '📊', roles: ['admin', 'admin_ehs', 'ho', 'area'] },
   {
     group: 'Disattivati',

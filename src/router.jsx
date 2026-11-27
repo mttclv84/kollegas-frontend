@@ -29,6 +29,7 @@ import CorsiDisattivati from './pages/CorsiDisattivati'
 import ArchivioDocumentiEHS from './pages/ArchivioDocumentiEHS'
 import CambiaPassword from './pages/CambiaPassword'
 import RichiesteResetPassword from './pages/RichiesteResetPassword'
+import Guida from './pages/Guida'
 
 function ProtectedRoute({ children, roles, paginaCambioPassword = false }) {
   const { user, loading } = useAuth()
@@ -86,6 +87,7 @@ export const router = createBrowserRouter([
       { path: 'stats', element: <ProtectedRoute roles={['admin','admin_ehs','ho','area']}><Stats /></ProtectedRoute> },
       { path: 'richieste', element: <ProtectedRoute roles={['admin','ho']}><RichiesteModifica ambito="altro" /></ProtectedRoute> },
       { path: 'richieste-password', element: <ProtectedRoute roles={['admin']}><RichiesteResetPassword /></ProtectedRoute> },
+      { path: 'guida', element: <ProtectedRoute roles={['admin','area']}><Guida /></ProtectedRoute> },
       { path: 'iscrizioni-store', element: <ProtectedRoute roles={['store']}><IscrizioniStore /></ProtectedRoute> },
     ],
   },
