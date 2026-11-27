@@ -89,7 +89,7 @@ export const router = createBrowserRouter([
       { path: 'richieste', element: <ProtectedRoute roles={['admin','ho']}><RichiesteModifica ambito="altro" /></ProtectedRoute> },
       { path: 'richieste-password', element: <ProtectedRoute roles={['admin']}><RichiesteResetPassword /></ProtectedRoute> },
       { path: 'assistenza', element: <Assistenza /> },
-      { path: 'guida', element: <ProtectedRoute roles={['admin','area']}><Guida /></ProtectedRoute> },
+      { path: 'guida', element: <ProtectedRoute roles={['admin','ho','area']}><Guida /></ProtectedRoute> },
       { path: 'iscrizioni-store', element: <ProtectedRoute roles={['store']}><IscrizioniStore /></ProtectedRoute> },
     ],
   },

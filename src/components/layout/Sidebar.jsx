@@ -57,7 +57,7 @@ const NAV_ITEMS = [
   { to: '/richieste',        label: 'Richieste di Modifica', icon: '🔔', roles: ['admin', 'ho'], alertBadge: true },
   { to: '/richieste-password', label: 'Richieste reset password', icon: '🔑', roles: ['admin'], resetBadge: true },
   { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin'] },
-  { to: '/guida',            label: 'Guida',                  icon: '📘', roles: ['admin', 'area'] },
+  { to: '/guida',            label: 'Guida',                  icon: '📘', roles: ['admin', 'ho', 'area'] },
   { to: '/assistenza',       label: 'Assistenza',             icon: '🛟', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'fornitore'], assistenzaBadge: true },
   { to: '/stats',            label: 'Stats',                  icon: '📊', roles: ['admin', 'admin_ehs', 'ho', 'area'] },
   {
