@@ -22,14 +22,14 @@ const LIVELLI_PER_RUOLO = {
     { value: 'base', label: 'Base' },
   ],
   ho: [
-    { value: 'area', label: 'Area Manager' },
     { value: 'base', label: 'Base' },
   ],
   store: [
     { value: 'base', label: 'Base' },
   ],
 }
-const PROFILI_PROTETTI_DA_HO = ['admin', 'admin_ehs']
+// HO crea, modifica e disattiva solo i profili Base: tutti gli altri li gestisce l'Admin.
+const LIVELLI_GESTITI_DA_HO = ['base']
 const SESSI = [
   { value: 'M', label: 'Maschio' },
   { value: 'F', label: 'Femmina' },
@@ -398,7 +398,7 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
 
   const disabledStyle = { background: '#F1F5F9', color: '#9CA3AF' }
 
-  const RichiesteTable = ({ title, items, pendingCount, onApprova, onRifiuta, onVisto, cols, renderCells }) => (
+  const RichiesteTable = ({ title, items, pendingCount, onApprova, onRifiuta, onVisto, cols, renderCells, puoDecidere = () => true }) => (
     items.length > 0 ? (
       <div className="card" style={{ marginBottom: 20, border: pendingCount > 0 ? '1px solid #F59E0B' : undefined }}>
         <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -413,7 +413,9 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
                 <tr key={r.id}>
                   {renderCells(r)}
                   <td>
-                    {r.stato === 'pending' ? (
+                    {r.stato === 'pending' && !puoDecidere(r) ? (
+                      <span style={{ fontSize: 12, color: '#6B7280' }}>La gestisce l'Admin</span>
+                    ) : r.stato === 'pending' ? (
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-primary btn-sm" onClick={() => onApprova(r.id)}>✓ Approva</button>
                         <button className="btn btn-danger btn-sm" onClick={() => onRifiuta(r.id)}>✕ Rifiuta</button>
@@ -451,6 +453,7 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
           items={richiesteCreazione}
           pendingCount={pendingCreazione.length}
           onApprova={handleApprovaCreazione}
+          puoDecidere={r => !can(['ho']) || LIVELLI_GESTITI_DA_HO.includes(r.livello_accesso)}
           onRifiuta={handleRifiutaCreazione}
           onVisto={vistoCreazione}
           cols={['Store richiedente', 'Cognome', 'Nome', 'Email', 'Ruolo', 'Stato', 'Data', '']}
@@ -473,6 +476,7 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
           items={richiesteEliminazione}
           pendingCount={pendingEliminazione.length}
           onApprova={handleApprovaEliminazione}
+          puoDecidere={r => !can(['ho']) || LIVELLI_GESTITI_DA_HO.includes(r.target_livello)}
           onRifiuta={handleRifiutaEliminazione}
           onVisto={vistoEliminazione}
           cols={['Store richiedente', 'Profilo da eliminare', 'Stato', 'Data', '']}
@@ -557,8 +561,8 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
             columns={columns}
             data={utentiFiltrati}
             actions={u => {
-              // HO non modifica né disattiva i profili Admin e Admin EHS.
-              const protetto = can(['ho']) && PROFILI_PROTETTI_DA_HO.includes(u.livello_accesso)
+              // HO modifica e disattiva solo i profili Base.
+              const protetto = can(['ho']) && !LIVELLI_GESTITI_DA_HO.includes(u.livello_accesso)
               return (
               <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 {!(isStore && u.livello_accesso === 'store') && !protetto && (
