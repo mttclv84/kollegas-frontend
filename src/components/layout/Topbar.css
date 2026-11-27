@@ -50,6 +50,16 @@
   border-radius: var(--radius-full);
   letter-spacing: 0.05em;
 }
+.topbar-ruolo {
+  font-size: 11px;
+  font-weight: 600;
+  background: #EEF2F7;
+  color: var(--color-neutral-dark);
+  border: 1px solid #DCE3EC;
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
 
 @media (max-width: 768px) {
   .topbar { left: 0; }
