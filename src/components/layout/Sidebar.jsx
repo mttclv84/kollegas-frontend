@@ -74,7 +74,7 @@ const NAV_ITEMS = [
 export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
   const { user, logout, can } = useAuth()
   const location = useLocation()
-  const [openGroups, setOpenGroups] = useState({ EHS: false, Report: true, Gestione: true }) // EHS parte chiuso a ogni accesso
+  const [openGroups, setOpenGroups] = useState({ EHS: false, Report: false, Gestione: true }) // EHS e Report partono chiusi a ogni accesso
   const [pendingCount, setPendingCount] = useState(0)
   const [accountBadge, setAccountBadge] = useState(0)
   // Promemoria archivio mensile: documenti EHS dei mesi precedenti ancora in Kollegas.

@@ -16,8 +16,13 @@ const RUOLO_CONFIG = {
   'P&C Coordinator':            { header: '#3F51B5', badge: '#1E40AF', order: 10 },
 }
 
+// Il commento lo modificano Admin, HO e Store (del proprio negozio); gli altri profili lo leggono.
+const PUO_MODIFICARE_COMMENTO = ['admin', 'ho', 'store']
+
 function CommentoEditPopup({ data, onChange, onSave, onDelete, onClose }) {
+  const { can } = useAuth()
   if (!data) return null
+  const solaLettura = !can(PUO_MODIFICARE_COMMENTO)
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
@@ -30,21 +35,34 @@ function CommentoEditPopup({ data, onChange, onSave, onDelete, onClose }) {
         <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14, color: '#111827' }}>
           Commento — {data.user.cognome} {data.user.nome}
         </div>
-        <textarea
-          className="form-control"
-          rows={4}
-          value={data.text}
-          onChange={e => onChange(e.target.value)}
-          placeholder="Scrivi un commento..."
-          autoFocus
-          style={{ marginBottom: 16, resize: 'vertical' }}
-        />
+        {solaLettura ? (
+          <div style={{ marginBottom: 16, fontSize: 14, color: data.text ? '#374151' : '#9CA3AF', whiteSpace: 'pre-wrap',
+            background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8, padding: '10px 12px', minHeight: 60 }}>
+            {data.text || 'Nessun commento.'}
+          </div>
+        ) : (
+          <textarea
+            className="form-control"
+            rows={4}
+            value={data.text}
+            onChange={e => onChange(e.target.value)}
+            placeholder="Scrivi un commento..."
+            autoFocus
+            style={{ marginBottom: 16, resize: 'vertical' }}
+          />
+        )}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          {data.user.commento_mapping && (
-            <button className="btn btn-danger btn-sm" onClick={onDelete}>Elimina commento</button>
+          {solaLettura ? (
+            <button className="btn btn-secondary btn-sm" onClick={onClose} autoFocus>Chiudi</button>
+          ) : (
+            <>
+              {data.user.commento_mapping && (
+                <button className="btn btn-danger btn-sm" onClick={onDelete}>Elimina commento</button>
+              )}
+              <button className="btn btn-secondary btn-sm" onClick={onClose}>Annulla</button>
+              <button className="btn btn-primary btn-sm" onClick={onSave}>Salva</button>
+            </>
           )}
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>Annulla</button>
-          <button className="btn btn-primary btn-sm" onClick={onSave}>Salva</button>
         </div>
       </div>
     </div>
@@ -52,6 +70,8 @@ function CommentoEditPopup({ data, onChange, onSave, onDelete, onClose }) {
 }
 
 function Avatar({ user, onEditComment }) {
+  const { can } = useAuth()
+  const modifica = can(PUO_MODIFICARE_COMMENTO)
   return (
     <div className={`mapping-card ${user.long_absence ? 'long-absence' : ''}`}>
       <div className="mapping-avatar">
@@ -65,7 +85,7 @@ function Avatar({ user, onEditComment }) {
       <button
         className="comment-bubble-btn"
         onClick={() => onEditComment(user)}
-        title={user.commento_mapping ? 'Modifica commento' : 'Aggiungi commento'}
+        title={modifica ? (user.commento_mapping ? 'Modifica commento' : 'Aggiungi commento') : (user.commento_mapping ? 'Leggi commento' : 'Nessun commento')}
         style={{
           opacity: user.commento_mapping ? 1 : 0.35,
           background: user.commento_mapping ? '#DBEAFE' : 'transparent',
