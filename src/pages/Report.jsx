@@ -3,6 +3,7 @@ import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import DataTable from '../components/ui/DataTable'
 import toast from 'react-hot-toast'
+import BadgeLA from '../components/ui/BadgeLA'
 
 const STATO_BADGE = { iscritto: 'primary', partecipato: 'success', assente: 'danger' }
 const TIPOLOGIA_LABEL = { ld: 'L&D', recruiting: 'RECRUITING', ehs: 'EHS', payroll: 'PAYROLL', altro: 'ALTRO' }
@@ -85,7 +86,10 @@ export default function Report() {
       render: d => <span className="badge badge-primary">{TIPOLOGIA_LABEL[d.attivita_tipologia] || d.attivita_tipologia}</span>
     },
     { key: 'store_nome', label: 'Store', accessor: d => d.store_nome || '—' },
-    { key: 'collaboratore', label: 'Collaboratore', accessor: d => `${d.user_cognome} ${d.user_nome}` },
+    {
+      key: 'collaboratore', label: 'Collaboratore', accessor: d => `${d.user_cognome} ${d.user_nome}`,
+      render: d => <>{d.user_cognome} {d.user_nome}<BadgeLA attivo={d.user_long_absence} /></>,
+    },
     { key: 'user_sesso', label: 'Sesso' },
     { key: 'location_display', label: 'Location', accessor: d => d.location_display || '—' },
     {

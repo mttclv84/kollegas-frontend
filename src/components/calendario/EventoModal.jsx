@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/client'
 import toast from 'react-hot-toast'
 import './EventoModal.css'
+import BadgeLA from '../ui/BadgeLA'
 
 const TIME_SLOTS = (() => {
   const slots = []
@@ -24,7 +25,7 @@ function ElencoPartecipanti({ titolo, colore, persone }) {
       ) : (
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151', maxHeight: 160, overflowY: 'auto' }}>
           {persone.map(p => (
-            <li key={p.id}>{p.user_cognome} {p.user_nome}{p.store_nome ? <span style={{ color: '#9CA3AF' }}> — {p.store_nome}</span> : null}</li>
+            <li key={p.id}>{p.user_cognome} {p.user_nome}<BadgeLA attivo={p.user_long_absence} />{p.store_nome ? <span style={{ color: '#9CA3AF' }}> — {p.store_nome}</span> : null}</li>
           ))}
         </ul>
       )}

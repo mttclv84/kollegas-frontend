@@ -8,6 +8,7 @@ import { arrotondaMezzora } from '../../utils/ehsTime'
 import EHSDataOraPicker from './EHSDataOraPicker'
 import EHSDocumentiSezioni from './EHSDocumentiSezioni'
 import '../calendario/EventoModal.css'
+import BadgeLA from '../ui/BadgeLA'
 
 const STATO_LABELS = {
   IN_APPROVAZIONE: 'In validazione EHS Admin',
@@ -361,7 +362,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {sessione.partecipanti.map(p => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: '1px solid #E5E7EB', borderRadius: 8, padding: 10 }}>
-              <span style={{ flex: 1, fontSize: 13 }}>{partecipanteLabel(p)}</span>
+              <span style={{ flex: 1, fontSize: 13 }}>{partecipanteLabel(p)}<BadgeLA attivo={p.utente_long_absence} /></span>
               <button type="button"
                 className="btn btn-sm"
                 style={{ background: presenze[p.id] ? '#10B981' : '#F3F4F6', color: presenze[p.id] ? '#fff' : '#374151' }}
@@ -643,7 +644,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       {sessione.partecipanti.map(p => (
                         <div key={p.id} style={{ fontSize: 13, color: '#374151', display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span>• {partecipanteLabel(p)}</span>
+                          <span>• {partecipanteLabel(p)}<BadgeLA attivo={p.utente_long_absence} /></span>
                           {puoRimuoverePartecipanti && cancellazioneOk && wizardStep === 0 && (
                             <button className="btn btn-ghost btn-sm btn-icon" title="Cancella iscrizione" disabled={busy}
                               onClick={() => handleRimuoviPartecipante(p)} style={{ color: '#EF4444' }}>✕</button>
@@ -700,7 +701,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                       }}>
                         {p.presente ? 'PRESENTE' : 'ASSENTE'}
                       </span>
-                      {partecipanteLabel(p)}
+                      {partecipanteLabel(p)}<BadgeLA attivo={p.utente_long_absence} />
                       {p.scadenza_formazione && (
                         <span style={{ color: '#9CA3AF', fontSize: 12 }}>— scade il {new Date(p.scadenza_formazione).toLocaleDateString('it-IT')}</span>
                       )}

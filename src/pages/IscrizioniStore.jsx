@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import api from '../api/client'
 import toast from 'react-hot-toast'
 import RichiestaModal from '../components/ui/RichiestaModal'
+import BadgeLA from '../components/ui/BadgeLA'
 
 const MESI_IT = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -225,7 +226,7 @@ export default function IscrizioniStore() {
                       <tr key={i.id}>
                         <td style={{ whiteSpace: 'nowrap', color: '#374151' }}>{i.evento_data}</td>
                         <td style={{ fontWeight: 600, color: '#111827' }}>{i.attivita_nome}</td>
-                        <td>{i.user_cognome} {i.user_nome}</td>
+                        <td>{i.user_cognome} {i.user_nome}<BadgeLA attivo={i.user_long_absence} /></td>
                         <td>{i.evento_ore != null ? `${i.evento_ore}h` : '—'}</td>
                         <td>
                           <span className={`badge badge-${STATO_BADGE[i.stato] || 'neutral'}`}>

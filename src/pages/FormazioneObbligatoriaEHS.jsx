@@ -8,6 +8,7 @@ import EHSRegistriList from '../components/ehs/EHSRegistriList'
 import EHSScadenzeList from '../components/ehs/EHSScadenzeList'
 import './EHS.css'
 import '../components/calendario/EventoModal.css'
+import BadgeLA from '../components/ui/BadgeLA'
 
 // Stati di una cella della matrice, nell'ordine in cui si alternano al clic.
 const STATI = [null, 'obbligatorio', 'facoltativo']
@@ -304,7 +305,7 @@ function PersoneRegistro({ matrice }) {
               {persone.map(p => (
                 <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)', verticalAlign: 'top' }}>
                   <td style={{ padding: '8px 12px', fontWeight: 600 }}>
-                    {p.nome_completo}
+                    {p.nome_completo}<BadgeLA attivo={p.long_absence} />
                     {inRicerca && p.store_nome && (
                       <div style={{ fontWeight: 400, fontSize: 12, color: '#6B7280' }}>{p.store_nome}</div>
                     )}

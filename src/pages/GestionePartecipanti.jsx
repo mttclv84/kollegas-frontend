@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import RichiestaModal from '../components/ui/RichiestaModal'
 import { isAulaChiusa } from '../utils/aule'
+import BadgeLA from '../components/ui/BadgeLA'
 
 const STATO_LABELS = { iscritto: 'Iscritto', partecipato: 'Partecipato', assente: 'Assente' }
 const STATO_BADGE = { iscritto: 'primary', partecipato: 'success', assente: 'danger' }
@@ -425,7 +426,7 @@ export default function GestionePartecipanti() {
                           <span className="badge badge-neutral">{i.store_nome || '—'}</span>
                         </td>
                         <td>
-                          {i.user_cognome} {i.user_nome}
+                          {i.user_cognome} {i.user_nome}<BadgeLA attivo={i.user_long_absence} />
                           {i.esito_edizione === 'parziale' && (
                             <span title="Non presente a tutte le giornate: non conta come partecipato"
                               style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#92400E', background: '#FEF3C7',
@@ -534,7 +535,7 @@ export default function GestionePartecipanti() {
                   ) : filteredDisponibili.map(u => (
                     <tr key={u.id}>
                       <td><span className="badge badge-neutral">{u.store_nome || '—'}</span></td>
-                      <td>{u.cognome} {u.nome}</td>
+                      <td>{u.cognome} {u.nome}<BadgeLA attivo={u.long_absence} /></td>
                       <td>
                         <button className="btn btn-primary btn-sm" disabled={postiEsauriti} onClick={() => avviaAssegna(u)}>
                           + Assegna

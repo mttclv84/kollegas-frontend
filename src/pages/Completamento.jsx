@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import './Completamento.css'
+import BadgeLA from '../components/ui/BadgeLA'
 
 // Programmi con una pagina di completamento. Per quelli su più aule c'è anche la card
 // "Percorso completo": conta chi ha svolto tutte le aule, come se fossero un unico corso.
@@ -309,7 +310,7 @@ function PersoneArea({ area, programma }) {
           <tbody>
             {persone.map(p => (
               <tr key={p.id}>
-                <td style={{ ...cella, fontWeight: 600, color: '#1F2937' }}>{p.cognome} {p.nome}</td>
+                <td style={{ ...cella, fontWeight: 600, color: '#1F2937' }}>{p.cognome} {p.nome}<BadgeLA attivo={p.long_absence} /></td>
                 <td style={{ ...cella, color: '#374151' }}>{p.codice_negozio ? `${p.codice_negozio} — ` : ''}{p.negozio}</td>
                 <td style={{ ...cella, color: '#6B7280' }}>{p.ruolo}</td>
                 {dati.corsi.map(c => (
@@ -459,7 +460,7 @@ function ZoomModal({ storeId, programma, onClose }) {
               <tbody>
                 {zoom.utenti.map(u => (
                   <tr key={u.id}>
-                    <td style={{ ...cella, fontWeight: 600, color: '#1F2937' }}>{u.cognome} {u.nome}</td>
+                    <td style={{ ...cella, fontWeight: 600, color: '#1F2937' }}>{u.cognome} {u.nome}<BadgeLA attivo={u.long_absence} /></td>
                     <td style={{ ...cella, color: '#6B7280' }}>{ETICHETTE_RUOLO[u.ruolo] || u.ruolo}</td>
                     {zoom.corsi.map(c => (
                       <td key={c.id} style={{ ...cella, textAlign: 'center' }}>

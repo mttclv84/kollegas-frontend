@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
+import BadgeLA from '../ui/BadgeLA'
 
 const CONFERMA_ELIMINA = 'ELIMINARE DEFINITIVAMENTE'
 
@@ -192,7 +193,7 @@ function PartecipantiOverlay({ partecipanti }) {
               }}>
                 {p.presente ? 'P' : 'A'}
               </span>
-              {p.utente_nome}
+              {p.utente_nome}<BadgeLA attivo={p.utente_long_absence} />
             </div>
           ))}
         </div>

@@ -3,6 +3,7 @@ import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import Modal from '../ui/Modal'
 import EHSRichiestaFormModal from './EHSRichiestaFormModal'
+import BadgeLA from '../ui/BadgeLA'
 
 // Semaforo di un gruppo di persone su un corso:
 // rosso = almeno uno scaduto o non ancora formato (anche se iscritto a un'aula),
@@ -196,7 +197,7 @@ export function DettaglioNegozio({ negozioId, conAnelli = false }) {
           <tbody>
             {dati.persone.map(p => (
               <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '7px 12px', fontWeight: 600 }}>{p.nome_completo}</td>
+                <td style={{ padding: '7px 12px', fontWeight: 600 }}>{p.nome_completo}<BadgeLA attivo={p.long_absence} /></td>
                 <td style={{ padding: '7px 12px', color: '#6B7280' }}>
                   {p.ruolo_nome || '—'}
                   {p.mansioni.length > 0 && <div style={{ fontSize: 11 }}>{p.mansioni.join(', ')}</div>}

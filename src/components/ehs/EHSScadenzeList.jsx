@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
+import BadgeLA from '../ui/BadgeLA'
 
 // Colore del countdown: scaduto / meno di 15 giorni / meno di 30 / entro i 45 del pannello.
 const countdownStile = (giorni) => {
@@ -125,7 +126,7 @@ export default function EHSScadenzeList() {
                           ⏳ {countdownTesto(s.giorni_mancanti)}
                         </span>
                       </td>
-                      <td><strong>{s.utente_nome}</strong></td>
+                      <td><strong>{s.utente_nome}</strong><BadgeLA attivo={s.utente_long_absence} /></td>
                       {isAdminHO && <td>{s.negozio_nome || '—'}</td>}
                       <td>{s.corso_nome}</td>
                       <td>{new Date(s.scadenza_formazione).toLocaleDateString('it-IT')}</td>
