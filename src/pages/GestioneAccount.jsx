@@ -172,6 +172,7 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
   const [shownPassword, setShownPassword] = useState(null)
   const [filterStore, setFilterStore] = useState('')
   const [filterRuolo, setFilterRuolo] = useState('')
+  const [soloLongAbsence, setSoloLongAbsence] = useState(false)
   const [docsUser, setDocsUser] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteText, setDeleteText] = useState('')
@@ -372,6 +373,7 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
   const utentiFiltrati = utenti.filter(u => {
     if (filterStore && String(u.store) !== filterStore) return false
     if (filterRuolo && String(u.ruolo) !== filterRuolo) return false
+    if (soloLongAbsence && !u.long_absence) return false
     return true
   })
 
@@ -536,8 +538,12 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
                 {ruoli.map(r => <option key={r.id} value={String(r.id)}>{r.nome}</option>)}
               </select>
             </div>
-            {(filterStore || filterRuolo) && (
-              <button className="btn btn-secondary" onClick={() => { setFilterStore(''); setFilterRuolo('') }}>Reset</button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, paddingBottom: 8 }}>
+              <input type="checkbox" checked={soloLongAbsence} onChange={e => setSoloLongAbsence(e.target.checked)} />
+              Solo Long Absence
+            </label>
+            {(filterStore || filterRuolo || soloLongAbsence) && (
+              <button className="btn btn-secondary" onClick={() => { setFilterStore(''); setFilterRuolo(''); setSoloLongAbsence(false) }}>Reset</button>
             )}
           </div>
         </div>
