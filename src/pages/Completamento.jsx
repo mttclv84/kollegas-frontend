@@ -263,11 +263,42 @@ function AreaTabella({ stores }) {
   )
 }
 
+const PER_PAGINA = 10
+
+// Righe della pagina corrente (al massimo PER_PAGINA).
+const paginaDi = (righe, pagina) => righe.slice((pagina - 1) * PER_PAGINA, pagina * PER_PAGINA)
+
+function Paginazione({ pagina, totale, onPagina }) {
+  const pagine = Math.max(1, Math.ceil(totale / PER_PAGINA))
+  if (pagine <= 1) return null
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 12, fontSize: 13 }}>
+      <button type="button" className="btn btn-secondary btn-sm" disabled={pagina <= 1}
+        onClick={() => onPagina(pagina - 1)} aria-label="Pagina precedente">‹</button>
+      <span>Pagina {pagina} di {pagine}</span>
+      <button type="button" className="btn btn-secondary btn-sm" disabled={pagina >= pagine}
+        onClick={() => onPagina(pagina + 1)} aria-label="Pagina successiva">›</button>
+    </div>
+  )
+}
+
+function FiltroNegozio({ negozi, valore, onChange }) {
+  return (
+    <select className="form-control" style={{ maxWidth: 240 }} aria-label="Filtra per negozio"
+      value={valore} onChange={e => onChange(e.target.value)}>
+      <option value="">Tutti i negozi</option>
+      {negozi.map(n => <option key={n.id} value={n.nome}>{n.codice_store ? `${n.codice_store} — ` : ''}{n.nome}</option>)}
+    </select>
+  )
+}
+
 // Elenco nominativo degli aventi diritto dell'area: ✓ fatta, – non fatta. Solo visualizzazione.
-function PersoneArea({ area, programma }) {
+function PersoneArea({ area, programma, negozio }) {
   const [dati, setDati] = useState(null)
   const [cerca, setCerca] = useState('')
   const [soloDaFare, setSoloDaFare] = useState(false)
+  const [pagina, setPagina] = useState(1)
+  useEffect(() => setPagina(1), [cerca, soloDaFare, negozio, programma])
 
   useEffect(() => {
     setDati(null)
@@ -280,7 +311,8 @@ function PersoneArea({ area, programma }) {
 
   const testo = cerca.trim().toLowerCase()
   const persone = dati.persone.filter(p =>
-    (!testo || `${p.cognome} ${p.nome} ${p.negozio} ${p.codice_negozio}`.toLowerCase().includes(testo))
+    (!negozio || p.negozio === negozio)
+    && (!testo || `${p.cognome} ${p.nome} ${p.negozio} ${p.codice_negozio}`.toLowerCase().includes(testo))
     && (!soloDaFare || dati.corsi.some(c => !p.fatti.includes(c.id))))
   const cella = { padding: '6px 10px', borderBottom: '1px solid #F3F4F6', fontSize: 13 }
 
@@ -308,7 +340,7 @@ function PersoneArea({ area, programma }) {
             </tr>
           </thead>
           <tbody>
-            {persone.map(p => (
+            {paginaDi(persone, pagina).map(p => (
               <tr key={p.id}>
                 <td style={{ ...cella, fontWeight: 600, color: '#1F2937' }}>{p.cognome} {p.nome}<BadgeLA attivo={p.long_absence} /></td>
                 <td style={{ ...cella, color: '#374151' }}>{p.codice_negozio ? `${p.codice_negozio} — ` : ''}{p.negozio}</td>
@@ -325,6 +357,7 @@ function PersoneArea({ area, programma }) {
           </tbody>
         </table>
       </div>
+      <Paginazione pagina={pagina} totale={persone.length} onPagina={setPagina} />
     </div>
   )
 }
@@ -335,6 +368,12 @@ function AreaDetailModal({ area, programma, onClose, compatta = false }) {
   const [vista, setVista] = useState('negozi')
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
+  // Filtro negozio comune alle due viste; la vista Negozi mostra 10 negozi per pagina.
+  const [negozio, setNegozio] = useState('')
+  const [pagina, setPagina] = useState(1)
+  useEffect(() => setPagina(1), [negozio, programma])
+  const negoziFiltrati = (detail?.stores || []).filter(s => !negozio || s.nome === negozio)
+  const negoziPagina = paginaDi(negoziFiltrati, pagina)
 
   useEffect(() => {
     api.get(`/completamento/area/${area.numero}/`, { params: { programma } })
@@ -360,22 +399,30 @@ function AreaDetailModal({ area, programma, onClose, compatta = false }) {
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#6B7280', lineHeight: 1 }}>✕</button>
         </div>
 
-        {vedePersone && (
-          <div role="tablist" aria-label="Vista" style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            {[['negozi', 'Negozi'], ['persone', 'Persone']].map(([chiave, etichetta]) => (
-              <button key={chiave} type="button" role="tab" aria-selected={vista === chiave}
-                className={`btn btn-sm ${vista === chiave ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setVista(chiave)}>
-                {etichetta}
-              </button>
-            ))}
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+          {vedePersone && (
+            <div role="tablist" aria-label="Vista" style={{ display: 'flex', gap: 8 }}>
+              {[['negozi', 'Negozi'], ['persone', 'Persone']].map(([chiave, etichetta]) => (
+                <button key={chiave} type="button" role="tab" aria-selected={vista === chiave}
+                  className={`btn btn-sm ${vista === chiave ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setVista(chiave)}>
+                  {etichetta}
+                </button>
+              ))}
+            </div>
+          )}
+          {detail?.stores?.length > 1 && <FiltroNegozio negozi={detail.stores} valore={negozio} onChange={setNegozio} />}
+        </div>
 
-        {vista === 'persone' && <PersoneArea area={area} programma={programma} />}
+        {vista === 'persone' && <PersoneArea area={area} programma={programma} negozio={negozio} />}
 
         {vista === 'negozi' && loading && <div className="loading-center"><div className="spinner" /></div>}
 
-        {vista === 'negozi' && detail && !loading && compatta && detail.stores.length > 0 && <AreaTabella stores={detail.stores} />}
+        {vista === 'negozi' && detail && !loading && compatta && negoziFiltrati.length > 0 && (
+          <>
+            <AreaTabella stores={negoziPagina} />
+            <Paginazione pagina={pagina} totale={negoziFiltrati.length} onPagina={setPagina} />
+          </>
+        )}
 
         {vista === 'negozi' && detail && !loading && !compatta && (
           <>
@@ -383,7 +430,7 @@ function AreaDetailModal({ area, programma, onClose, compatta = false }) {
               <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>Nessun negozio configurato per questa area.</p>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {detail.stores.map(store => (
+              {negoziPagina.map(store => (
                 <div key={store.id} style={{ border: `2px solid ${store.alert ? '#FCA5A5' : '#E5E7EB'}`, borderRadius: 8, padding: '10px 14px', background: store.alert ? '#FFF5F5' : '#fff' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                     {store.alert && <span title="Negozio con maggior numero di persone ancora da formare" style={{ fontSize: 16 }}>⚠️</span>}
@@ -407,6 +454,7 @@ function AreaDetailModal({ area, programma, onClose, compatta = false }) {
                 </div>
               ))}
             </div>
+            <Paginazione pagina={pagina} totale={negoziFiltrati.length} onPagina={setPagina} />
           </>
         )}
       </div>
