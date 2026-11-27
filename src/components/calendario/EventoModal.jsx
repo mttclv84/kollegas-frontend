@@ -359,8 +359,13 @@ export default function EventoModal({ mode, selectedDay, evento, onClose, onSave
               </>
             ) : (
               <div className="modal-actions">
-                {canEdit && (
+                {canEdit && evento.puo_modificare !== false && (
                   <button className="btn btn-danger btn-sm" onClick={handleDelete}>Elimina</button>
+                )}
+                {canEdit && evento.puo_modificare === false && (
+                  <span style={{ fontSize: 12, color: '#6B7280', marginRight: 'auto' }}>
+                    {evento.created_by_nome ? `Creata da ${evento.created_by_nome}: ` : ''}può annullarla solo chi l'ha creata o l'Admin.
+                  </span>
                 )}
                 <button className="btn btn-primary" onClick={() => navigate(`/iscrizioni?evento=${evento.id}`)}>
                   Gestione Partecipanti
