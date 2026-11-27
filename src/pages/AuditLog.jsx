@@ -50,6 +50,35 @@ const STILE_COMPATTO = `
     overflow-wrap: anywhere; }
 `
 
+// Icona "foglio": passando sopra (o con il tab della tastiera) si apre il dettaglio completo.
+// L'overlay è fisso sullo schermo, così non viene tagliato dalla tabella che scorre.
+function DettaglioIcona({ testo }) {
+  const [pos, setPos] = useState(null)
+  if (!testo) return <span style={{ color: '#9CA3AF' }}>—</span>
+  const apri = (e) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    const larghezza = 380
+    const left = Math.max(12, Math.min(r.right - larghezza, window.innerWidth - larghezza - 12))
+    const sotto = r.bottom + 8 + 200 < window.innerHeight
+    setPos({ left, top: sotto ? r.bottom + 8 : undefined, bottom: sotto ? undefined : window.innerHeight - r.top + 8 })
+  }
+  return (
+    <span onMouseEnter={apri} onMouseLeave={() => setPos(null)} onFocus={apri} onBlur={() => setPos(null)}
+      tabIndex={0} role="button" aria-label="Mostra dettaglio" style={{ cursor: 'help', fontSize: 18, lineHeight: 1 }}>
+      📄
+      {pos && (
+        <span role="tooltip" style={{
+          position: 'fixed', left: pos.left, top: pos.top, bottom: pos.bottom, width: 380, maxHeight: 260, overflow: 'auto',
+          zIndex: 50, background: '#1F2937', color: '#F9FAFB', fontSize: 12.5, lineHeight: 1.5, padding: '10px 12px',
+          borderRadius: 8, boxShadow: '0 10px 30px rgba(0,0,0,.25)', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', textAlign: 'left',
+        }}>
+          {testo.split(' · ').join('\n')}
+        </span>
+      )}
+    </span>
+  )
+}
+
 const dataBreve = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 
 function ElencoPersone({ titolo, persone, extra }) {
@@ -240,12 +269,12 @@ export default function AuditLog() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '11%' }}>Data / Ora</th>
-                    <th style={{ width: '15%' }}>Eseguita da</th>
-                    <th style={{ width: '12%' }}>Azione</th>
-                    <th style={{ width: '12%' }}>Tipo</th>
-                    <th style={{ width: '18%' }}>Oggetto</th>
-                    <th style={{ width: '32%' }}>Dettaglio</th>
+                    <th style={{ width: '13%' }}>Data / Ora</th>
+                    <th style={{ width: '18%' }}>Eseguita da</th>
+                    <th style={{ width: '14%' }}>Azione</th>
+                    <th style={{ width: '16%' }}>Tipo</th>
+                    <th style={{ width: '29%' }}>Oggetto</th>
+                    <th style={{ width: '10%', textAlign: 'center' }}>Dettaglio</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -267,8 +296,8 @@ export default function AuditLog() {
                       <td title={log.target_repr || ''}>
                         {log.target_repr || <span style={{ color: '#9CA3AF' }}>—</span>}
                       </td>
-                      <td style={{ color: '#6B7280', fontSize: 12 }}>
-                        {log.dettaglio || '—'}
+                      <td style={{ textAlign: 'center' }}>
+                        <DettaglioIcona testo={log.dettaglio} />
                       </td>
                     </tr>
                   ))}
