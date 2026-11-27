@@ -77,6 +77,7 @@ export const router = createBrowserRouter([
       { path: 'host', element: <ProtectedRoute roles={['admin','ho']}><GestioneHost /></ProtectedRoute> },
       { path: 'ruoli', element: <ProtectedRoute roles={['admin','ho']}><GestioneRuoli /></ProtectedRoute> },
       { path: 'disattivati', element: <ProtectedRoute roles={['admin','admin_ehs']}><GestioneAccount mostraDisattivati={true} /></ProtectedRoute> },
+      { path: 'dettaglio-disattivati', element: <ProtectedRoute roles={['admin','admin_ehs']}><Report disattivati /></ProtectedRoute> },
       { path: 'ehs/archivio', element: <ProtectedRoute roles={['admin','admin_ehs']}><ArchivioDocumentiEHS /></ProtectedRoute> },
       { path: 'corsi-disattivati', element: <ProtectedRoute roles={['admin']}><CorsiDisattivati /></ProtectedRoute> },
       { path: 'completamento', element: <Completamento /> },

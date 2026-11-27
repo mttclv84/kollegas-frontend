@@ -9,7 +9,8 @@ const STATO_BADGE = { iscritto: 'primary', partecipato: 'success', assente: 'dan
 const STATO_LABEL = { iscritto: 'Iscritto', partecipato: 'Partecipato', assente: 'Assente' }
 const TIPOLOGIA_LABEL = { ld: 'L&D', recruiting: 'RECRUITING', ehs: 'EHS', payroll: 'PAYROLL', altro: 'ALTRO' }
 
-export default function Report() {
+// Con `disattivati` mostra solo i profili disattivati (sezione Disattivati > Dettaglio disattivati).
+export default function Report({ disattivati = false }) {
   const { user, can } = useAuth()
   const [dati, setDati] = useState([])
   const [loading, setLoading] = useState(true)
@@ -30,6 +31,7 @@ export default function Report() {
     const params = {}
     for (const k of ['data_da', 'data_a', 'ruolo', 'tipologia']) if (filters[k]) params[k] = filters[k]
     if (filters.store && can(['admin', 'admin_ehs', 'ho', 'area'])) params.store = filters.store
+    if (disattivati) params.disattivati = 1
     return params
   }
 
@@ -40,7 +42,7 @@ export default function Report() {
       const { data } = await api.get('/report/', { params })
       setDati(data.results || data)
     } finally { setLoading(false) }
-  }, [filters])
+  }, [filters, disattivati])
 
   useEffect(() => { fetchReport() }, [fetchReport])
 
@@ -85,7 +87,7 @@ ${dettaglio}`)) return
       const url = URL.createObjectURL(data)
       const a = document.createElement('a')
       a.href = url
-      a.download = `dettaglio_${new Date().toISOString().slice(0, 10)}.xlsx`
+      a.download = `dettaglio${disattivati ? '_disattivati' : ''}_${new Date().toISOString().slice(0, 10)}.xlsx`
       a.click()
       URL.revokeObjectURL(url)
     } catch {
@@ -126,7 +128,7 @@ ${dettaglio}`)) return
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h1 className="page-title" style={{ marginBottom: 0 }}>Dettaglio</h1>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>{disattivati ? 'Dettaglio disattivati' : 'Dettaglio'}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {assentiCount > 0 && can(['admin', 'admin_ehs', 'ho']) && (
             <button className="btn btn-danger" onClick={handleDeleteAssenti}>

@@ -64,6 +64,7 @@ const NAV_ITEMS = [
     roles: ['admin', 'admin_ehs'],
     children: [
       { to: '/disattivati',       label: 'Account disattivati', icon: <span className="icona-barrata">👤</span>, roles: ['admin', 'admin_ehs'] },
+      { to: '/dettaglio-disattivati', label: 'Dettaglio disattivati', icon: <span className="icona-barrata">🔍</span>, roles: ['admin', 'admin_ehs'] },
       // Corsi EHS e attività del catalogo disattivati: solo Admin generale.
       { to: '/corsi-disattivati', label: 'Corsi disattivati',   icon: <span className="icona-barrata">🎓</span>, roles: ['admin'] },
     ],
