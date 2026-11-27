@@ -251,6 +251,14 @@ export default function Development() {
     <div>
       <h1 className="page-title">Development</h1>
 
+      <div role="status" style={{
+        background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8, padding: '10px 16px',
+        marginBottom: 16, fontSize: 14, color: '#92400E',
+      }}>
+        🚧 <strong>Sezione in fase di costruzione.</strong> Fai una prova per vedere il funzionamento digitando
+        <strong> ALAIMO</strong> sulla ricerca nome.
+      </div>
+
       {/* Filters */}
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-body">
