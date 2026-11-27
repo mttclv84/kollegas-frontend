@@ -7,8 +7,7 @@ import './Completamento.css'
 // "Percorso completo": conta chi ha svolto tutte le aule, come se fossero un unico corso.
 const PROGRAMMI = [
   { chiave: 'gwu-ratm', titolo: 'GWU RA-TM' },
-  { chiave: 'dm-leadership', titolo: 'DM Leadership' },
-  { chiave: 'gwu-tm-dm', titolo: 'GWU TM-DM Leadership' },
+  { chiave: 'gwu-tm-dm', titolo: 'GWU TM-DM' },
 ]
 const ETICHETTE_RUOLO = { 'Team Manager': 'TM', 'Department Manager': 'DM' }
 const elencoRuoli = (ruoli = []) => ruoli.map((r, i) => (
@@ -543,14 +542,26 @@ export default function Completamento() {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }} role="tablist" aria-label="Programma">
-        {PROGRAMMI.map(p => (
-          <button key={p.chiave} type="button" role="tab" aria-selected={programma === p.chiave}
-            className={`btn btn-sm ${programma === p.chiave ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setProgramma(p.chiave)}>
-            {p.titolo}
-          </button>
-        ))}
+      {/* Selettore programma: due schede grandi, quella attiva piena e in evidenza. */}
+      <div role="tablist" aria-label="Programma"
+        style={{ display: 'grid', gridTemplateColumns: `repeat(${PROGRAMMI.length}, minmax(0, 1fr))`, gap: 16, marginBottom: 24, maxWidth: 720 }}>
+        {PROGRAMMI.map(p => {
+          const attivo = programma === p.chiave
+          return (
+            <button key={p.chiave} type="button" role="tab" aria-selected={attivo} onClick={() => setProgramma(p.chiave)}
+              style={{
+                minHeight: 72, padding: '14px 20px', borderRadius: 12, cursor: 'pointer',
+                fontSize: 20, fontWeight: 800, letterSpacing: '0.02em',
+                border: `2px solid ${attivo ? 'var(--color-primary)' : '#D1D5DB'}`,
+                background: attivo ? 'var(--color-primary)' : '#fff',
+                color: attivo ? '#fff' : '#374151',
+                boxShadow: attivo ? '0 6px 18px rgba(0, 181, 216, 0.35)' : '0 1px 3px rgba(0, 0, 0, 0.08)',
+                transition: 'all .15s',
+              }}>
+              {p.titolo}
+            </button>
+          )
+        })}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>

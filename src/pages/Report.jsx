@@ -13,7 +13,8 @@ export default function Report() {
   const [loading, setLoading] = useState(true)
   const [ruoli, setRuoli] = useState([])
   const [stores, setStores] = useState([])
-  const [filters, setFilters] = useState({ data_da: '', data_a: '', ruolo: '', store: '' })
+  const FILTRI_VUOTI = { data_da: '', data_a: '', ruolo: '', tipologia: '', store: '' }
+  const [filters, setFilters] = useState(FILTRI_VUOTI)
 
   useEffect(() => {
     Promise.all([api.get('/ruoli/'), api.get('/stores/')]).then(([rRes, sRes]) => {
@@ -22,13 +23,17 @@ export default function Report() {
     })
   }, [])
 
+  // Stessi filtri per la tabella, l'export Excel e l'eliminazione degli assenti.
+  const parametri = () => {
+    const params = {}
+    for (const k of ['data_da', 'data_a', 'ruolo', 'tipologia']) if (filters[k]) params[k] = filters[k]
+    if (filters.store && can(['admin', 'admin_ehs', 'ho', 'area'])) params.store = filters.store
+    return params
+  }
+
   const fetchReport = useCallback(async () => {
     setLoading(true)
-    const params = {}
-    if (filters.data_da) params.data_da = filters.data_da
-    if (filters.data_a) params.data_a = filters.data_a
-    if (filters.ruolo) params.ruolo = filters.ruolo
-    if (filters.store && can(['admin', 'admin_ehs', 'ho', 'area'])) params.store = filters.store
+    const params = parametri()
     try {
       const { data } = await api.get('/report/', { params })
       setDati(data.results || data)
@@ -46,12 +51,7 @@ export default function Report() {
       `Eliminare ${assentiCount} record con stato "assente"${Object.values(filters).some(Boolean) ? ' (filtri attivi)' : ''}?\n\nL'operazione è irreversibile.`
     )) return
     try {
-      const params = {}
-      if (filters.data_da) params.data_da = filters.data_da
-      if (filters.data_a)  params.data_a  = filters.data_a
-      if (filters.ruolo)   params.ruolo   = filters.ruolo
-      if (filters.store && can(['admin', 'admin_ehs', 'ho', 'area'])) params.store = filters.store
-      const { data } = await api.delete('/iscrizioni/assenti/', { params })
+      const { data } = await api.delete('/iscrizioni/assenti/', { params: parametri() })
       toast.success(`${data.eliminati} record eliminati.`)
       fetchReport()
     } catch { toast.error('Errore durante l\'eliminazione.') }
@@ -62,12 +62,7 @@ export default function Report() {
   const exportExcel = async () => {
     setEsportando(true)
     try {
-      const params = {}
-      if (filters.data_da) params.data_da = filters.data_da
-      if (filters.data_a) params.data_a = filters.data_a
-      if (filters.ruolo) params.ruolo = filters.ruolo
-      if (filters.store && can(['admin', 'admin_ehs', 'ho', 'area'])) params.store = filters.store
-      const { data } = await api.get('/report/excel/', { params, responseType: 'blob' })
+      const { data } = await api.get('/report/excel/', { params: parametri(), responseType: 'blob' })
       const url = URL.createObjectURL(data)
       const a = document.createElement('a')
       a.href = url
@@ -132,6 +127,13 @@ export default function Report() {
               {ruoli.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
             </select>
           </div>
+          <div className="form-group" style={{ marginBottom: 0, minWidth: 160 }}>
+            <label className="form-label">Tipo attività</label>
+            <select className="form-control" value={filters.tipologia} onChange={e => setF('tipologia', e.target.value)}>
+              <option value="">Tutti i tipi</option>
+              {Object.entries(TIPOLOGIA_LABEL).map(([valore, etichetta]) => <option key={valore} value={valore}>{etichetta}</option>)}
+            </select>
+          </div>
           {can(['admin', 'admin_ehs', 'ho', 'area']) && (
             <div className="form-group" style={{ marginBottom: 0, minWidth: 180 }}>
               <label className="form-label">Store</label>
@@ -141,7 +143,7 @@ export default function Report() {
               </select>
             </div>
           )}
-          <button className="btn btn-secondary" onClick={() => setFilters({ data_da: '', data_a: '', ruolo: '', store: '' })}>Reset</button>
+          <button className="btn btn-secondary" onClick={() => setFilters(FILTRI_VUOTI)}>Reset</button>
         </div>
       </div>
 
