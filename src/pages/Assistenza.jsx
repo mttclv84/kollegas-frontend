@@ -11,7 +11,7 @@ const TIPI = [
 const TIPO = Object.fromEntries(TIPI.map(t => [t.valore, t]))
 const SEZIONI = [
   'Accesso e password', 'Calendario', 'Elenco Attività', 'Iscrizioni e partecipanti', '% Completamento', 'Dettaglio',
-  'Mapping', 'Development', 'Stats', 'Gestione Account', 'EHS Calendar & Richieste', 'Panel Formazione EHS', 'Guida', 'Altro',
+  'Mapping', 'Development', 'Stats', 'Gestione Account', 'EHS Calendar & Aule', 'Panel Formazione EHS', 'Guida', 'Altro',
 ]
 const STATI = {
   nuova: { etichetta: 'Nuova', bg: '#DBEAFE', fg: '#1E40AF' },

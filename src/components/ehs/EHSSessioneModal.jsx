@@ -58,7 +58,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
   const [notaDecisione, setNotaDecisione] = useState('')
 
   // "Aula completata": 0 = non avviato, 1 = marcatura presenti/assenti. I documenti
-  // (Presenze e Attestati) si caricano dopo, dal menù Richieste.
+  // (Presenze e Attestati) si caricano dopo, dalla scheda Aule.
   const [wizardStep, setWizardStep] = useState(0)
   const [presenze, setPresenze] = useState({})
   const [motivi, setMotivi] = useState({})
@@ -316,7 +316,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
     api.post(`/ehs/sessioni/${sessioneId}/${endpoint}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       .then(() => {
         toast.success(modificaPresenze ? 'Presenze aggiornate.'
-          : 'Aula completata. Carica Presenze e Attestati dal menù Richieste entro 45 giorni.')
+          : 'Aula completata. Carica Presenze e Attestati dalla scheda Aule entro 45 giorni.')
         setWizardStep(0); setModificaPresenze(false); notify()
       })
       .catch(err => toast.error(err.response?.data?.detail || 'Errore durante il salvataggio.'))

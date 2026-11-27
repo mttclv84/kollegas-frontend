@@ -177,7 +177,7 @@ export default function EHS() {
             style={{ position: 'relative' }}
           >
             {/* Per l'Area Manager, che consulta soltanto, la scheda si chiama Aule. */}
-            📋 {can(['area']) ? 'Aule' : 'Richieste'}
+            📋 Aule
             {(notificheRichieste.length > 0 || eccezioniInAttesa > 0) && (
               <span style={{
                 position: 'absolute', top: -4, right: -4, width: 10, height: 10,

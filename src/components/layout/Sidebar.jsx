@@ -14,7 +14,7 @@ const NAV_ITEMS = [
     className: 'nav-item-ehs',
     children: [
       // lockedRoles: la voce resta visibile ma con lucchetto e non cliccabile.
-      { to: '/ehs', label: 'EHS Calendar & Richieste', icon: <EhsIcon nome="calendario" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
+      { to: '/ehs', label: 'EHS Calendar & Aule', icon: <EhsIcon nome="calendario" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
       { to: '/ehs/fornitori', label: 'Fornitori EHS', icon: <EhsIcon nome="fornitori" />, roles: ['admin', 'admin_ehs', 'ho'] },
       { to: '/ehs/corsi', label: 'Tabella Corsi EHS', icon: <EhsIcon nome="corsi" />, roles: ['admin', 'admin_ehs'] },
       { to: '/ehs/obblighi', label: 'Panel Formazione EHS', icon: <EhsIcon nome="obblighi" />, roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'] },
