@@ -8,6 +8,7 @@ const AZIONE_CFG = {
   disattiva:  { label: 'Disattivazione',  bg: '#FEE2E2', color: '#991B1B' },
   riattiva:   { label: 'Riattivazione',   bg: '#FEF3C7', color: '#92400E' },
   accesso:    { label: 'Accesso',         bg: '#F3F4F6', color: '#374151' },
+  accesso_fallito: { label: 'Accesso non riuscito', bg: '#FFE4E6', color: '#9F1239' },
 }
 
 const TIPO_LABEL = {

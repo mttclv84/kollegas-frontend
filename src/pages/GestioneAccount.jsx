@@ -394,6 +394,14 @@ export default function GestioneAccount({ mostraDisattivati = false }) {
       key: 'long_absence', label: 'Long Abs.',
       render: u => u.long_absence ? <span className="badge badge-warning">Long Absence</span> : null
     },
+    // Solo Admin: quando la persona è entrata l'ultima volta in Kollegas.
+    ...(can(['admin']) ? [{
+      key: 'last_login', label: 'Ultimo accesso', sortable: true,
+      accessor: u => u.last_login || '',
+      render: u => u.last_login
+        ? <span style={{ fontSize: 12.5, whiteSpace: 'nowrap' }}>{new Date(u.last_login).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span>
+        : <span style={{ fontSize: 12, color: '#9CA3AF' }}>Mai</span>,
+    }] : []),
   ]
 
   const disabledStyle = { background: '#F1F5F9', color: '#9CA3AF' }
