@@ -58,8 +58,8 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute><FornitoreGuard><AppLayout /></FornitoreGuard></ProtectedRoute>,
     children: [
       { index: true, element: <Calendario /> },
-      // Il ruolo 'area' vede la voce EHS in sidebar ma bloccata (lucchetto): niente accesso alla pagina.
-      { path: 'ehs', element: <ProtectedRoute roles={['admin','admin_ehs','ho','store','base','fornitore']}><EHS /></ProtectedRoute> },
+      // Area e HO vedono il calendario EHS in sola visione.
+      { path: 'ehs', element: <ProtectedRoute roles={['admin','admin_ehs','ho','area','store','base','fornitore']}><EHS /></ProtectedRoute> },
       { path: 'ehs/fornitori', element: <ProtectedRoute roles={['admin','admin_ehs','ho']}><GestioneFornitoriEHS /></ProtectedRoute> },
       { path: 'ehs/corsi', element: <ProtectedRoute roles={['admin','admin_ehs']}><GestioneCorsiEHS /></ProtectedRoute> },
       { path: 'ehs/obblighi', element: <ProtectedRoute roles={['admin','admin_ehs','ho','area','store','base','fornitore']}><FormazioneObbligatoriaEHS /></ProtectedRoute> },

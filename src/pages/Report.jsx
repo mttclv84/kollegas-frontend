@@ -7,6 +7,8 @@ import BadgeLA from '../components/ui/BadgeLA'
 
 const STATO_BADGE = { iscritto: 'primary', partecipato: 'success', assente: 'danger' }
 const STATO_LABEL = { iscritto: 'Iscritto', partecipato: 'Partecipato', assente: 'Assente' }
+// Stessi colori dei badge anche nel menù dello stato dell'Admin: [sfondo, testo, bordo].
+const STATO_COLORI = { partecipato: ['#D1FAE5', '#065F46', '#6EE7B7'], iscritto: ['#DBEAFE', '#1E40AF', '#93C5FD'], assente: ['#FEE2E2', '#991B1B', '#FCA5A5'] }
 const TIPOLOGIA_LABEL = { ld: 'L&D', recruiting: 'RECRUITING', ehs: 'EHS', payroll: 'PAYROLL', altro: 'ALTRO' }
 
 // Con `disattivati` mostra solo i profili disattivati (sezione Disattivati > Dettaglio disattivati).
@@ -118,7 +120,8 @@ ${dettaglio}`)) return
       render: d => isAdmin ? (
         <select className="form-control" aria-label={`Stato di ${d.user_cognome} ${d.user_nome}`}
           value={d.stato} onChange={e => cambiaStato(d, e.target.value)}
-          style={{ padding: '2px 6px', fontSize: 12, minWidth: 110, height: 'auto' }}>
+          style={{ padding: '2px 6px', fontSize: 12, fontWeight: 600, minWidth: 110, height: 'auto',
+            background: STATO_COLORI[d.stato]?.[0], color: STATO_COLORI[d.stato]?.[1], borderColor: STATO_COLORI[d.stato]?.[2] }}>
           {Object.entries(STATO_LABEL).map(([valore, etichetta]) => <option key={valore} value={valore}>{etichetta}</option>)}
         </select>
       ) : <span className={`badge badge-${STATO_BADGE[d.stato] || 'neutral'}`}>{d.stato}</span>

@@ -21,7 +21,7 @@ export default function Calendario() {
   const navigate = useNavigate()
   // L'utente Area visualizza soltanto: non crea formazioni.
   const canEdit = can(['admin', 'admin_ehs', 'ho']) && !ospite
-  const canAreaEHS = can(['admin', 'admin_ehs', 'ho', 'store', 'base', 'fornitore'])
+  const canAreaEHS = can(['admin', 'admin_ehs', 'ho', 'area', 'store', 'base', 'fornitore'])
   const isAdmin = can(['admin'])
 
   const [currentDate, setCurrentDate] = useState(new Date())

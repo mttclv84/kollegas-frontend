@@ -106,7 +106,7 @@ export default function EHS() {
   // - Admin / Admin EHS: tutto cliccabile (sessione EHS completa o dettaglio evento);
   // - Store: la sessione del proprio negozio si apre completa, le aule degli altri
   //   negozi in sola lettura con l'iscrizione delle persone;
-  // - HO: vede ogni sessione EHS, senza poter modificare nulla;
+  // - HO e Area: vedono ogni sessione EHS, senza poter modificare nulla;
   // - Fornitore: solo le proprie sessioni (le altre arrivano già come "Occupato").
   const isAdmin = can(['admin', 'admin_ehs'])
   const isEventoCliccabile = (ev) => !ev.occupato && (isAdmin || (ev.is_ehs && !!ev.ehs_sessione_id))
@@ -122,7 +122,7 @@ export default function EHS() {
       return
     }
     // HO apre la scheda completa, ma in sola visione (nessuna azione disponibile).
-    const sessioneMia = isAdmin || isFornitore || can(['ho']) || (can(['store']) && ev.ehs_negozio_id === user?.store_id)
+    const sessioneMia = isAdmin || isFornitore || can(['ho', 'area']) || (can(['store']) && ev.ehs_negozio_id === user?.store_id)
     if (sessioneMia) setSelectedSessioneId(ev.ehs_sessione_id)
     else setAulaInfo(ev)
   }
@@ -241,7 +241,7 @@ export default function EHS() {
               <div className="card-body">
                 <h4 className="legenda-title">Legenda</h4>
                 <div className="legenda-item">
-                  <span className="legenda-dot" style={{ background: '#10B981' }} /> {isFornitore ? 'Tue sessioni EHS (cliccabili)' : can(['ho']) ? 'Aula EHS (cliccabile per i dettagli)' : 'Aula EHS (cliccabile per iscrivere)'}
+                  <span className="legenda-dot" style={{ background: '#10B981' }} /> {isFornitore ? 'Tue sessioni EHS (cliccabili)' : can(['ho', 'area']) ? 'Aula EHS (cliccabile per i dettagli)' : 'Aula EHS (cliccabile per iscrivere)'}
                 </div>
                 <div className="legenda-item">
                   <span className="legenda-dot" style={{ background: '#9CA3AF' }} /> {isFornitore ? 'Store occupato da altre attività' : isAdmin ? 'Altre attività' : 'Altre attività (sola vista)'}

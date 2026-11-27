@@ -627,7 +627,7 @@ export default function EHSSessioneModal({ sessioneId, onClose, onChanged }) {
                   className="btn btn-secondary btn-sm"
                   onClick={() => navigate(`/iscrizioni?evento=${sessione.calendario_evento}`)}
                 >
-                  {can(['ho']) ? 'Visualizza partecipanti →'
+                  {can(['ho', 'area']) ? 'Visualizza partecipanti →'
                     : sessione.stato === 'COMPLETATA' ? 'Aggiungi / togli partecipanti →' : 'Gestione Partecipanti →'}
                 </button>
               </div>

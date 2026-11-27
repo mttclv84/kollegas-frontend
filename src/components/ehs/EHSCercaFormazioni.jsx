@@ -15,7 +15,7 @@ export default function EHSCercaFormazioni({ onApri }) {
   const { can } = useAuth()
   const navigate = useNavigate()
   const puoIscrivere = can(['store', 'admin', 'admin_ehs'])
-  const vedeTutteLeSessioni = can(['admin', 'admin_ehs', 'ho'])
+  const vedeTutteLeSessioni = can(['admin', 'admin_ehs', 'ho', 'area'])
   const [aperta, setAperta] = useState(false)
   const [filtri, setFiltri] = useState(FILTRI_VUOTI)
   const [corsi, setCorsi] = useState([])
