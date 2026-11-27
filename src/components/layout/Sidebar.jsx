@@ -58,6 +58,7 @@ const NAV_ITEMS = [
   { to: '/richieste-password', label: 'Richieste reset password', icon: '🔑', roles: ['admin'], resetBadge: true },
   { to: '/audit',            label: 'Audit Log',              icon: '📋', roles: ['admin'] },
   { to: '/guida',            label: 'Guida',                  icon: '📘', roles: ['admin', 'area'] },
+  { to: '/assistenza',       label: 'Assistenza',             icon: '🛟', roles: ['admin', 'admin_ehs', 'ho', 'area', 'store', 'fornitore'], assistenzaBadge: true },
   { to: '/stats',            label: 'Stats',                  icon: '📊', roles: ['admin', 'admin_ehs', 'ho', 'area'] },
   {
     group: 'Disattivati',
@@ -84,6 +85,13 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
 
   // Disattivazioni di attività chieste dagli HO, da approvare: pallino su Richieste di Modifica.
   const [disattivazioniBadge, setDisattivazioniBadge] = useState(0)
+  // Assistenza: richieste nuove per l'Admin, risposte non lette per gli altri.
+  const [assistenzaBadge, setAssistenzaBadge] = useState(0)
+
+  useEffect(() => {
+    if (!user || user.sola_lettura) return
+    api.get('/assistenza/contatori/').then(({ data }) => setAssistenzaBadge(data.da_vedere || 0)).catch(() => {})
+  }, [user, location.pathname])
 
   useEffect(() => {
     if (!user || !can(['admin'])) return
@@ -230,6 +238,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
           // ── Flat item ──
           if (!can(item.roles)) return null
           const hasBadge = (item.alertBadge && (pendingCount > 0 || disattivazioniBadge > 0)) || (item.resetBadge && resetBadge > 0)
+            || (item.assistenzaBadge && assistenzaBadge > 0 && location.pathname !== '/assistenza')
           return (
             <NavLink
               key={item.to}
