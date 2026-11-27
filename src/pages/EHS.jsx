@@ -176,7 +176,8 @@ export default function EHS() {
             onClick={() => handleTabClick('richieste')}
             style={{ position: 'relative' }}
           >
-            📋 Richieste
+            {/* Per l'Area Manager, che consulta soltanto, la scheda si chiama Aule. */}
+            📋 {can(['area']) ? 'Aule' : 'Richieste'}
             {(notificheRichieste.length > 0 || eccezioniInAttesa > 0) && (
               <span style={{
                 position: 'absolute', top: -4, right: -4, width: 10, height: 10,
